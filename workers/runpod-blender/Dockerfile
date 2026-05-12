@@ -14,8 +14,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     libsm6 \
     libx11-6 \
+    libxcursor1 \
     libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxinerama1 \
+    libxkbcommon0 \
+    libxrandr2 \
     libxrender1 \
+    libxxf86vm1 \
     python3 \
     python3-pip \
     xz-utils \

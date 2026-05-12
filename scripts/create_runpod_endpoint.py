@@ -13,12 +13,13 @@ RUNPOD_REST = "https://rest.runpod.io/v1"
 def load_env(path: Path) -> None:
     if not path.exists():
         return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
+    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        os.environ.setdefault(key, value.strip().strip('"'))
+        if not os.environ.get(key):
+            os.environ[key] = value.strip().strip('"')
 
 
 def request_json(method: str, path: str, api_key: str, payload: dict | None = None) -> dict:
@@ -51,6 +52,7 @@ def main() -> None:
     parser.add_argument("--execution-timeout-ms", type=int, default=1800000)
     parser.add_argument("--container-disk-gb", type=int, default=50)
     parser.add_argument("--env-file", default=".env")
+    parser.add_argument("--update-endpoint-id", default="", help="Patch an existing endpoint instead of creating a new one")
     args = parser.parse_args()
 
     load_env(Path(args.env_file))
@@ -98,8 +100,12 @@ def main() -> None:
         "scalerType": "QUEUE_DELAY",
         "scalerValue": 4,
     }
-    print("Creating RunPod endpoint...")
-    endpoint = request_json("POST", "/endpoints", api_key, endpoint_payload)
+    if args.update_endpoint_id:
+        print(f"Updating RunPod endpoint {args.update_endpoint_id}...")
+        endpoint = request_json("PATCH", f"/endpoints/{args.update_endpoint_id}", api_key, endpoint_payload)
+    else:
+        print("Creating RunPod endpoint...")
+        endpoint = request_json("POST", "/endpoints", api_key, endpoint_payload)
     endpoint_id = endpoint["id"]
     print(json.dumps({"template": template, "endpoint": endpoint}, indent=2))
     print()
@@ -115,4 +121,3 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         sys.exit(130)
-
