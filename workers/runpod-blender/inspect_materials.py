@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import bpy
+from mathutils import Vector
 
 
 def args():
@@ -76,12 +77,34 @@ def material_summary(material):
 
 
 def object_summary(obj):
-    return {
+    summary = {
         "name": obj.name,
         "type": obj.type,
         "material_slots": [slot.material.name if slot.material else None for slot in obj.material_slots],
         "children": [child.name for child in obj.children],
+        "hide_render": obj.hide_render,
+        "hide_viewport": obj.hide_viewport,
+        "visible_get": obj.visible_get(),
     }
+    if obj.type == "MESH":
+        mins = Vector((float("inf"), float("inf"), float("inf")))
+        maxs = Vector((float("-inf"), float("-inf"), float("-inf")))
+        for corner in obj.bound_box:
+            point = obj.matrix_world @ Vector(corner)
+            mins.x = min(mins.x, point.x)
+            mins.y = min(mins.y, point.y)
+            mins.z = min(mins.z, point.z)
+            maxs.x = max(maxs.x, point.x)
+            maxs.y = max(maxs.y, point.y)
+            maxs.z = max(maxs.z, point.z)
+        size = maxs - mins
+        summary["bounds"] = {
+            "min": list(mins),
+            "max": list(maxs),
+            "size": list(size),
+            "max_dimension": max(size.x, size.y, size.z),
+        }
+    return summary
 
 
 def main():
@@ -98,4 +121,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

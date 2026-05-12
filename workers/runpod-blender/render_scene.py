@@ -28,7 +28,14 @@ DEFAULT_RECIPE = {
     },
     "world": {"color": [1.0, 1.0, 1.0], "strength": 0.18},
     "background": {"color": [0.98, 0.98, 0.965, 1.0], "plane_size": 8.0, "plane_z": -0.04},
-    "model": {"auto_center": True, "auto_scale": True, "target_size": 2.0, "shade_smooth": True},
+    "model": {
+        "auto_center": True,
+        "auto_scale": True,
+        "target_size": 2.0,
+        "shade_smooth": True,
+        "include_contains": [],
+        "exclude_contains": ["light", "camera", "cube", "helper", "swatch", "plane"],
+    },
     "material_strategy": "override",
     "material_map": [
         {"contains": ["metal", "band", "prong", "basket", "shank"], "material": "white_gold_polished"},
@@ -117,6 +124,24 @@ def import_model(path: Path):
     else:
         raise ValueError(f"Unsupported model type: {suffix}")
     return [obj for obj in bpy.data.objects if obj not in before and obj.type == "MESH"]
+
+
+def filter_product_objects(objects, settings):
+    include = [token.lower() for token in settings.get("include_contains", [])]
+    exclude = [token.lower() for token in settings.get("exclude_contains", [])]
+    selected = []
+    for obj in objects:
+        signature = f"{obj.name} {' '.join(slot.material.name for slot in obj.material_slots if slot.material)}".lower()
+        if include and not any(token in signature for token in include):
+            obj.hide_render = True
+            obj.hide_viewport = True
+            continue
+        if exclude and any(token in signature for token in exclude):
+            obj.hide_render = True
+            obj.hide_viewport = True
+            continue
+        selected.append(obj)
+    return selected
 
 
 def normalize(objects, settings):
@@ -280,6 +305,9 @@ def main():
     setup_render(recipe)
     setup_world(recipe)
     objects = import_model(Path(parsed.model))
+    objects = filter_product_objects(objects, recipe["model"])
+    if not objects:
+        raise RuntimeError("No product mesh objects matched model include/exclude filters.")
     normalize(objects, recipe["model"])
     assign_materials(objects, recipe)
     setup_background(recipe)
