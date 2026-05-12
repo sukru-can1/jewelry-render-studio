@@ -1,0 +1,13 @@
+models/
+outputs/
+blend/
+*.blend1
+__pycache__/
+.venv/
+node_modules/
+.env
+.env.*
+!.env.example
+
+.vercel
+.env*.local

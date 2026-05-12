@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+blend/
+models/
+outputs/
+workers/
+scripts/
+apps/
+docs/
+recipes/
+requirements.txt
+*.blend
+*.blend1

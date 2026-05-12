@@ -1,0 +1,62 @@
+name: Build RunPod Worker Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Image version tag
+        required: true
+        default: v0.1.0
+  push:
+    branches:
+      - main
+    paths:
+      - workers/runpod-blender/**
+      - .github/workflows/runpod-worker-image.yml
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute metadata
+        id: meta
+        shell: bash
+        run: |
+          OWNER_LC="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then VERSION="sha-${GITHUB_SHA::12}"; fi
+          echo "image=ghcr.io/${OWNER_LC}/jewelry-render-worker" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: workers/runpod-blender/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
+
+      - name: Summary
+        run: |
+          echo "Published image:" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"

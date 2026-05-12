@@ -1,0 +1,135 @@
+{
+  "name": "glamira_white_catalog",
+  "description": "Bright white luxury catalog setup for diamond rings with controlled metal reflections and crisp stone highlights.",
+  "render": {
+    "engine": "CYCLES",
+    "device": "CPU",
+    "resolution": [1400, 1400],
+    "samples": 192,
+    "denoise": true,
+    "transparent": false,
+    "film_exposure": 0.0,
+    "view_transform": "Filmic",
+    "look": "Medium High Contrast",
+    "exposure": 0.0,
+    "gamma": 1.0
+  },
+  "camera": {
+    "position": [0.0, -4.2, 2.1],
+    "target": [0.0, 0.0, 0.32],
+    "focal_length": 90,
+    "sensor_width": 32,
+    "depth_of_field": {
+      "enabled": true,
+      "f_stop": 7.5
+    }
+  },
+  "world": {
+    "color": [1.0, 1.0, 1.0],
+    "strength": 0.18
+  },
+  "background": {
+    "color": [0.98, 0.98, 0.965],
+    "shadow_plane": true,
+    "plane_size": 8.0,
+    "plane_z": -0.04
+  },
+  "model": {
+    "auto_center": true,
+    "auto_scale": true,
+    "target_size": 2.0,
+    "rotation_degrees": [0.0, 0.0, 0.0],
+    "shade_smooth": true,
+    "bevel_modifier": {
+      "enabled": false,
+      "width": 0.006,
+      "segments": 3
+    }
+  },
+  "materials": {
+    "default_metal": "polished_white_gold",
+    "default_stone": "bright_diamond",
+    "presets": {
+      "polished_white_gold": {
+        "kind": "metal",
+        "base_color": [0.86, 0.84, 0.8, 1.0],
+        "metallic": 1.0,
+        "roughness": 0.16,
+        "specular_ior_level": 0.78
+      },
+      "bright_diamond": {
+        "kind": "gem",
+        "base_color": [1.0, 0.98, 0.92, 1.0],
+        "roughness": 0.0,
+        "alpha": 0.26,
+        "transmission_weight": 1.0,
+        "ior": 2.417
+      }
+    }
+  },
+  "lights": [
+    {
+      "name": "large_top_softbox",
+      "type": "AREA",
+      "position": [0.0, -1.6, 3.0],
+      "rotation_degrees": [62.0, 0.0, 0.0],
+      "size": 3.2,
+      "power": 520.0
+    },
+    {
+      "name": "left_front_strip",
+      "type": "AREA",
+      "position": [-2.4, -2.4, 1.2],
+      "rotation_degrees": [70.0, 0.0, -34.0],
+      "size": 1.1,
+      "power": 160.0
+    },
+    {
+      "name": "right_rim_strip",
+      "type": "AREA",
+      "position": [2.3, -0.2, 1.4],
+      "rotation_degrees": [78.0, 0.0, 45.0],
+      "size": 0.75,
+      "power": 125.0
+    },
+    {
+      "name": "diamond_sparkle_pin_1",
+      "type": "POINT",
+      "position": [-0.65, -1.15, 1.45],
+      "power": 55.0,
+      "shadow_soft_size": 0.018
+    },
+    {
+      "name": "diamond_sparkle_pin_2",
+      "type": "POINT",
+      "position": [0.82, -1.35, 1.75],
+      "power": 38.0,
+      "shadow_soft_size": 0.012
+    }
+  ],
+  "reflection_cards": [
+    {
+      "name": "dark_lower_reflection",
+      "position": [0.0, -2.6, 0.28],
+      "rotation_degrees": [72.0, 0.0, 0.0],
+      "size": [3.2, 0.55],
+      "color": [0.035, 0.035, 0.038, 1.0],
+      "visible_to_camera": false
+    },
+    {
+      "name": "soft_gray_side_reflection",
+      "position": [2.1, -1.5, 0.8],
+      "rotation_degrees": [65.0, 0.0, 58.0],
+      "size": [1.4, 1.0],
+      "color": [0.42, 0.42, 0.43, 1.0],
+      "visible_to_camera": false
+    }
+  ],
+  "experiments": {
+    "world.strength": [0.12, 0.18, 0.26],
+    "lights.diamond_sparkle_pin_1.power": [40.0, 70.0],
+    "lights.large_top_softbox.size": [2.6, 3.4],
+    "materials.presets.polished_white_gold.roughness": [0.11, 0.17]
+  }
+}
+

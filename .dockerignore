@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+.vercel/
+blend/
+models/
+outputs/
+node_modules/
+.next/
+apps/
+docs/
+recipes/
+scripts/
+*.blend
+*.blend1
+
