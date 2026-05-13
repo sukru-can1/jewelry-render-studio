@@ -38,6 +38,7 @@ def args():
     parser.add_argument("--recipe", required=True)
     parser.add_argument("--model-url", default="https://u6oaq5xqg2yrxzlq.public.blob.vercel-storage.com/models/ring99.blend")
     parser.add_argument("--model-pathname", default="models/ring99.blend")
+    parser.add_argument("--endpoint-id", default="")
     parser.add_argument("--output-prefix", default="")
     parser.add_argument("--download-to", default="")
     parser.add_argument("--timeout-seconds", type=int, default=1800)
@@ -48,7 +49,7 @@ def main():
     parsed = args()
     load_env(Path(".env"))
     api_key = os.environ.get("RUNPOD_API_KEY")
-    endpoint_id = os.environ.get("RUNPOD_ENDPOINT_ID", "4lvi3w848rqy0l")
+    endpoint_id = parsed.endpoint_id or os.environ.get("RUNPOD_ENDPOINT_ID", "4lvi3w848rqy0l")
     if not api_key:
         raise SystemExit("RUNPOD_API_KEY is missing.")
 
