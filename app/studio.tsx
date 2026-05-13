@@ -1,5 +1,6 @@
 "use client";
 
+import defaultRecipeSource from "@/recipes/ring99_hybrid_catalog.json";
 import { upload } from "@vercel/blob/client";
 import { FileSearch, Images, ImageUp, Play, RefreshCw, UploadCloud } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -32,7 +33,7 @@ type AppConfig = {
 
 type JsonRecord = Record<string, unknown>;
 
-const defaultRecipe = {
+const defaultRecipeFallback = {
   name: "ring99_catalog_faceted_post",
   description:
     "Storefront studio recipe for ring99.blend. Uses source BLEND metal and side-stone materials, a renderer-controlled center diamond, and a targeted catalog post-process for center-stone facets.",
@@ -221,6 +222,8 @@ const defaultRecipe = {
   }
 };
 
+const defaultRecipe = defaultRecipeSource as JsonRecord;
+
 async function uploadBlob(prefix: string, file: File): Promise<BlobAsset> {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const blob = await upload(`${prefix}/${safeName}`, file, {
@@ -285,43 +288,43 @@ function setReflectionCardTone(recipe: JsonRecord, dark: number, gray: number) {
 function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
   const variants = [
     {
-      suffix: "reference-pose",
-      camera: { position: [0.0, -5.05, 1.36], target: [0.0, 0.01, 0.14], focal: 98 },
-      rotation: [50.0, 0.0, 0.0],
+      suffix: "source-balanced",
+      camera: { position: [0.0, -5.0, 1.82], target: [0.0, 0.0, 0.14], focal: 100 },
+      rotation: [38.0, 0.0, 0.0],
       translation: [0.0, 0.01, 0.0],
-      targetSize: 1.68,
-      exposure: 0.04,
-      worldStrength: 0.2,
-      centerMaterial: "diamond_center",
-      darkCard: 0.34,
-      grayCard: 0.8,
-      overlay: { radius_scale: 0.48, dark_alpha: 0.16, light_alpha: 0.24, chroma_alpha: 0.1 }
-    },
-    {
-      suffix: "closer",
-      camera: { position: [0.0, -4.95, 1.42], target: [0.0, -0.01, 0.16], focal: 104 },
-      rotation: [52.0, 0.0, 0.0],
-      translation: [0.0, 0.0, 0.0],
-      targetSize: 1.72,
-      exposure: 0.03,
+      targetSize: 1.55,
+      exposure: 0.025,
       worldStrength: 0.18,
-      centerMaterial: "diamond_center",
-      darkCard: 0.3,
-      grayCard: 0.76,
-      overlay: { radius_scale: 0.5, dark_alpha: 0.22, light_alpha: 0.3, chroma_alpha: 0.12 }
+      centerMaterial: "Diamond.001",
+      darkCard: 0.28,
+      grayCard: 0.74,
+      overlay: { enabled: false }
     },
     {
-      suffix: "clean-center",
-      camera: { position: [0.0, -5.05, 1.36], target: [0.0, 0.01, 0.14], focal: 98 },
-      rotation: [50.0, 0.0, 0.0],
+      suffix: "source-contrast",
+      camera: { position: [0.0, -5.0, 1.82], target: [0.0, 0.0, 0.14], focal: 100 },
+      rotation: [38.0, 0.0, 0.0],
       translation: [0.0, 0.01, 0.0],
-      targetSize: 1.66,
-      exposure: 0.04,
-      worldStrength: 0.21,
+      targetSize: 1.55,
+      exposure: -0.02,
+      worldStrength: 0.12,
       centerMaterial: "Diamond.001",
-      darkCard: 0.38,
-      grayCard: 0.82,
-      overlay: { radius_scale: 0.46, dark_alpha: 0.12, light_alpha: 0.2, chroma_alpha: 0.08 }
+      darkCard: 0.16,
+      grayCard: 0.58,
+      overlay: { enabled: false }
+    },
+    {
+      suffix: "brighter-brilliant",
+      camera: { position: [0.0, -5.0, 1.82], target: [0.0, 0.0, 0.14], focal: 100 },
+      rotation: [38.0, 0.0, 0.0],
+      translation: [0.0, 0.01, 0.0],
+      targetSize: 1.55,
+      exposure: 0.035,
+      worldStrength: 0.2,
+      centerMaterial: "diamond-brillant_aaa",
+      darkCard: 0.32,
+      grayCard: 0.78,
+      overlay: { enabled: false }
     }
   ];
 

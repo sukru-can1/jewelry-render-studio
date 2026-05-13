@@ -35,7 +35,8 @@ def request_json(method: str, path: str, api_key: str, payload: dict | None = No
     )
     try:
         with urllib.request.urlopen(request, timeout=120) as response:
-            return json.loads(response.read().decode("utf-8"))
+            text = response.read().decode("utf-8")
+            return json.loads(text) if text.strip() else {}
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise SystemExit(f"RunPod API error {exc.code}: {detail}") from exc
@@ -51,7 +52,8 @@ def request_json_or_error(method: str, path: str, api_key: str, payload: dict | 
     )
     try:
         with urllib.request.urlopen(request, timeout=120) as response:
-            return json.loads(response.read().decode("utf-8")), None
+            text = response.read().decode("utf-8")
+            return json.loads(text) if text.strip() else {}, None
     except urllib.error.HTTPError as exc:
         return None, f"RunPod API error {exc.code}: {exc.read().decode('utf-8', errors='replace')}"
 
