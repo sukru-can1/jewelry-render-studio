@@ -74,6 +74,24 @@ DEFAULT_RECIPE = {
         {"name": "diamond_sparkle_pin_1", "type": "POINT", "position": [-0.65, -1.15, 1.45], "power": 55, "shadow_soft_size": 0.018},
         {"name": "diamond_sparkle_pin_2", "type": "POINT", "position": [0.82, -1.35, 1.75], "power": 38, "shadow_soft_size": 0.012},
     ],
+    "reflection_cards": [
+        {
+            "name": "dark_lower_reflection",
+            "position": [0.0, -2.8, 0.35],
+            "rotation_degrees": [72.0, 0.0, 0.0],
+            "size": [3.6, 0.75],
+            "color": [0.035, 0.035, 0.038, 1.0],
+            "visible_to_camera": False,
+        },
+        {
+            "name": "soft_gray_side_reflection",
+            "position": [2.4, -1.6, 0.85],
+            "rotation_degrees": [65.0, 0.0, 58.0],
+            "size": [1.8, 1.15],
+            "color": [0.38, 0.38, 0.39, 1.0],
+            "visible_to_camera": False,
+        },
+    ],
 }
 
 
@@ -266,6 +284,22 @@ def setup_background(recipe):
     plane.data.materials.append(mat)
 
 
+def add_reflection_cards(recipe):
+    for config in recipe.get("reflection_cards", []):
+        bpy.ops.mesh.primitive_plane_add(
+            size=1.0,
+            location=config["position"],
+            rotation=[math.radians(v) for v in config.get("rotation_degrees", [0, 0, 0])],
+        )
+        card = bpy.context.object
+        card.name = config["name"]
+        size = config.get("size", [1, 1])
+        card.scale = (size[0], size[1], 1)
+        mat = make_material(config["name"] + "_material", {"base_color": config.get("color", [0.1, 0.1, 0.1, 1]), "roughness": 0.5})
+        card.data.materials.append(mat)
+        card.visible_camera = config.get("visible_to_camera", False)
+
+
 def add_lights(recipe):
     for config in recipe.get("lights", []):
         data = bpy.data.lights.new(config["name"], config["type"])
@@ -311,6 +345,7 @@ def main():
     normalize(objects, recipe["model"])
     assign_materials(objects, recipe)
     setup_background(recipe)
+    add_reflection_cards(recipe)
     add_lights(recipe)
     setup_camera(recipe)
     bpy.context.scene.render.filepath = parsed.output

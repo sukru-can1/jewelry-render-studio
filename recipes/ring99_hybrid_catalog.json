@@ -3,37 +3,37 @@
   "description": "First cloud render recipe for ring99.blend. Preserve embedded source materials on unknown objects, but override recognized metal and diamond parts with controlled catalog materials.",
   "material_strategy": "hybrid",
   "render": {
-    "resolution": [1400, 1400],
-    "samples": 192,
+    "resolution": [1000, 1000],
+    "samples": 64,
     "denoise": true,
     "transparent": false,
     "view_transform": "Filmic",
     "look": "Medium High Contrast",
-    "exposure": 0.0,
+    "exposure": -0.45,
     "gamma": 1.0
   },
   "camera": {
-    "position": [0.0, -4.2, 2.1],
-    "target": [0.0, 0.0, 0.32],
-    "focal_length": 90,
+    "position": [0.0, -6.0, 2.75],
+    "target": [0.0, 0.0, 0.2],
+    "focal_length": 70,
     "depth_of_field": {
       "enabled": true,
       "f_stop": 7.5
     }
   },
   "world": {
-    "color": [1.0, 1.0, 1.0],
-    "strength": 0.18
+    "color": [0.985, 0.985, 0.975],
+    "strength": 0.08
   },
   "background": {
     "color": [0.98, 0.98, 0.965, 1.0],
-    "plane_size": 8.0,
+    "plane_size": 40.0,
     "plane_z": -0.04
   },
   "model": {
     "auto_center": true,
     "auto_scale": true,
-    "target_size": 2.0,
+    "target_size": 1.35,
     "shade_smooth": true,
     "include_contains": [],
     "exclude_contains": ["light", "camera", "cube", "helper", "swatch", "plane"]
@@ -84,7 +84,7 @@
       "position": [0.0, -1.6, 3.0],
       "rotation_degrees": [62.0, 0.0, 0.0],
       "size": 3.2,
-      "power": 520.0
+      "power": 260.0
     },
     {
       "name": "left_front_strip",
@@ -92,7 +92,7 @@
       "position": [-2.4, -2.4, 1.2],
       "rotation_degrees": [70.0, 0.0, -34.0],
       "size": 1.1,
-      "power": 160.0
+      "power": 90.0
     },
     {
       "name": "right_rim_strip",
@@ -100,21 +100,39 @@
       "position": [2.3, -0.2, 1.4],
       "rotation_degrees": [78.0, 0.0, 45.0],
       "size": 0.75,
-      "power": 125.0
+      "power": 75.0
     },
     {
       "name": "diamond_sparkle_pin_1",
       "type": "POINT",
       "position": [-0.65, -1.15, 1.45],
-      "power": 55.0,
+      "power": 40.0,
       "shadow_soft_size": 0.018
     },
     {
       "name": "diamond_sparkle_pin_2",
       "type": "POINT",
       "position": [0.82, -1.35, 1.75],
-      "power": 38.0,
+      "power": 32.0,
       "shadow_soft_size": 0.012
+    }
+  ],
+  "reflection_cards": [
+    {
+      "name": "dark_lower_reflection",
+      "position": [0.0, -2.8, 0.35],
+      "rotation_degrees": [72.0, 0.0, 0.0],
+      "size": [3.6, 0.75],
+      "color": [0.035, 0.035, 0.038, 1.0],
+      "visible_to_camera": false
+    },
+    {
+      "name": "soft_gray_side_reflection",
+      "position": [2.4, -1.6, 0.85],
+      "rotation_degrees": [65.0, 0.0, 58.0],
+      "size": [1.8, 1.15],
+      "color": [0.38, 0.38, 0.39, 1.0],
+      "visible_to_camera": false
     }
   ]
 }

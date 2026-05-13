@@ -90,7 +90,6 @@ def main() -> None:
     endpoint_payload = {
         "name": args.name,
         "templateId": template_id,
-        "computeType": "GPU",
         "gpuCount": 1,
         "gpuTypeIds": [args.gpu],
         "workersMin": args.workers_min,
@@ -100,6 +99,8 @@ def main() -> None:
         "scalerType": "QUEUE_DELAY",
         "scalerValue": 4,
     }
+    if not args.update_endpoint_id:
+        endpoint_payload["computeType"] = "GPU"
     if args.update_endpoint_id:
         print(f"Updating RunPod endpoint {args.update_endpoint_id}...")
         endpoint = request_json("PATCH", f"/endpoints/{args.update_endpoint_id}", api_key, endpoint_payload)
