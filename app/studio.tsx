@@ -34,16 +34,53 @@ type JsonRecord = Record<string, unknown>;
 
 const defaultRecipe = {
   name: "ring99_hybrid_catalog",
+  description:
+    "Storefront studio recipe for ring99.blend. Uses source BLEND metal and diamond library materials, remaps emerald-assigned stones to diamond, and rotates the model into a catalog pose.",
   material_strategy: "hybrid",
   render: {
-    resolution: [1400, 1400],
-    samples: 192,
-    denoise: true
+    resolution: [1000, 1000],
+    samples: 64,
+    denoise: true,
+    transparent: false,
+    view_transform: "Filmic",
+    look: "Medium High Contrast",
+    exposure: 0.0,
+    gamma: 1.0
+  },
+  camera: {
+    position: [0.0, -4.65, 1.35],
+    target: [0.0, -0.08, 0.28],
+    focal_length: 105,
+    depth_of_field: {
+      enabled: true,
+      f_stop: 11.0
+    }
+  },
+  world: {
+    color: [1.0, 1.0, 0.995],
+    strength: 0.12
+  },
+  background: {
+    color: [1.0, 1.0, 0.992, 1.0],
+    plane_size: 40.0,
+    plane_z: -0.12
+  },
+  model: {
+    auto_center: true,
+    auto_scale: true,
+    target_size: 1.74,
+    rotation_degrees: [68.0, 0.0, 0.0],
+    translation: [0.0, -0.08, 0.0],
+    ground_to_plane: true,
+    ground_clearance: 0.012,
+    shade_smooth: true,
+    include_contains: [],
+    exclude_contains: ["light", "camera", "cube", "helper", "swatch", "plane"]
   },
   material_map: [
-    { contains: ["metal", "band", "shank", "prong", "basket", "gold", "platinum", "silver"], material: "white_gold_polished" },
-    { contains: ["center", "main", "diamond", "stone", "gem", "brilliant"], material: "diamond_center" },
-    { contains: ["side", "pave", "small", "accent"], material: "diamond_side" }
+    { contains: ["stone_emerald"], source_material: "Diamond.001" },
+    { contains: ["Diamond.001", "diamond"], source_material: "Diamond.001" },
+    { contains: ["metal", "band", "shank", "prong", "basket"], source_material: "metal" }
   ],
   materials: {
     white_gold_polished: {
@@ -69,7 +106,96 @@ const defaultRecipe = {
       transmission_weight: 1.0,
       ior: 2.417
     }
-  }
+  },
+  lights: [
+    {
+      name: "large_top_softbox",
+      type: "AREA",
+      position: [0.0, -1.25, 3.2],
+      rotation_degrees: [62.0, 0.0, 0.0],
+      size: 3.1,
+      power: 360.0
+    },
+    {
+      name: "left_front_strip",
+      type: "AREA",
+      position: [-2.4, -2.0, 1.25],
+      rotation_degrees: [70.0, 0.0, -34.0],
+      size: 1.1,
+      power: 90.0
+    },
+    {
+      name: "right_rim_strip",
+      type: "AREA",
+      position: [2.3, -0.15, 1.45],
+      rotation_degrees: [78.0, 0.0, 45.0],
+      size: 0.75,
+      power: 90.0
+    },
+    {
+      name: "diamond_sparkle_pin_1",
+      type: "POINT",
+      position: [-0.42, -1.05, 1.15],
+      power: 120.0,
+      shadow_soft_size: 0.018
+    },
+    {
+      name: "diamond_sparkle_pin_2",
+      type: "POINT",
+      position: [0.62, -1.25, 1.35],
+      power: 105.0,
+      shadow_soft_size: 0.012
+    },
+    {
+      name: "diamond_sparkle_pin_3",
+      type: "POINT",
+      position: [-0.95, -0.55, 1.75],
+      power: 65.0,
+      shadow_soft_size: 0.01
+    }
+  ],
+  reflection_cards: [
+    {
+      name: "dark_lower_reflection",
+      position: [0.0, -2.8, 0.35],
+      rotation_degrees: [72.0, 0.0, 0.0],
+      size: [3.6, 0.75],
+      color: [0.14, 0.14, 0.146, 1.0],
+      visible_to_camera: false
+    },
+    {
+      name: "soft_gray_side_reflection",
+      position: [2.4, -1.6, 0.85],
+      rotation_degrees: [65.0, 0.0, 58.0],
+      size: [1.8, 1.15],
+      color: [0.6, 0.6, 0.6, 1.0],
+      visible_to_camera: false
+    },
+    {
+      name: "dark_upper_facet_reflection",
+      position: [-1.1, -0.9, 2.28],
+      rotation_degrees: [36.0, 0.0, -28.0],
+      size: [2.6, 0.82],
+      color: [0.14, 0.14, 0.146, 1.0],
+      visible_to_camera: false
+    },
+    {
+      name: "dark_overhead_table_reflection",
+      position: [0.05, -0.35, 2.65],
+      rotation_degrees: [0.0, 0.0, 12.0],
+      size: [2.8, 1.25],
+      color: [0.14, 0.14, 0.146, 1.0],
+      visible_to_camera: false
+    },
+    {
+      name: "left_dark_edge_reflection",
+      position: [-2.15, -1.05, 1.15],
+      rotation_degrees: [68.0, 0.0, -54.0],
+      size: [1.4, 1.0],
+      color: [0.14, 0.14, 0.146, 1.0],
+      visible_to_camera: false
+    }
+  ]
 };
 
 async function uploadBlob(prefix: string, file: File): Promise<BlobAsset> {
