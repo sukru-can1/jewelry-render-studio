@@ -9,31 +9,31 @@
     "transparent": false,
     "view_transform": "Filmic",
     "look": "Medium High Contrast",
-    "exposure": -0.45,
+    "exposure": -0.48,
     "gamma": 1.0
   },
   "camera": {
-    "position": [0.0, -6.0, 2.75],
-    "target": [0.0, 0.0, 0.2],
-    "focal_length": 70,
+    "position": [-2.05, -3.25, 3.9],
+    "target": [0.0, 0.0, 0.03],
+    "focal_length": 74,
     "depth_of_field": {
       "enabled": true,
-      "f_stop": 7.5
+      "f_stop": 9.5
     }
   },
   "world": {
-    "color": [0.985, 0.985, 0.975],
-    "strength": 0.08
+    "color": [1.0, 1.0, 0.995],
+    "strength": 0.045
   },
   "background": {
-    "color": [0.98, 0.98, 0.965, 1.0],
+    "color": [1.0, 1.0, 0.992, 1.0],
     "plane_size": 40.0,
-    "plane_z": -0.04
+    "plane_z": -0.12
   },
   "model": {
     "auto_center": true,
     "auto_scale": true,
-    "target_size": 1.35,
+    "target_size": 1.9,
     "shade_smooth": true,
     "include_contains": [],
     "exclude_contains": ["light", "camera", "cube", "helper", "swatch", "plane"]
@@ -62,59 +62,68 @@
     },
     "diamond_center": {
       "type": "gem",
-      "base_color": [1.0, 0.98, 0.92, 1.0],
+      "base_color": [0.92, 0.965, 1.0, 1.0],
       "roughness": 0.0,
-      "alpha": 0.24,
-      "transmission_weight": 1.0,
-      "ior": 2.417
+      "alpha": 1.0,
+      "transmission_weight": 0.18,
+      "ior": 2.417,
+      "specular_ior_level": 1.0
     },
     "diamond_side": {
       "type": "gem",
-      "base_color": [1.0, 0.98, 0.94, 1.0],
+      "base_color": [0.94, 0.975, 1.0, 1.0],
       "roughness": 0.0,
-      "alpha": 0.3,
-      "transmission_weight": 1.0,
-      "ior": 2.417
+      "alpha": 1.0,
+      "transmission_weight": 0.28,
+      "ior": 2.417,
+      "specular_ior_level": 1.0
     }
   },
   "lights": [
     {
       "name": "large_top_softbox",
       "type": "AREA",
-      "position": [0.0, -1.6, 3.0],
+      "position": [-0.25, -1.45, 3.7],
       "rotation_degrees": [62.0, 0.0, 0.0],
-      "size": 3.2,
-      "power": 260.0
+      "size": 2.35,
+      "power": 185.0
     },
     {
       "name": "left_front_strip",
       "type": "AREA",
-      "position": [-2.4, -2.4, 1.2],
+      "position": [-2.75, -2.25, 1.55],
       "rotation_degrees": [70.0, 0.0, -34.0],
       "size": 1.1,
-      "power": 90.0
+      "power": 145.0
     },
     {
       "name": "right_rim_strip",
       "type": "AREA",
-      "position": [2.3, -0.2, 1.4],
+      "position": [2.55, -0.05, 1.65],
       "rotation_degrees": [78.0, 0.0, 45.0],
       "size": 0.75,
-      "power": 75.0
+      "power": 135.0
     },
     {
       "name": "diamond_sparkle_pin_1",
       "type": "POINT",
       "position": [-0.65, -1.15, 1.45],
-      "power": 40.0,
+      "power": 95.0,
       "shadow_soft_size": 0.018
     },
     {
       "name": "diamond_sparkle_pin_2",
       "type": "POINT",
       "position": [0.82, -1.35, 1.75],
-      "power": 32.0,
+      "power": 86.0,
       "shadow_soft_size": 0.012
+    },
+    {
+      "name": "diamond_sparkle_pin_3",
+      "type": "POINT",
+      "position": [-1.15, -0.45, 2.25],
+      "power": 52.0,
+      "shadow_soft_size": 0.01
     }
   ],
   "reflection_cards": [
@@ -132,6 +141,30 @@
       "rotation_degrees": [65.0, 0.0, 58.0],
       "size": [1.8, 1.15],
       "color": [0.38, 0.38, 0.39, 1.0],
+      "visible_to_camera": false
+    },
+    {
+      "name": "dark_upper_facet_reflection",
+      "position": [-1.1, -0.9, 2.28],
+      "rotation_degrees": [36.0, 0.0, -28.0],
+      "size": [2.6, 0.82],
+      "color": [0.012, 0.014, 0.018, 1.0],
+      "visible_to_camera": false
+    },
+    {
+      "name": "dark_overhead_table_reflection",
+      "position": [0.05, -0.35, 2.65],
+      "rotation_degrees": [0.0, 0.0, 12.0],
+      "size": [2.8, 1.25],
+      "color": [0.018, 0.02, 0.024, 1.0],
+      "visible_to_camera": false
+    },
+    {
+      "name": "left_dark_edge_reflection",
+      "position": [-2.15, -1.05, 1.15],
+      "rotation_degrees": [68.0, 0.0, -54.0],
+      "size": [1.4, 1.0],
+      "color": [0.03, 0.032, 0.036, 1.0],
       "visible_to_camera": false
     }
   ]

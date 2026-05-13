@@ -5,6 +5,7 @@ blend/
 __pycache__/
 .venv/
 node_modules/
+.next/
 .env
 .env.*
 !.env.example

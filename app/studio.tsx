@@ -1,7 +1,7 @@
 "use client";
 
 import { upload } from "@vercel/blob/client";
-import { FileSearch, ImageUp, Play, RefreshCw, UploadCloud } from "lucide-react";
+import { FileSearch, Images, ImageUp, Play, RefreshCw, UploadCloud } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type BlobAsset = {
@@ -29,6 +29,8 @@ type AppConfig = {
   runpodApiConfigured: boolean;
   runpodEndpointConfigured: boolean;
 };
+
+type JsonRecord = Record<string, unknown>;
 
 const defaultRecipe = {
   name: "ring99_hybrid_catalog",
@@ -81,6 +83,92 @@ async function uploadBlob(prefix: string, file: File): Promise<BlobAsset> {
     pathname: blob.pathname,
     contentType: file.type || "application/octet-stream"
   };
+}
+
+function isRecord(value: unknown): value is JsonRecord {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function cloneRecipe(recipe: JsonRecord): JsonRecord {
+  return JSON.parse(JSON.stringify(recipe)) as JsonRecord;
+}
+
+function ensureRecord(parent: JsonRecord, key: string): JsonRecord {
+  if (!isRecord(parent[key])) parent[key] = {};
+  return parent[key] as JsonRecord;
+}
+
+function setGem(recipe: JsonRecord, materialName: string, transmission: number) {
+  const materials = ensureRecord(recipe, "materials");
+  const material = ensureRecord(materials, materialName);
+  material.alpha = 1.0;
+  material.roughness = 0.0;
+  material.ior = 2.417;
+  material.specular_ior_level = 1.0;
+  material.transmission_weight = transmission;
+}
+
+function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
+  const variants = [
+    {
+      suffix: "balanced",
+      camera: { position: [-2.45, -4.25, 3.1], target: [0, 0, 0.06], focal: 78 },
+      targetSize: 1.94,
+      exposure: -0.32,
+      centerTransmission: 0.58,
+      sideTransmission: 0.58
+    },
+    {
+      suffix: "higher",
+      camera: { position: [-2.05, -3.25, 3.9], target: [0, 0, 0.03], focal: 74 },
+      targetSize: 1.9,
+      exposure: -0.36,
+      centerTransmission: 0.42,
+      sideTransmission: 0.48
+    },
+    {
+      suffix: "contrast",
+      camera: { position: [-2.05, -3.25, 3.9], target: [0, 0, 0.03], focal: 74 },
+      targetSize: 1.9,
+      exposure: -0.48,
+      centerTransmission: 0.18,
+      sideTransmission: 0.28
+    }
+  ];
+
+  return variants.map((variant) => {
+    const recipe = cloneRecipe(baseRecipe);
+    const baseName = typeof recipe.name === "string" ? recipe.name : "recipe";
+    recipe.name = `${baseName}_sweep_${variant.suffix}`;
+
+    const render = ensureRecord(recipe, "render");
+    render.exposure = variant.exposure;
+
+    const camera = ensureRecord(recipe, "camera");
+    camera.position = variant.camera.position;
+    camera.target = variant.camera.target;
+    camera.focal_length = variant.camera.focal;
+
+    const model = ensureRecord(recipe, "model");
+    model.target_size = variant.targetSize;
+
+    setGem(recipe, "diamond_center", variant.centerTransmission);
+    setGem(recipe, "diamond_side", variant.sideTransmission);
+
+    return recipe;
+  });
+}
+
+function getJobImageUrl(job: RenderJob) {
+  const output = isRecord(job.result) && isRecord(job.result.output) ? job.result.output : null;
+  if (!output) return null;
+  if (typeof output.image_url === "string") return output.image_url;
+  if (isRecord(output.image_blob) && typeof output.image_blob.url === "string") return output.image_blob.url;
+  return null;
+}
+
+function getRecipeName(job: RenderJob) {
+  return typeof job.recipe.name === "string" ? job.recipe.name : "Untitled recipe";
 }
 
 export default function Studio() {
@@ -147,6 +235,32 @@ export default function Studio() {
     );
   }
 
+  async function submitSweep() {
+    if (!model) return;
+    setBusy(true);
+    setMessage("Submitting 3 sweep jobs");
+    try {
+      const baseRecipe = JSON.parse(recipeText) as JsonRecord;
+      const submitted = await Promise.all(
+        buildSweepRecipes(baseRecipe).map(async (recipe) => {
+          const response = await fetch("/api/render-jobs", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ model, referenceImage: reference, recipe })
+          });
+          if (!response.ok) throw new Error(await response.text());
+          return (await response.json()) as RenderJob;
+        })
+      );
+      setJobs((current) => [...submitted, ...current]);
+      setMessage("Submitted sweep to RunPod");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Sweep submit failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function inspectMaterials() {
     if (!model) return;
     submit("/api/material-inspections", { model }, "Submitting material inspection");
@@ -200,6 +314,10 @@ export default function Studio() {
               <Play size={18} />
               Submit Render
             </button>
+            <button className="secondary" disabled={!canSubmit || busy} onClick={submitSweep}>
+              <Images size={18} />
+              Submit Sweep
+            </button>
             <button className="secondary" disabled={!model || busy} onClick={inspectMaterials}>
               <FileSearch size={18} />
               Inspect Materials
@@ -212,17 +330,26 @@ export default function Studio() {
           <h2>Jobs</h2>
           <div className="jobs">
             {jobs.length === 0 && <p className="empty">No render jobs yet.</p>}
-            {jobs.map((job) => (
-              <article className="job" key={job.id}>
-                <div>
-                  <strong>{job.id.slice(0, 10)}</strong>
-                  <span>{job.status}</span>
-                </div>
-                <p>{job.model.pathname}</p>
-                {job.error && <p className="error">{job.error}</p>}
-                {job.result && <pre>{JSON.stringify(job.result, null, 2)}</pre>}
-              </article>
-            ))}
+            {jobs.map((job) => {
+              const imageUrl = getJobImageUrl(job);
+              return (
+                <article className="job" key={job.id}>
+                  <div>
+                    <strong>{job.id.slice(0, 10)}</strong>
+                    <span>{job.status}</span>
+                  </div>
+                  <p>{getRecipeName(job)}</p>
+                  <p>{job.model.pathname}</p>
+                  {imageUrl && (
+                    <a className="previewLink" href={imageUrl} target="_blank" rel="noreferrer">
+                      <img src={imageUrl} alt={`${getRecipeName(job)} render output`} />
+                    </a>
+                  )}
+                  {job.error && <p className="error">{job.error}</p>}
+                  {job.result && <pre>{JSON.stringify(job.result, null, 2)}</pre>}
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>

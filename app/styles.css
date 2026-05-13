@@ -208,7 +208,24 @@ textarea {
 .empty {
   color: #6d6255;
   font-size: 13px;
+  margin-top: 6px;
   overflow-wrap: anywhere;
+}
+
+.previewLink {
+  background: #f6f4ef;
+  border: 1px solid #e2ddd4;
+  border-radius: 8px;
+  display: block;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.previewLink img {
+  aspect-ratio: 1;
+  display: block;
+  object-fit: cover;
+  width: 100%;
 }
 
 .error {
