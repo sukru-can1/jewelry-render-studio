@@ -38,19 +38,19 @@ const defaultRecipe = {
     "Storefront studio recipe for ring99.blend. Uses source BLEND metal and diamond library materials, remaps emerald-assigned stones to diamond, and rotates the model into a catalog pose.",
   material_strategy: "hybrid",
   render: {
-    resolution: [1000, 1000],
-    samples: 64,
+    resolution: [1200, 1200],
+    samples: 192,
     denoise: true,
     transparent: false,
     view_transform: "Filmic",
     look: "Medium High Contrast",
-    exposure: 0.0,
+    exposure: 0.04,
     gamma: 1.0
   },
   camera: {
-    position: [0.0, -4.65, 1.35],
-    target: [0.0, -0.08, 0.28],
-    focal_length: 105,
+    position: [0.0, -5.05, 1.36],
+    target: [0.0, 0.01, 0.14],
+    focal_length: 98,
     depth_of_field: {
       enabled: true,
       f_stop: 11.0
@@ -58,7 +58,7 @@ const defaultRecipe = {
   },
   world: {
     color: [1.0, 1.0, 0.995],
-    strength: 0.12
+    strength: 0.2
   },
   background: {
     color: [1.0, 1.0, 0.992, 1.0],
@@ -68,9 +68,9 @@ const defaultRecipe = {
   model: {
     auto_center: true,
     auto_scale: true,
-    target_size: 1.74,
-    rotation_degrees: [68.0, 0.0, 0.0],
-    translation: [0.0, -0.08, 0.0],
+    target_size: 1.68,
+    rotation_degrees: [50.0, 0.0, 0.0],
+    translation: [0.0, 0.01, 0.0],
     ground_to_plane: true,
     ground_clearance: 0.012,
     shade_smooth: true,
@@ -78,6 +78,7 @@ const defaultRecipe = {
     exclude_contains: ["light", "camera", "cube", "helper", "swatch", "plane"]
   },
   material_map: [
+    { contains: ["Round_5"], source_material: "diamond-brillant_aaa" },
     { contains: ["stone_emerald"], source_material: "Diamond.001" },
     { contains: ["Diamond.001", "diamond"], source_material: "Diamond.001" },
     { contains: ["metal", "band", "shank", "prong", "basket"], source_material: "metal" }
@@ -114,7 +115,7 @@ const defaultRecipe = {
       position: [0.0, -1.25, 3.2],
       rotation_degrees: [62.0, 0.0, 0.0],
       size: 3.1,
-      power: 360.0
+      power: 375.0
     },
     {
       name: "left_front_strip",
@@ -122,7 +123,7 @@ const defaultRecipe = {
       position: [-2.4, -2.0, 1.25],
       rotation_degrees: [70.0, 0.0, -34.0],
       size: 1.1,
-      power: 90.0
+      power: 65.0
     },
     {
       name: "right_rim_strip",
@@ -130,7 +131,7 @@ const defaultRecipe = {
       position: [2.3, -0.15, 1.45],
       rotation_degrees: [78.0, 0.0, 45.0],
       size: 0.75,
-      power: 90.0
+      power: 75.0
     },
     {
       name: "diamond_sparkle_pin_1",
@@ -160,7 +161,7 @@ const defaultRecipe = {
       position: [0.0, -2.8, 0.35],
       rotation_degrees: [72.0, 0.0, 0.0],
       size: [3.6, 0.75],
-      color: [0.14, 0.14, 0.146, 1.0],
+      color: [0.34, 0.34, 0.344, 1.0],
       visible_to_camera: false
     },
     {
@@ -168,7 +169,7 @@ const defaultRecipe = {
       position: [2.4, -1.6, 0.85],
       rotation_degrees: [65.0, 0.0, 58.0],
       size: [1.8, 1.15],
-      color: [0.6, 0.6, 0.6, 1.0],
+      color: [0.8, 0.8, 0.804, 1.0],
       visible_to_camera: false
     },
     {
@@ -176,7 +177,7 @@ const defaultRecipe = {
       position: [-1.1, -0.9, 2.28],
       rotation_degrees: [36.0, 0.0, -28.0],
       size: [2.6, 0.82],
-      color: [0.14, 0.14, 0.146, 1.0],
+      color: [0.34, 0.34, 0.344, 1.0],
       visible_to_camera: false
     },
     {
@@ -184,7 +185,7 @@ const defaultRecipe = {
       position: [0.05, -0.35, 2.65],
       rotation_degrees: [0.0, 0.0, 12.0],
       size: [2.8, 1.25],
-      color: [0.14, 0.14, 0.146, 1.0],
+      color: [0.34, 0.34, 0.344, 1.0],
       visible_to_camera: false
     },
     {
@@ -192,8 +193,16 @@ const defaultRecipe = {
       position: [-2.15, -1.05, 1.15],
       rotation_degrees: [68.0, 0.0, -54.0],
       size: [1.4, 1.0],
-      color: [0.14, 0.14, 0.146, 1.0],
+      color: [0.34, 0.34, 0.344, 1.0],
       visible_to_camera: false
+    },
+    {
+      name: "visible_white_backdrop",
+      position: [0.0, 1.65, 1.25],
+      rotation_degrees: [90.0, 0.0, 0.0],
+      size: [8.0, 4.0],
+      color: [1.0, 1.0, 0.995, 1.0],
+      visible_to_camera: true
     }
   ]
 };
@@ -234,31 +243,62 @@ function setGem(recipe: JsonRecord, materialName: string, transmission: number) 
   material.transmission_weight = transmission;
 }
 
+function setSourceMaterialMap(recipe: JsonRecord, centerMaterial: string) {
+  recipe.material_strategy = "hybrid";
+  recipe.material_map = [
+    { contains: ["Round_5"], source_material: centerMaterial },
+    { contains: ["stone_emerald"], source_material: "Diamond.001" },
+    { contains: ["Diamond.001", "diamond"], source_material: "Diamond.001" },
+    { contains: ["metal", "band", "shank", "prong", "basket"], source_material: "metal" }
+  ];
+}
+
+function setReflectionCardTone(recipe: JsonRecord, dark: number, gray: number) {
+  const cards = Array.isArray(recipe.reflection_cards) ? recipe.reflection_cards : [];
+  for (const card of cards) {
+    if (!isRecord(card) || typeof card.name !== "string") continue;
+    if (card.name.includes("dark")) card.color = [dark, dark, dark + 0.004, 1.0];
+    if (card.name.includes("gray")) card.color = [gray, gray, gray + 0.004, 1.0];
+  }
+}
+
 function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
   const variants = [
     {
-      suffix: "balanced",
-      camera: { position: [-2.45, -4.25, 3.1], target: [0, 0, 0.06], focal: 78 },
-      targetSize: 1.94,
-      exposure: -0.32,
-      centerTransmission: 0.58,
-      sideTransmission: 0.58
+      suffix: "reference-pose",
+      camera: { position: [0.0, -5.05, 1.36], target: [0.0, 0.01, 0.14], focal: 98 },
+      rotation: [50.0, 0.0, 0.0],
+      translation: [0.0, 0.01, 0.0],
+      targetSize: 1.68,
+      exposure: 0.04,
+      worldStrength: 0.2,
+      centerMaterial: "diamond-brillant_aaa",
+      darkCard: 0.34,
+      grayCard: 0.8
     },
     {
-      suffix: "higher",
-      camera: { position: [-2.05, -3.25, 3.9], target: [0, 0, 0.03], focal: 74 },
-      targetSize: 1.9,
-      exposure: -0.36,
-      centerTransmission: 0.42,
-      sideTransmission: 0.48
+      suffix: "closer",
+      camera: { position: [0.0, -4.95, 1.42], target: [0.0, -0.01, 0.16], focal: 104 },
+      rotation: [52.0, 0.0, 0.0],
+      translation: [0.0, 0.0, 0.0],
+      targetSize: 1.72,
+      exposure: 0.03,
+      worldStrength: 0.18,
+      centerMaterial: "diamond-brillant_aaaa",
+      darkCard: 0.3,
+      grayCard: 0.76
     },
     {
-      suffix: "contrast",
-      camera: { position: [-2.05, -3.25, 3.9], target: [0, 0, 0.03], focal: 74 },
-      targetSize: 1.9,
-      exposure: -0.48,
-      centerTransmission: 0.18,
-      sideTransmission: 0.28
+      suffix: "clean-center",
+      camera: { position: [0.0, -5.05, 1.36], target: [0.0, 0.01, 0.14], focal: 98 },
+      rotation: [50.0, 0.0, 0.0],
+      translation: [0.0, 0.01, 0.0],
+      targetSize: 1.66,
+      exposure: 0.04,
+      worldStrength: 0.21,
+      centerMaterial: "Diamond.001",
+      darkCard: 0.38,
+      grayCard: 0.82
     }
   ];
 
@@ -270,6 +310,9 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
     const render = ensureRecord(recipe, "render");
     render.exposure = variant.exposure;
 
+    const world = ensureRecord(recipe, "world");
+    world.strength = variant.worldStrength;
+
     const camera = ensureRecord(recipe, "camera");
     camera.position = variant.camera.position;
     camera.target = variant.camera.target;
@@ -277,9 +320,11 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
 
     const model = ensureRecord(recipe, "model");
     model.target_size = variant.targetSize;
+    model.rotation_degrees = variant.rotation;
+    model.translation = variant.translation;
 
-    setGem(recipe, "diamond_center", variant.centerTransmission);
-    setGem(recipe, "diamond_side", variant.sideTransmission);
+    setSourceMaterialMap(recipe, variant.centerMaterial);
+    setReflectionCardTone(recipe, variant.darkCard, variant.grayCard);
 
     return recipe;
   });
