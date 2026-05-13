@@ -1,6 +1,6 @@
 "use client";
 
-import defaultRecipeSource from "@/recipes/ring99_hybrid_catalog.json";
+import defaultRecipeSource from "../recipes/ring99_hybrid_catalog.json";
 import { upload } from "@vercel/blob/client";
 import { FileSearch, Images, ImageUp, Play, RefreshCw, UploadCloud } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
