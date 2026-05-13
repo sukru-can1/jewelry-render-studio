@@ -41,6 +41,17 @@ def request_json(method: str, path: str, api_key: str, payload: dict | None = No
         raise SystemExit(f"RunPod API error {exc.code}: {detail}") from exc
 
 
+def redact_secrets(value):
+    if isinstance(value, dict):
+        return {
+            key: ("[redacted]" if any(token in key.upper() for token in ("TOKEN", "KEY", "SECRET")) else redact_secrets(item))
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_secrets(item) for item in value]
+    return value
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Create a RunPod Serverless endpoint for the Blender worker.")
     parser.add_argument("--image", required=True, help="Published worker image, e.g. docker.io/user/jewelry-render-worker:v0.1.0")
@@ -108,7 +119,7 @@ def main() -> None:
         print("Creating RunPod endpoint...")
         endpoint = request_json("POST", "/endpoints", api_key, endpoint_payload)
     endpoint_id = endpoint["id"]
-    print(json.dumps({"template": template, "endpoint": endpoint}, indent=2))
+    print(json.dumps(redact_secrets({"template": template, "endpoint": endpoint}), indent=2))
     print()
     print(f"RUNPOD_ENDPOINT_ID={endpoint_id}")
     print()

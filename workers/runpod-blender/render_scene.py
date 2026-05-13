@@ -139,6 +139,7 @@ def import_model(path: Path):
     elif suffix == ".blend":
         with bpy.data.libraries.load(str(path), link=False) as (source, target):
             target.objects = source.objects
+            target.materials = source.materials
         for obj in target.objects:
             if obj:
                 bpy.context.collection.objects.link(obj)
@@ -211,6 +212,18 @@ def object_bounds(objects):
     return mins, maxs
 
 
+def bounds_summary(objects):
+    mins, maxs = object_bounds(objects)
+    size = maxs - mins
+    return {
+        "min": list(mins),
+        "max": list(maxs),
+        "size": list(size),
+        "center": list((mins + maxs) * 0.5),
+        "max_dimension": max(size.x, size.y, size.z),
+    }
+
+
 def transform_model(objects, model_settings, background_settings):
     rotation = model_settings.get("rotation_degrees", [0, 0, 0])
     if any(abs(float(value)) > 0.0001 for value in rotation):
@@ -274,7 +287,11 @@ def assign_materials(objects, recipe):
         selected = None
         for rule in recipe.get("material_map", []):
             if any(token.lower() in signature for token in rule["contains"]):
-                selected = presets[rule["material"]]
+                source_material = rule.get("source_material")
+                if source_material:
+                    selected = bpy.data.materials.get(source_material)
+                else:
+                    selected = presets[rule["material"]]
                 break
         if selected is None:
             if strategy == "hybrid":
@@ -383,8 +400,11 @@ def main():
     objects = filter_product_objects(objects, recipe["model"])
     if not objects:
         raise RuntimeError("No product mesh objects matched model include/exclude filters.")
+    imported_bounds = bounds_summary(objects)
     normalize(objects, recipe["model"])
+    normalized_bounds = bounds_summary(objects)
     transform_model(objects, recipe["model"], recipe["background"])
+    transformed_bounds = bounds_summary(objects)
     assign_materials(objects, recipe)
     setup_background(recipe)
     add_reflection_cards(recipe)
@@ -392,7 +412,22 @@ def main():
     setup_camera(recipe)
     bpy.context.scene.render.filepath = parsed.output
     bpy.ops.render.render(write_still=True)
-    Path(parsed.metadata).write_text(json.dumps({"recipe": recipe}, indent=2), encoding="utf-8")
+    Path(parsed.metadata).write_text(
+        json.dumps(
+            {
+                "recipe": recipe,
+                "model_bounds": {
+                    "imported": imported_bounds,
+                    "normalized": normalized_bounds,
+                    "transformed": transformed_bounds,
+                },
+                "selected_objects": [obj.name for obj in objects],
+                "materials": [material.name for material in bpy.data.materials],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":
