@@ -184,25 +184,16 @@
       "visible_to_camera": true
     }
   ],
-  "postprocess": {
+  "facet_overlay": {
     "enabled": true,
-    "global": {
-      "sharpness": 1.08,
-      "contrast": 1.03,
-      "brightness": 1.01
-    },
-    "center_diamond": {
-      "enabled": true,
-      "object_contains": ["Round_5"],
-      "radius_scale": 0.98,
-      "local_blend": 0.68,
-      "contrast": 1.2,
-      "sharpen_percent": 190,
-      "facets": 18,
-      "dark_alpha": 20,
-      "light_alpha": 32,
-      "chroma_alpha": 22,
-      "sparkle_strength": 0.9
-    }
+    "object_contains": ["Round_5"],
+    "radius_scale": 0.48,
+    "camera_offset": 0.014,
+    "facets": 20,
+    "inner_ratio": 0.16,
+    "y_scale": 0.82,
+    "dark_alpha": 0.16,
+    "light_alpha": 0.24,
+    "chroma_alpha": 0.1
   }
 }

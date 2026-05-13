@@ -206,26 +206,17 @@ const defaultRecipe = {
       visible_to_camera: true
     }
   ],
-  postprocess: {
+  facet_overlay: {
     enabled: true,
-    global: {
-      sharpness: 1.08,
-      contrast: 1.03,
-      brightness: 1.01
-    },
-    center_diamond: {
-      enabled: true,
-      object_contains: ["Round_5"],
-      radius_scale: 0.98,
-      local_blend: 0.68,
-      contrast: 1.2,
-      sharpen_percent: 190,
-      facets: 18,
-      dark_alpha: 20,
-      light_alpha: 32,
-      chroma_alpha: 22,
-      sparkle_strength: 0.9
-    }
+    object_contains: ["Round_5"],
+    radius_scale: 0.48,
+    camera_offset: 0.014,
+    facets: 20,
+    inner_ratio: 0.16,
+    y_scale: 0.82,
+    dark_alpha: 0.16,
+    light_alpha: 0.24,
+    chroma_alpha: 0.1
   }
 };
 
@@ -275,11 +266,10 @@ function setSourceMaterialMap(recipe: JsonRecord, centerMaterial: string) {
   ];
 }
 
-function setCenterPostprocess(recipe: JsonRecord, settings: JsonRecord) {
-  const postprocess = ensureRecord(recipe, "postprocess");
-  postprocess.enabled = true;
-  const center = ensureRecord(postprocess, "center_diamond");
-  Object.assign(center, settings);
+function setFacetOverlay(recipe: JsonRecord, settings: JsonRecord) {
+  const overlay = ensureRecord(recipe, "facet_overlay");
+  overlay.enabled = true;
+  Object.assign(overlay, settings);
 }
 
 function setReflectionCardTone(recipe: JsonRecord, dark: number, gray: number) {
@@ -304,7 +294,7 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
       centerMaterial: "diamond_center",
       darkCard: 0.34,
       grayCard: 0.8,
-      post: { local_blend: 0.68, dark_alpha: 20, light_alpha: 32, chroma_alpha: 22, sparkle_strength: 0.9 }
+      overlay: { radius_scale: 0.48, dark_alpha: 0.16, light_alpha: 0.24, chroma_alpha: 0.1 }
     },
     {
       suffix: "closer",
@@ -317,7 +307,7 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
       centerMaterial: "diamond_center",
       darkCard: 0.3,
       grayCard: 0.76,
-      post: { local_blend: 0.76, dark_alpha: 28, light_alpha: 38, chroma_alpha: 24, sparkle_strength: 1.05 }
+      overlay: { radius_scale: 0.5, dark_alpha: 0.22, light_alpha: 0.3, chroma_alpha: 0.12 }
     },
     {
       suffix: "clean-center",
@@ -330,7 +320,7 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
       centerMaterial: "Diamond.001",
       darkCard: 0.38,
       grayCard: 0.82,
-      post: { local_blend: 0.58, dark_alpha: 16, light_alpha: 26, chroma_alpha: 16, sparkle_strength: 0.7 }
+      overlay: { radius_scale: 0.46, dark_alpha: 0.12, light_alpha: 0.2, chroma_alpha: 0.08 }
     }
   ];
 
@@ -357,7 +347,7 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
 
     setSourceMaterialMap(recipe, variant.centerMaterial);
     setReflectionCardTone(recipe, variant.darkCard, variant.grayCard);
-    setCenterPostprocess(recipe, variant.post);
+    setFacetOverlay(recipe, variant.overlay);
 
     return recipe;
   });

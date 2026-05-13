@@ -428,6 +428,79 @@ def add_lights(recipe):
             data.shadow_soft_size = config.get("shadow_soft_size", 0.02)
 
 
+def make_overlay_material(name, color, alpha):
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    bsdf = material.node_tree.nodes.get("Principled BSDF")
+    if bsdf:
+        if "Base Color" in bsdf.inputs:
+            bsdf.inputs["Base Color"].default_value = [color[0], color[1], color[2], alpha]
+        if "Alpha" in bsdf.inputs:
+            bsdf.inputs["Alpha"].default_value = alpha
+        if "Roughness" in bsdf.inputs:
+            bsdf.inputs["Roughness"].default_value = 0.18
+    material.blend_method = "BLEND"
+    material.show_transparent_back = False
+    return material
+
+
+def add_center_facet_overlay(objects, recipe):
+    config = recipe.get("facet_overlay", {})
+    if not config.get("enabled", False):
+        return []
+
+    tokens = [token.lower() for token in config.get("object_contains", ["Round_5"])]
+    target = None
+    for obj in objects:
+        if any(token in object_signature(obj) for token in tokens):
+            target = obj
+            break
+    if target is None or bpy.context.scene.camera is None:
+        return []
+
+    mins, maxs = object_bounds([target])
+    center = (mins + maxs) * 0.5
+    size = maxs - mins
+    radius = max(size.x, size.y, size.z) * float(config.get("radius_scale", 0.48))
+
+    camera = bpy.context.scene.camera
+    toward_camera = (camera.location - center).normalized()
+    right = camera.matrix_world.to_quaternion() @ Vector((1, 0, 0))
+    up = camera.matrix_world.to_quaternion() @ Vector((0, 1, 0))
+    plane_center = center + toward_camera * float(config.get("camera_offset", 0.012))
+
+    white = make_overlay_material("facet_overlay_white", [1.0, 1.0, 1.0], float(config.get("light_alpha", 0.2)))
+    dark = make_overlay_material("facet_overlay_dark", [0.04, 0.045, 0.055], float(config.get("dark_alpha", 0.12)))
+    blue = make_overlay_material("facet_overlay_blue", [0.34, 0.72, 1.0], float(config.get("chroma_alpha", 0.1)))
+    amber = make_overlay_material("facet_overlay_amber", [1.0, 0.78, 0.22], float(config.get("chroma_alpha", 0.1)))
+    materials = [white, dark, blue, white, amber, dark]
+
+    created = []
+    count = int(config.get("facets", 20))
+    y_scale = float(config.get("y_scale", 0.82))
+    inner_ratio = float(config.get("inner_ratio", 0.18))
+    for index in range(count):
+        a0 = -math.pi / 2 + index * math.tau / count
+        a1 = -math.pi / 2 + (index + 1) * math.tau / count
+        mid = (a0 + a1) * 0.5
+        inner = radius * (inner_ratio if index % 2 else inner_ratio * 1.45)
+        p0 = plane_center + right * (math.cos(a0) * radius) + up * (math.sin(a0) * radius * y_scale)
+        p1 = plane_center + right * (math.cos(a1) * radius) + up * (math.sin(a1) * radius * y_scale)
+        pc = plane_center + right * (math.cos(mid) * inner) + up * (math.sin(mid) * inner * y_scale)
+        mesh = bpy.data.meshes.new(f"facet_overlay_mesh_{index:02d}")
+        mesh.from_pydata([pc, p0, p1], [], [(0, 1, 2)])
+        mesh.update()
+        obj = bpy.data.objects.new(f"facet_overlay_{index:02d}", mesh)
+        bpy.context.collection.objects.link(obj)
+        obj.data.materials.append(materials[index % len(materials)])
+        obj.visible_shadow = False
+        obj.visible_diffuse = False
+        obj.visible_glossy = False
+        created.append(obj)
+
+    return created
+
+
 def setup_camera(recipe):
     cam_data = bpy.data.cameras.new("catalog_camera")
     cam = bpy.data.objects.new("catalog_camera", cam_data)
@@ -497,6 +570,7 @@ def main():
     add_reflection_cards(recipe)
     add_lights(recipe)
     setup_camera(recipe)
+    overlay_objects = add_center_facet_overlay(objects, recipe)
     image_bounds = object_image_bounds(objects)
     bpy.context.scene.render.filepath = parsed.output
     bpy.ops.render.render(write_still=True)
@@ -510,6 +584,7 @@ def main():
                     "transformed": transformed_bounds,
                 },
                 "selected_objects": [obj.name for obj in objects],
+                "overlay_objects": [obj.name for obj in overlay_objects],
                 "object_image_bounds": image_bounds,
                 "materials": [material.name for material in bpy.data.materials],
             },
