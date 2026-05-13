@@ -9,21 +9,21 @@
     "transparent": false,
     "view_transform": "Filmic",
     "look": "Medium High Contrast",
-    "exposure": -0.48,
+    "exposure": -0.22,
     "gamma": 1.0
   },
   "camera": {
-    "position": [-2.05, -3.25, 3.9],
-    "target": [0.0, 0.0, 0.03],
-    "focal_length": 74,
+    "position": [0.0, -4.65, 1.35],
+    "target": [0.0, -0.08, 0.28],
+    "focal_length": 105,
     "depth_of_field": {
       "enabled": true,
-      "f_stop": 9.5
+      "f_stop": 11.0
     }
   },
   "world": {
     "color": [1.0, 1.0, 0.995],
-    "strength": 0.045
+    "strength": 0.035
   },
   "background": {
     "color": [1.0, 1.0, 0.992, 1.0],
@@ -33,7 +33,11 @@
   "model": {
     "auto_center": true,
     "auto_scale": true,
-    "target_size": 1.9,
+    "target_size": 1.74,
+    "rotation_degrees": [68.0, 0.0, 0.0],
+    "translation": [0.0, -0.08, 0.0],
+    "ground_to_plane": true,
+    "ground_clearance": 0.012,
     "shade_smooth": true,
     "include_contains": [],
     "exclude_contains": ["light", "camera", "cube", "helper", "swatch", "plane"]
@@ -62,19 +66,19 @@
     },
     "diamond_center": {
       "type": "gem",
-      "base_color": [0.92, 0.965, 1.0, 1.0],
+      "base_color": [1.0, 0.99, 0.965, 1.0],
       "roughness": 0.0,
-      "alpha": 1.0,
-      "transmission_weight": 0.18,
+      "alpha": 0.55,
+      "transmission_weight": 0.86,
       "ior": 2.417,
       "specular_ior_level": 1.0
     },
     "diamond_side": {
       "type": "gem",
-      "base_color": [0.94, 0.975, 1.0, 1.0],
+      "base_color": [1.0, 0.99, 0.97, 1.0],
       "roughness": 0.0,
-      "alpha": 1.0,
-      "transmission_weight": 0.28,
+      "alpha": 0.62,
+      "transmission_weight": 0.78,
       "ior": 2.417,
       "specular_ior_level": 1.0
     }
@@ -83,46 +87,46 @@
     {
       "name": "large_top_softbox",
       "type": "AREA",
-      "position": [-0.25, -1.45, 3.7],
+      "position": [0.0, -1.25, 3.2],
       "rotation_degrees": [62.0, 0.0, 0.0],
-      "size": 2.35,
-      "power": 185.0
+      "size": 3.1,
+      "power": 275.0
     },
     {
       "name": "left_front_strip",
       "type": "AREA",
-      "position": [-2.75, -2.25, 1.55],
+      "position": [-2.4, -2.0, 1.25],
       "rotation_degrees": [70.0, 0.0, -34.0],
       "size": 1.1,
-      "power": 145.0
+      "power": 130.0
     },
     {
       "name": "right_rim_strip",
       "type": "AREA",
-      "position": [2.55, -0.05, 1.65],
+      "position": [2.3, -0.15, 1.45],
       "rotation_degrees": [78.0, 0.0, 45.0],
       "size": 0.75,
-      "power": 135.0
+      "power": 120.0
     },
     {
       "name": "diamond_sparkle_pin_1",
       "type": "POINT",
-      "position": [-0.65, -1.15, 1.45],
-      "power": 95.0,
+      "position": [-0.42, -1.05, 1.15],
+      "power": 120.0,
       "shadow_soft_size": 0.018
     },
     {
       "name": "diamond_sparkle_pin_2",
       "type": "POINT",
-      "position": [0.82, -1.35, 1.75],
-      "power": 86.0,
+      "position": [0.62, -1.25, 1.35],
+      "power": 105.0,
       "shadow_soft_size": 0.012
     },
     {
       "name": "diamond_sparkle_pin_3",
       "type": "POINT",
-      "position": [-1.15, -0.45, 2.25],
-      "power": 52.0,
+      "position": [-0.95, -0.55, 1.75],
+      "power": 65.0,
       "shadow_soft_size": 0.01
     }
   ],

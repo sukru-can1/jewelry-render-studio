@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Euler, Vector
 
 
 DEFAULT_RECIPE = {
@@ -32,6 +32,9 @@ DEFAULT_RECIPE = {
         "auto_center": True,
         "auto_scale": True,
         "target_size": 2.0,
+        "rotation_degrees": [0.0, 0.0, 0.0],
+        "ground_to_plane": True,
+        "ground_clearance": 0.015,
         "shade_smooth": True,
         "include_contains": [],
         "exclude_contains": ["light", "camera", "cube", "helper", "swatch", "plane"],
@@ -192,6 +195,44 @@ def normalize(objects, settings):
         obj.scale *= scale
 
 
+def object_bounds(objects):
+    bpy.context.view_layer.update()
+    mins = Vector((float("inf"), float("inf"), float("inf")))
+    maxs = Vector((float("-inf"), float("-inf"), float("-inf")))
+    for obj in objects:
+        for corner in obj.bound_box:
+            point = obj.matrix_world @ Vector(corner)
+            mins.x = min(mins.x, point.x)
+            mins.y = min(mins.y, point.y)
+            mins.z = min(mins.z, point.z)
+            maxs.x = max(maxs.x, point.x)
+            maxs.y = max(maxs.y, point.y)
+            maxs.z = max(maxs.z, point.z)
+    return mins, maxs
+
+
+def transform_model(objects, model_settings, background_settings):
+    rotation = model_settings.get("rotation_degrees", [0, 0, 0])
+    if any(abs(float(value)) > 0.0001 for value in rotation):
+        matrix = Euler([math.radians(float(value)) for value in rotation], "XYZ").to_matrix().to_4x4()
+        for obj in objects:
+            obj.matrix_world = matrix @ obj.matrix_world
+
+    translation = model_settings.get("translation", [0, 0, 0])
+    if any(abs(float(value)) > 0.0001 for value in translation):
+        offset = Vector((float(translation[0]), float(translation[1]), float(translation[2])))
+        for obj in objects:
+            obj.location += offset
+
+    if model_settings.get("ground_to_plane", True):
+        mins, _ = object_bounds(objects)
+        plane_z = float(background_settings.get("plane_z", -0.04))
+        clearance = float(model_settings.get("ground_clearance", 0.015))
+        lift = plane_z + clearance - mins.z
+        for obj in objects:
+            obj.location.z += lift
+
+
 def make_material(name, preset):
     material = bpy.data.materials.new(name)
     material.use_nodes = True
@@ -343,6 +384,7 @@ def main():
     if not objects:
         raise RuntimeError("No product mesh objects matched model include/exclude filters.")
     normalize(objects, recipe["model"])
+    transform_model(objects, recipe["model"], recipe["background"])
     assign_materials(objects, recipe)
     setup_background(recipe)
     add_reflection_cards(recipe)
