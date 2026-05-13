@@ -37,6 +37,7 @@ DEFAULT_RECIPE = {
         "ground_to_plane": True,
         "ground_clearance": 0.015,
         "shade_smooth": True,
+        "shade_smooth_exclude_contains": ["diamond", "stone", "gem", "round_", "emerald", "zirconia", "brillant"],
         "include_contains": [],
         "exclude_contains": ["light", "camera", "cube", "helper", "swatch", "plane"],
     },
@@ -169,10 +170,14 @@ def filter_product_objects(objects, settings):
 
 def normalize(objects, settings):
     if settings.get("shade_smooth", True):
+        smooth_exclude = [token.lower() for token in settings.get("shade_smooth_exclude_contains", [])]
         for obj in objects:
             bpy.context.view_layer.objects.active = obj
             obj.select_set(True)
-            bpy.ops.object.shade_smooth()
+            if any(token in object_signature(obj) for token in smooth_exclude):
+                bpy.ops.object.shade_flat()
+            else:
+                bpy.ops.object.shade_smooth()
             obj.select_set(False)
 
     bpy.context.view_layer.update()

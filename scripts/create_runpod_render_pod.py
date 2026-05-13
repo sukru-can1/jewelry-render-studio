@@ -41,6 +41,21 @@ def request_json(method: str, path: str, api_key: str, payload: dict | None = No
         raise SystemExit(f"RunPod API error {exc.code}: {detail}") from exc
 
 
+def request_json_or_error(method: str, path: str, api_key: str, payload: dict | None = None) -> tuple[dict | None, str | None]:
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        f"{RUNPOD_REST}{path}",
+        data=body,
+        method=method,
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            return json.loads(response.read().decode("utf-8")), None
+    except urllib.error.HTTPError as exc:
+        return None, f"RunPod API error {exc.code}: {exc.read().decode('utf-8', errors='replace')}"
+
+
 def download(url: str, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     with urllib.request.urlopen(url, timeout=120) as response:
@@ -60,6 +75,9 @@ def args():
     parser.add_argument("--model-pathname", default="models/ring99.blend")
     parser.add_argument("--output-prefix", default="")
     parser.add_argument("--download-to", default="")
+    parser.add_argument("--gpu", action="append", default=[])
+    parser.add_argument("--cloud-type", default="SECURE")
+    parser.add_argument("--volume-gb", type=int, default=20)
     parser.add_argument("--timeout-seconds", type=int, default=2400)
     return parser.parse_args()
 
@@ -81,13 +99,7 @@ def main() -> None:
     image_key = f"{output_prefix.rstrip('/')}/{job_id}.png"
     public_base_url = os.environ.get("BLOB_PUBLIC_BASE_URL", "https://u6oaq5xqg2yrxzlq.public.blob.vercel-storage.com")
 
-    payload = {
-        "name": f"{parsed.name}-{job_id[:8]}",
-        "imageName": parsed.image,
-        "computeType": "GPU",
-        "cloudType": "SECURE",
-        "gpuCount": 1,
-        "gpuTypeIds": [
+    gpu_candidates = parsed.gpu or [
             "NVIDIA RTX A5000",
             "NVIDIA L4",
             "NVIDIA GeForce RTX 3090",
@@ -99,10 +111,16 @@ def main() -> None:
             "NVIDIA L40",
             "NVIDIA L40S",
             "NVIDIA GeForce RTX 4090",
-        ],
+    ]
+    base_payload = {
+        "name": f"{parsed.name}-{job_id[:8]}",
+        "imageName": parsed.image,
+        "computeType": "GPU",
+        "cloudType": parsed.cloud_type,
+        "gpuCount": 1,
         "gpuTypePriority": "availability",
         "containerDiskInGb": 50,
-        "volumeInGb": 0,
+        "volumeInGb": parsed.volume_gb,
         "dockerEntrypoint": [],
         "dockerStartCmd": ["python3", "-u", "pod_render_once.py"],
         "env": {
@@ -117,7 +135,20 @@ def main() -> None:
         },
     }
 
-    pod = request_json("POST", "/pods", api_key, payload)
+    errors = []
+    pod = None
+    for gpu_type in gpu_candidates:
+        payload = dict(base_payload)
+        payload["gpuTypeIds"] = [gpu_type]
+        print(json.dumps({"event": "try_pod_gpu", "gpu": gpu_type}))
+        pod, error = request_json_or_error("POST", "/pods", api_key, payload)
+        if pod:
+            break
+        errors.append({"gpu": gpu_type, "error": error})
+        print(json.dumps(errors[-1]))
+    if not pod:
+        raise SystemExit(json.dumps({"error": "No RunPod GPU candidate allocated a Pod.", "attempts": errors}, indent=2))
+
     pod_id = pod["id"]
     print(json.dumps({"pod_id": pod_id, "job_id": job_id, "output_prefix": output_prefix}, indent=2))
 

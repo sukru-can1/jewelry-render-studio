@@ -74,6 +74,7 @@ const defaultRecipe = {
     ground_to_plane: true,
     ground_clearance: 0.012,
     shade_smooth: true,
+    shade_smooth_exclude_contains: ["diamond", "stone", "gem", "round_", "emerald", "zirconia", "brillant"],
     include_contains: [],
     exclude_contains: ["light", "camera", "cube", "helper", "swatch", "plane"]
   },
