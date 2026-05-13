@@ -33,9 +33,9 @@ type AppConfig = {
 type JsonRecord = Record<string, unknown>;
 
 const defaultRecipe = {
-  name: "ring99_hybrid_catalog",
+  name: "ring99_catalog_faceted_post",
   description:
-    "Storefront studio recipe for ring99.blend. Uses source BLEND metal and diamond library materials, remaps emerald-assigned stones to diamond, and rotates the model into a catalog pose.",
+    "Storefront studio recipe for ring99.blend. Uses source BLEND metal and side-stone materials, a renderer-controlled center diamond, and a targeted catalog post-process for center-stone facets.",
   material_strategy: "hybrid",
   render: {
     resolution: [1200, 1200],
@@ -78,7 +78,7 @@ const defaultRecipe = {
     exclude_contains: ["light", "camera", "cube", "helper", "swatch", "plane"]
   },
   material_map: [
-    { contains: ["Round_5"], source_material: "diamond-brillant_aaa" },
+    { contains: ["Round_5"], material: "diamond_center" },
     { contains: ["stone_emerald"], source_material: "Diamond.001" },
     { contains: ["Diamond.001", "diamond"], source_material: "Diamond.001" },
     { contains: ["metal", "band", "shank", "prong", "basket"], source_material: "metal" }
@@ -92,12 +92,13 @@ const defaultRecipe = {
       specular_ior_level: 0.78
     },
     diamond_center: {
-      type: "gem",
-      base_color: [1.0, 0.98, 0.92, 1.0],
+      type: "catalog_diamond",
+      glass_color: [1.0, 0.992, 0.975, 1.0],
+      gloss_color: [1.0, 1.0, 1.0, 1.0],
       roughness: 0.0,
-      alpha: 0.24,
-      transmission_weight: 1.0,
-      ior: 2.417
+      gloss_roughness: 0.012,
+      ior: 2.417,
+      transparent_mix: 0.08
     },
     diamond_side: {
       type: "gem",
@@ -204,7 +205,28 @@ const defaultRecipe = {
       color: [1.0, 1.0, 0.995, 1.0],
       visible_to_camera: true
     }
-  ]
+  ],
+  postprocess: {
+    enabled: true,
+    global: {
+      sharpness: 1.08,
+      contrast: 1.03,
+      brightness: 1.01
+    },
+    center_diamond: {
+      enabled: true,
+      object_contains: ["Round_5"],
+      radius_scale: 0.98,
+      local_blend: 0.68,
+      contrast: 1.2,
+      sharpen_percent: 190,
+      facets: 18,
+      dark_alpha: 20,
+      light_alpha: 32,
+      chroma_alpha: 22,
+      sparkle_strength: 0.9
+    }
+  }
 };
 
 async function uploadBlob(prefix: string, file: File): Promise<BlobAsset> {
@@ -246,11 +268,18 @@ function setGem(recipe: JsonRecord, materialName: string, transmission: number) 
 function setSourceMaterialMap(recipe: JsonRecord, centerMaterial: string) {
   recipe.material_strategy = "hybrid";
   recipe.material_map = [
-    { contains: ["Round_5"], source_material: centerMaterial },
+    centerMaterial === "diamond_center" ? { contains: ["Round_5"], material: "diamond_center" } : { contains: ["Round_5"], source_material: centerMaterial },
     { contains: ["stone_emerald"], source_material: "Diamond.001" },
     { contains: ["Diamond.001", "diamond"], source_material: "Diamond.001" },
     { contains: ["metal", "band", "shank", "prong", "basket"], source_material: "metal" }
   ];
+}
+
+function setCenterPostprocess(recipe: JsonRecord, settings: JsonRecord) {
+  const postprocess = ensureRecord(recipe, "postprocess");
+  postprocess.enabled = true;
+  const center = ensureRecord(postprocess, "center_diamond");
+  Object.assign(center, settings);
 }
 
 function setReflectionCardTone(recipe: JsonRecord, dark: number, gray: number) {
@@ -272,9 +301,10 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
       targetSize: 1.68,
       exposure: 0.04,
       worldStrength: 0.2,
-      centerMaterial: "diamond-brillant_aaa",
+      centerMaterial: "diamond_center",
       darkCard: 0.34,
-      grayCard: 0.8
+      grayCard: 0.8,
+      post: { local_blend: 0.68, dark_alpha: 20, light_alpha: 32, chroma_alpha: 22, sparkle_strength: 0.9 }
     },
     {
       suffix: "closer",
@@ -284,9 +314,10 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
       targetSize: 1.72,
       exposure: 0.03,
       worldStrength: 0.18,
-      centerMaterial: "diamond-brillant_aaaa",
+      centerMaterial: "diamond_center",
       darkCard: 0.3,
-      grayCard: 0.76
+      grayCard: 0.76,
+      post: { local_blend: 0.76, dark_alpha: 28, light_alpha: 38, chroma_alpha: 24, sparkle_strength: 1.05 }
     },
     {
       suffix: "clean-center",
@@ -298,7 +329,8 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
       worldStrength: 0.21,
       centerMaterial: "Diamond.001",
       darkCard: 0.38,
-      grayCard: 0.82
+      grayCard: 0.82,
+      post: { local_blend: 0.58, dark_alpha: 16, light_alpha: 26, chroma_alpha: 16, sparkle_strength: 0.7 }
     }
   ];
 
@@ -325,6 +357,7 @@ function buildSweepRecipes(baseRecipe: JsonRecord): JsonRecord[] {
 
     setSourceMaterialMap(recipe, variant.centerMaterial);
     setReflectionCardTone(recipe, variant.darkCard, variant.grayCard);
+    setCenterPostprocess(recipe, variant.post);
 
     return recipe;
   });

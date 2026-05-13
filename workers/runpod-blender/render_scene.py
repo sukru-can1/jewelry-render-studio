@@ -6,6 +6,7 @@ import math
 from pathlib import Path
 
 import bpy
+from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Euler, Vector
 
 
@@ -249,6 +250,9 @@ def transform_model(objects, model_settings, background_settings):
 def make_material(name, preset):
     material = bpy.data.materials.new(name)
     material.use_nodes = True
+    if preset.get("type") == "catalog_diamond":
+        return make_catalog_diamond_material(material, preset)
+
     bsdf = material.node_tree.nodes.get("Principled BSDF")
     if not bsdf:
         return material
@@ -268,6 +272,56 @@ def make_material(name, preset):
             inputs[input_name].default_value = value
     material.blend_method = "BLEND" if preset.get("alpha", 1.0) < 1 else "OPAQUE"
     material.use_screen_refraction = preset.get("type") == "gem"
+    return material
+
+
+def set_node_input(node, input_name, value):
+    if input_name in node.inputs and value is not None:
+        node.inputs[input_name].default_value = value
+
+
+def make_catalog_diamond_material(material, preset):
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    nodes.clear()
+
+    output = nodes.new("ShaderNodeOutputMaterial")
+    output.location = (520, 0)
+
+    glass = nodes.new("ShaderNodeBsdfGlass")
+    glass.location = (-420, 120)
+    set_node_input(glass, "Color", preset.get("glass_color", [1.0, 0.985, 0.955, 1.0]))
+    set_node_input(glass, "Roughness", preset.get("roughness", 0.0))
+    set_node_input(glass, "IOR", preset.get("ior", 2.417))
+
+    glossy = nodes.new("ShaderNodeBsdfGlossy")
+    glossy.location = (-420, -80)
+    set_node_input(glossy, "Color", preset.get("gloss_color", [1.0, 1.0, 1.0, 1.0]))
+    set_node_input(glossy, "Roughness", preset.get("gloss_roughness", 0.015))
+
+    add = nodes.new("ShaderNodeAddShader")
+    add.location = (-120, 80)
+    links.new(glass.outputs["BSDF"], add.inputs[0])
+    links.new(glossy.outputs["BSDF"], add.inputs[1])
+
+    transparent_mix = float(preset.get("transparent_mix", 0.06))
+    if transparent_mix > 0:
+        transparent = nodes.new("ShaderNodeBsdfTransparent")
+        transparent.location = (-120, -160)
+        set_node_input(transparent, "Color", preset.get("transparent_color", [1.0, 1.0, 1.0, 1.0]))
+
+        mix = nodes.new("ShaderNodeMixShader")
+        mix.location = (180, 0)
+        mix.inputs["Fac"].default_value = max(0.0, min(1.0, transparent_mix))
+        links.new(add.outputs["Shader"], mix.inputs[1])
+        links.new(transparent.outputs["BSDF"], mix.inputs[2])
+        links.new(mix.outputs["Shader"], output.inputs["Surface"])
+    else:
+        links.new(add.outputs["Shader"], output.inputs["Surface"])
+
+    material.blend_method = "BLEND"
+    material.use_screen_refraction = True
+    material.show_transparent_back = True
     return material
 
 
@@ -390,6 +444,39 @@ def setup_camera(recipe):
     bpy.context.scene.camera = cam
 
 
+def object_image_bounds(objects):
+    scene = bpy.context.scene
+    camera = scene.camera
+    width = scene.render.resolution_x
+    height = scene.render.resolution_y
+    bounds = []
+    for obj in objects:
+        projected = []
+        for corner in obj.bound_box:
+            co = world_to_camera_view(scene, camera, obj.matrix_world @ Vector(corner))
+            if co.z >= 0:
+                projected.append((co.x, co.y))
+        if not projected:
+            continue
+        x_values = [point[0] for point in projected]
+        y_values = [point[1] for point in projected]
+        x0 = max(0.0, min(x_values))
+        x1 = min(1.0, max(x_values))
+        y0 = max(0.0, min(y_values))
+        y1 = min(1.0, max(y_values))
+        material_names = [slot.material.name for slot in obj.material_slots if slot.material]
+        bounds.append(
+            {
+                "name": obj.name,
+                "materials": material_names,
+                "signature": f"{obj.name} {' '.join(material_names)}",
+                "bounds_norm": [x0, 1.0 - y1, x1, 1.0 - y0],
+                "bounds_px": [round(x0 * width), round((1.0 - y1) * height), round(x1 * width), round((1.0 - y0) * height)],
+            }
+        )
+    return bounds
+
+
 def main():
     parsed = args()
     recipe = deep_merge(DEFAULT_RECIPE, json.loads(Path(parsed.recipe).read_text(encoding="utf-8")))
@@ -410,6 +497,7 @@ def main():
     add_reflection_cards(recipe)
     add_lights(recipe)
     setup_camera(recipe)
+    image_bounds = object_image_bounds(objects)
     bpy.context.scene.render.filepath = parsed.output
     bpy.ops.render.render(write_still=True)
     Path(parsed.metadata).write_text(
@@ -422,6 +510,7 @@ def main():
                     "transformed": transformed_bounds,
                 },
                 "selected_objects": [obj.name for obj in objects],
+                "object_image_bounds": image_bounds,
                 "materials": [material.name for material in bpy.data.materials],
             },
             indent=2,

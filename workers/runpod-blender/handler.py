@@ -14,6 +14,7 @@ from vercel.blob import BlobClient
 WORKER_DIR = Path(__file__).resolve().parent
 BLENDER_SCRIPT = WORKER_DIR / "render_scene.py"
 INSPECT_SCRIPT = WORKER_DIR / "inspect_materials.py"
+POSTPROCESS_SCRIPT = WORKER_DIR / "postprocess_image.py"
 
 
 def download(url: str, destination: Path) -> None:
@@ -151,6 +152,27 @@ def handler(job):
                 "stdout": completed.stdout[-4000:],
                 "stderr": completed.stderr[-4000:],
             }
+
+        if recipe.get("postprocess", {}).get("enabled", False):
+            runpod.serverless.progress_update(job, "Post-processing catalog image")
+            completed = run_blender(
+                [
+                    "python",
+                    str(POSTPROCESS_SCRIPT),
+                    "--image",
+                    str(render_path),
+                    "--metadata",
+                    str(metadata_path),
+                    "--recipe",
+                    str(recipe_path),
+                ]
+            )
+            if completed.returncode != 0:
+                return {
+                    "error": "Image post-process failed",
+                    "stdout": completed.stdout[-4000:],
+                    "stderr": completed.stderr[-4000:],
+                }
 
         runpod.serverless.progress_update(job, "Uploading output")
         image_key = f"{prefix.rstrip('/')}/{job_id}.png"

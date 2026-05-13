@@ -1,6 +1,6 @@
 {
-  "name": "ring99_hybrid_catalog",
-  "description": "Storefront studio recipe for ring99.blend. Uses source BLEND metal and diamond library materials, remaps emerald-assigned stones to diamond, and rotates the model into a catalog pose.",
+  "name": "ring99_catalog_faceted_post",
+  "description": "Storefront studio recipe for ring99.blend. Uses source BLEND metal and side-stone materials, a renderer-controlled center diamond, and a targeted catalog post-process for center-stone facets.",
   "material_strategy": "hybrid",
   "render": {
     "resolution": [1200, 1200],
@@ -45,7 +45,7 @@
   "material_map": [
     {
       "contains": ["Round_5"],
-      "source_material": "diamond-brillant_aaa"
+      "material": "diamond_center"
     },
     {
       "contains": ["stone_emerald"],
@@ -69,13 +69,13 @@
       "specular_ior_level": 0.78
     },
     "diamond_center": {
-      "type": "gem",
-      "base_color": [1.0, 0.99, 0.965, 1.0],
+      "type": "catalog_diamond",
+      "glass_color": [1.0, 0.992, 0.975, 1.0],
+      "gloss_color": [1.0, 1.0, 1.0, 1.0],
       "roughness": 0.0,
-      "alpha": 0.55,
-      "transmission_weight": 0.86,
+      "gloss_roughness": 0.012,
       "ior": 2.417,
-      "specular_ior_level": 1.0
+      "transparent_mix": 0.08
     },
     "diamond_side": {
       "type": "gem",
@@ -183,5 +183,26 @@
       "color": [1.0, 1.0, 0.995, 1.0],
       "visible_to_camera": true
     }
-  ]
+  ],
+  "postprocess": {
+    "enabled": true,
+    "global": {
+      "sharpness": 1.08,
+      "contrast": 1.03,
+      "brightness": 1.01
+    },
+    "center_diamond": {
+      "enabled": true,
+      "object_contains": ["Round_5"],
+      "radius_scale": 0.98,
+      "local_blend": 0.68,
+      "contrast": 1.2,
+      "sharpen_percent": 190,
+      "facets": 18,
+      "dark_alpha": 20,
+      "light_alpha": 32,
+      "chroma_alpha": 22,
+      "sparkle_strength": 0.9
+    }
+  }
 }
