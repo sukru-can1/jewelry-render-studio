@@ -10,6 +10,8 @@ import requests
 import runpod
 from vercel.blob import BlobClient
 
+from postprocess import apply_postprocess
+
 
 WORKER_DIR = Path(__file__).resolve().parent
 BLENDER_SCRIPT = WORKER_DIR / "render_scene.py"
@@ -155,8 +157,9 @@ def handler(job):
         runpod.serverless.progress_update(job, "Uploading output")
         image_key = f"{prefix.rstrip('/')}/{job_id}.png"
         metadata_key = f"{prefix.rstrip('/')}/{job_id}.json"
-        image_blob = upload_blob(render_path, image_key, "image/png")
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["postprocess"] = apply_postprocess(render_path, metadata, recipe)
+        image_blob = upload_blob(render_path, image_key, "image/png")
         metadata_blob = put_json_blob(metadata, metadata_key)
 
     return {

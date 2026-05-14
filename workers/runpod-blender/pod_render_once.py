@@ -10,6 +10,8 @@ from pathlib import Path
 import requests
 from vercel.blob import BlobClient
 
+from postprocess import apply_postprocess
+
 
 WORKER_DIR = Path(__file__).resolve().parent
 BLENDER_SCRIPT = WORKER_DIR / "render_scene.py"
@@ -125,8 +127,10 @@ def main() -> None:
         print(json.dumps({"event": "upload_start", "job_id": job_id}))
         image_key = f"{output_prefix}/{job_id}.png"
         metadata_key = f"{output_prefix}/{job_id}.json"
-        image_blob = upload_blob(render_path, image_key, "image/png")
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        recipe = json.loads(recipe_path.read_text(encoding="utf-8"))
+        metadata["postprocess"] = apply_postprocess(render_path, metadata, recipe)
+        image_blob = upload_blob(render_path, image_key, "image/png")
         metadata_blob = put_json_blob(metadata, metadata_key)
 
     result = {
