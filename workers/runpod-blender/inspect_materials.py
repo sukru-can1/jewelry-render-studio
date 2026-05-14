@@ -67,7 +67,16 @@ def material_summary(material):
         return summary
 
     for node in material.node_tree.nodes:
-        summary["nodes"].append({"name": node.name, "type": node.bl_idname})
+        node_summary = {"name": node.name, "type": node.bl_idname, "inputs": {}, "outputs": {}}
+        for socket in node.inputs:
+            value = socket_value(socket)
+            if value is not None:
+                node_summary["inputs"][socket.name] = value
+        for socket in node.outputs:
+            value = socket_value(socket)
+            if value is not None:
+                node_summary["outputs"][socket.name] = value
+        summary["nodes"].append(node_summary)
         if node.name == "Principled BSDF" or node.bl_idname == "ShaderNodeBsdfPrincipled":
             for socket in node.inputs:
                 value = socket_value(socket)

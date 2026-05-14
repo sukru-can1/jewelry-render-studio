@@ -330,6 +330,98 @@ def make_catalog_diamond_material(material, preset):
     return material
 
 
+def mix_color(current, target, amount):
+    amount = max(0.0, min(1.0, float(amount)))
+    return [current[i] * (1.0 - amount) + target[i] * amount for i in range(min(len(current), len(target)))]
+
+
+def socket_default(socket):
+    value = getattr(socket, "default_value", None)
+    if value is None:
+        return None
+    if hasattr(value, "__iter__") and not isinstance(value, str):
+        return list(value)
+    return value
+
+
+def set_socket_default(socket, value):
+    if value is not None and hasattr(socket, "default_value"):
+        socket.default_value = value
+
+
+def adjust_color_socket(node, input_name, target, amount):
+    if input_name not in node.inputs:
+        return
+    current = socket_default(node.inputs[input_name])
+    if not isinstance(current, list):
+        return
+    if len(target) == 3 and len(current) >= 4:
+        target = [target[0], target[1], target[2], current[3]]
+    set_socket_default(node.inputs[input_name], mix_color(current, target, amount))
+
+
+def multiply_socket(node, input_name, scale, minimum=None, maximum=None):
+    if input_name not in node.inputs or scale is None:
+        return
+    current = socket_default(node.inputs[input_name])
+    if not isinstance(current, (int, float)):
+        return
+    value = current * float(scale)
+    if minimum is not None:
+        value = max(float(minimum), value)
+    if maximum is not None:
+        value = min(float(maximum), value)
+    set_socket_default(node.inputs[input_name], value)
+
+
+def adjust_source_material(material, adjust):
+    if not adjust or not material or not material.use_nodes or not material.node_tree:
+        return material
+
+    material = material.copy()
+    material.name = f"{material.name}_adjusted"
+    glass_target = adjust.get("glass_color")
+    glass_color_mix = adjust.get("glass_color_mix", 0)
+    volume_target = adjust.get("volume_color")
+    volume_color_mix = adjust.get("volume_color_mix", 0)
+    for node in material.node_tree.nodes:
+        if node.bl_idname == "ShaderNodeBsdfGlass":
+            if glass_target is not None:
+                adjust_color_socket(node, "Color", glass_target, glass_color_mix)
+            if "Roughness" in node.inputs and "glass_roughness" in adjust:
+                set_socket_default(node.inputs["Roughness"], float(adjust["glass_roughness"]))
+            if "IOR" in node.inputs and "ior" in adjust:
+                set_socket_default(node.inputs["IOR"], float(adjust["ior"]))
+        elif node.bl_idname in {"ShaderNodeVolumeAbsorption", "ShaderNodeVolumeScatter"}:
+            if volume_target is not None:
+                adjust_color_socket(node, "Color", volume_target, volume_color_mix)
+            multiply_socket(node, "Density", adjust.get("volume_density_scale"), 0.0, adjust.get("volume_density_max"))
+        elif node.bl_idname == "ShaderNodeEmission":
+            if "emission_color" in adjust:
+                adjust_color_socket(node, "Color", adjust["emission_color"], adjust.get("emission_color_mix", 1.0))
+            multiply_socket(node, "Strength", adjust.get("emission_strength_scale"), 0.0, adjust.get("emission_strength_max"))
+        elif node.bl_idname == "ShaderNodeValue":
+            if node.outputs:
+                current = socket_default(node.outputs[0])
+                if isinstance(current, (int, float)):
+                    value = current * float(adjust.get("value_scale", 1.0)) + float(adjust.get("value_offset", 0.0))
+                    if "value_min" in adjust:
+                        value = max(float(adjust["value_min"]), value)
+                    if "value_max" in adjust:
+                        value = min(float(adjust["value_max"]), value)
+                    node.outputs[0].default_value = value
+        elif node.bl_idname == "ShaderNodeHueSaturation":
+            multiply_socket(node, "Saturation", adjust.get("saturation_scale"), 0.0, adjust.get("saturation_max"))
+            multiply_socket(node, "Value", adjust.get("hsv_value_scale"), 0.0, adjust.get("hsv_value_max"))
+
+    material.diffuse_color = adjust.get("diffuse_color", material.diffuse_color)
+    if "blend_method" in adjust:
+        material.blend_method = adjust["blend_method"]
+    if "use_screen_refraction" in adjust:
+        material.use_screen_refraction = bool(adjust["use_screen_refraction"])
+    return material
+
+
 def object_signature(obj):
     material_names = " ".join(slot.material.name for slot in obj.material_slots if slot.material)
     return f"{obj.name} {material_names}".lower()
@@ -349,6 +441,7 @@ def assign_materials(objects, recipe):
                 source_material = rule.get("source_material")
                 if source_material:
                     selected = bpy.data.materials.get(source_material)
+                    selected = adjust_source_material(selected, rule.get("source_material_adjust"))
                 else:
                     selected = presets[rule["material"]]
                 break
