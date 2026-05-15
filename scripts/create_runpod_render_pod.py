@@ -81,6 +81,7 @@ def args():
     parser.add_argument("--cloud-type", default="SECURE")
     parser.add_argument("--volume-gb", type=int, default=20)
     parser.add_argument("--timeout-seconds", type=int, default=2400)
+    parser.add_argument("--inject-local-postprocess-worker", action="store_true")
     return parser.parse_args()
 
 
@@ -95,7 +96,7 @@ def main() -> None:
         raise SystemExit("BLOB_READ_WRITE_TOKEN is missing.")
 
     job_id = str(uuid.uuid4())
-    recipe_json = Path(parsed.recipe).read_text(encoding="utf-8")
+    recipe_json = Path(parsed.recipe).read_text(encoding="utf-8-sig")
     output_prefix = parsed.output_prefix or f"outputs/ring99/pod_{job_id}"
     result_key = f"{output_prefix.rstrip('/')}/{job_id}_result.json"
     image_key = f"{output_prefix.rstrip('/')}/{job_id}.png"
@@ -114,6 +115,37 @@ def main() -> None:
             "NVIDIA L40S",
             "NVIDIA GeForce RTX 4090",
     ]
+    env = {
+        "BLOB_READ_WRITE_TOKEN": blob_token,
+        "BLOB_ACCESS": os.environ.get("BLOB_ACCESS", "public"),
+        "BLENDER_TIMEOUT_SECONDS": os.environ.get("BLENDER_TIMEOUT_SECONDS", "1800"),
+        "RENDER_JOB_ID": job_id,
+        "MODEL_URL": parsed.model_url,
+        "MODEL_PATHNAME": parsed.model_pathname,
+        "RECIPE_JSON_B64": base64.b64encode(recipe_json.encode("utf-8")).decode("ascii"),
+        "OUTPUT_PREFIX": output_prefix,
+    }
+    docker_start_cmd = ["python3", "-u", "pod_render_once.py"]
+    if parsed.inject_local_postprocess_worker:
+        pod_render_once = (Path("workers") / "runpod-blender" / "pod_render_once.py").read_text(encoding="utf-8")
+        postprocess = (Path("workers") / "runpod-blender" / "postprocess.py").read_text(encoding="utf-8")
+        render_scene = (Path("workers") / "runpod-blender" / "render_scene.py").read_text(encoding="utf-8")
+        env["INJECT_POD_RENDER_ONCE_PY_B64"] = base64.b64encode(pod_render_once.encode("utf-8")).decode("ascii")
+        env["INJECT_POSTPROCESS_PY_B64"] = base64.b64encode(postprocess.encode("utf-8")).decode("ascii")
+        env["INJECT_RENDER_SCENE_PY_B64"] = base64.b64encode(render_scene.encode("utf-8")).decode("ascii")
+        docker_start_cmd = [
+            "bash",
+            "-lc",
+            (
+                "python3 -m pip install --no-cache-dir Pillow==10.4.0 && "
+                "python3 -c \"import base64, os, pathlib; "
+                "pathlib.Path('pod_render_once.py').write_text(base64.b64decode(os.environ['INJECT_POD_RENDER_ONCE_PY_B64']).decode('utf-8'), encoding='utf-8'); "
+                "pathlib.Path('postprocess.py').write_text(base64.b64decode(os.environ['INJECT_POSTPROCESS_PY_B64']).decode('utf-8'), encoding='utf-8'); "
+                "pathlib.Path('render_scene.py').write_text(base64.b64decode(os.environ['INJECT_RENDER_SCENE_PY_B64']).decode('utf-8'), encoding='utf-8')\" && "
+                "python3 -u pod_render_once.py"
+            ),
+        ]
+
     base_payload = {
         "name": f"{parsed.name}-{job_id[:8]}",
         "imageName": parsed.image,
@@ -124,17 +156,8 @@ def main() -> None:
         "containerDiskInGb": 50,
         "volumeInGb": parsed.volume_gb,
         "dockerEntrypoint": [],
-        "dockerStartCmd": ["python3", "-u", "pod_render_once.py"],
-        "env": {
-            "BLOB_READ_WRITE_TOKEN": blob_token,
-            "BLOB_ACCESS": os.environ.get("BLOB_ACCESS", "public"),
-            "BLENDER_TIMEOUT_SECONDS": os.environ.get("BLENDER_TIMEOUT_SECONDS", "1800"),
-            "RENDER_JOB_ID": job_id,
-            "MODEL_URL": parsed.model_url,
-            "MODEL_PATHNAME": parsed.model_pathname,
-            "RECIPE_JSON_B64": base64.b64encode(recipe_json.encode("utf-8")).decode("ascii"),
-            "OUTPUT_PREFIX": output_prefix,
-        },
+        "dockerStartCmd": docker_start_cmd,
+        "env": env,
     }
 
     errors = []

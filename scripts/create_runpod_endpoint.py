@@ -1,4 +1,5 @@
 import argparse
+import base64
 import json
 import os
 import sys
@@ -44,7 +45,11 @@ def request_json(method: str, path: str, api_key: str, payload: dict | None = No
 def redact_secrets(value):
     if isinstance(value, dict):
         return {
-            key: ("[redacted]" if any(token in key.upper() for token in ("TOKEN", "KEY", "SECRET")) else redact_secrets(item))
+            key: (
+                "[redacted]"
+                if any(token in key.upper() for token in ("TOKEN", "KEY", "SECRET", "INJECT_", "_B64"))
+                else redact_secrets(item)
+            )
             for key, item in value.items()
         }
     if isinstance(value, list):
@@ -64,6 +69,7 @@ def main() -> None:
     parser.add_argument("--container-disk-gb", type=int, default=50)
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--update-endpoint-id", default="", help="Patch an existing endpoint instead of creating a new one")
+    parser.add_argument("--inject-local-postprocess-worker", action="store_true")
     args = parser.parse_args()
 
     load_env(Path(args.env_file))
@@ -74,18 +80,40 @@ def main() -> None:
     if not blob_token:
         raise SystemExit("BLOB_READ_WRITE_TOKEN is missing. Pull it from Vercel env first.")
 
+    env = {
+        "BLOB_READ_WRITE_TOKEN": blob_token,
+        "BLOB_ACCESS": os.environ.get("BLOB_ACCESS", "public"),
+        "BLENDER_TIMEOUT_SECONDS": os.environ.get("BLENDER_TIMEOUT_SECONDS", "1800"),
+    }
+    docker_start_cmd = []
+    if args.inject_local_postprocess_worker:
+        handler = (Path("workers") / "runpod-blender" / "handler.py").read_text(encoding="utf-8")
+        postprocess = (Path("workers") / "runpod-blender" / "postprocess.py").read_text(encoding="utf-8")
+        render_scene = (Path("workers") / "runpod-blender" / "render_scene.py").read_text(encoding="utf-8")
+        env["INJECT_HANDLER_PY_B64"] = base64.b64encode(handler.encode("utf-8")).decode("ascii")
+        env["INJECT_POSTPROCESS_PY_B64"] = base64.b64encode(postprocess.encode("utf-8")).decode("ascii")
+        env["INJECT_RENDER_SCENE_PY_B64"] = base64.b64encode(render_scene.encode("utf-8")).decode("ascii")
+        docker_start_cmd = [
+            "bash",
+            "-lc",
+            (
+                "python3 -m pip install --no-cache-dir Pillow==10.4.0 && "
+                "python3 -c \"import base64, os, pathlib; "
+                "pathlib.Path('handler.py').write_text(base64.b64decode(os.environ['INJECT_HANDLER_PY_B64']).decode('utf-8'), encoding='utf-8'); "
+                "pathlib.Path('postprocess.py').write_text(base64.b64decode(os.environ['INJECT_POSTPROCESS_PY_B64']).decode('utf-8'), encoding='utf-8'); "
+                "pathlib.Path('render_scene.py').write_text(base64.b64decode(os.environ['INJECT_RENDER_SCENE_PY_B64']).decode('utf-8'), encoding='utf-8')\" && "
+                "python3 -u handler.py"
+            ),
+        ]
+
     template_payload = {
         "name": f"{args.name}-template",
         "imageName": args.image,
         "category": "NVIDIA",
         "containerDiskInGb": args.container_disk_gb,
         "dockerEntrypoint": [],
-        "dockerStartCmd": [],
-        "env": {
-            "BLOB_READ_WRITE_TOKEN": blob_token,
-            "BLOB_ACCESS": os.environ.get("BLOB_ACCESS", "public"),
-            "BLENDER_TIMEOUT_SECONDS": os.environ.get("BLENDER_TIMEOUT_SECONDS", "1800"),
-        },
+        "dockerStartCmd": docker_start_cmd,
+        "env": env,
         "isPublic": False,
         "isServerless": True,
         "ports": [],

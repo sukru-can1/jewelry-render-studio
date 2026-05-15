@@ -90,7 +90,7 @@ def run_blender(model_path: Path, recipe_path: Path, render_path: Path, metadata
 
 def env_recipe() -> dict:
     encoded = os.environ.get("RECIPE_JSON_B64")
-    raw = base64.b64decode(encoded).decode("utf-8") if encoded else os.environ.get("RECIPE_JSON", "{}")
+    raw = base64.b64decode(encoded).decode("utf-8-sig") if encoded else os.environ.get("RECIPE_JSON", "{}").lstrip("\ufeff")
     return json.loads(raw)
 
 

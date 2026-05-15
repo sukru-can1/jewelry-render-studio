@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import tempfile
+import urllib.request
 from pathlib import Path
 
 import bpy
@@ -392,6 +394,20 @@ def adjust_source_material(material, adjust):
                 set_socket_default(node.inputs["Roughness"], float(adjust["glass_roughness"]))
             if "IOR" in node.inputs and "ior" in adjust:
                 set_socket_default(node.inputs["IOR"], float(adjust["ior"]))
+        elif node.bl_idname == "ShaderNodeBsdfPrincipled":
+            base_color = adjust.get("base_color")
+            if base_color is not None:
+                adjust_color_socket(node, "Base Color", base_color, adjust.get("base_color_mix", 1.0))
+            if "Metallic" in node.inputs and "metallic" in adjust:
+                set_socket_default(node.inputs["Metallic"], float(adjust["metallic"]))
+            if "Roughness" in node.inputs and "roughness" in adjust:
+                set_socket_default(node.inputs["Roughness"], float(adjust["roughness"]))
+            if "Alpha" in node.inputs and "alpha" in adjust:
+                set_socket_default(node.inputs["Alpha"], float(adjust["alpha"]))
+            if "Specular IOR Level" in node.inputs and "specular_ior_level" in adjust:
+                set_socket_default(node.inputs["Specular IOR Level"], float(adjust["specular_ior_level"]))
+            if "IOR" in node.inputs and "ior" in adjust:
+                set_socket_default(node.inputs["IOR"], float(adjust["ior"]))
         elif node.bl_idname in {"ShaderNodeVolumeAbsorption", "ShaderNodeVolumeScatter"}:
             if volume_target is not None:
                 adjust_color_socket(node, "Color", volume_target, volume_color_mix)
@@ -478,6 +494,25 @@ def setup_world(recipe):
     world = bpy.context.scene.world or bpy.data.worlds.new("World")
     bpy.context.scene.world = world
     world.use_nodes = True
+    hdri_url = recipe["world"].get("hdri_url")
+    if hdri_url:
+        nodes = world.node_tree.nodes
+        links = world.node_tree.links
+        nodes.clear()
+        output = nodes.new("ShaderNodeOutputWorld")
+        output.location = (520, 0)
+        background = nodes.new("ShaderNodeBackground")
+        background.location = (260, 0)
+        env = nodes.new("ShaderNodeTexEnvironment")
+        env.location = (-120, 0)
+        hdri_path = Path(tempfile.gettempdir()) / Path(str(hdri_url).split("?")[0]).name
+        if not hdri_path.exists():
+            urllib.request.urlretrieve(hdri_url, hdri_path)
+        env.image = bpy.data.images.load(str(hdri_path), check_existing=True)
+        background.inputs["Strength"].default_value = recipe["world"].get("hdri_strength", recipe["world"].get("strength", 0.18))
+        links.new(env.outputs["Color"], background.inputs["Color"])
+        links.new(background.outputs["Background"], output.inputs["Surface"])
+        return
     bg = world.node_tree.nodes.get("Background")
     if bg:
         color = recipe["world"].get("color", [1, 1, 1])
@@ -518,6 +553,9 @@ def add_lights(recipe):
         obj.location = config["position"]
         obj.rotation_euler = [math.radians(v) for v in config.get("rotation_degrees", [0, 0, 0])]
         data.energy = config.get("power", 100)
+        if "color" in config:
+            color = config["color"]
+            data.color = (color[0], color[1], color[2])
         if config["type"] == "AREA":
             data.shape = "RECTANGLE"
             data.size = config.get("size", 1)

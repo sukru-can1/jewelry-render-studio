@@ -54,7 +54,7 @@ def main():
         raise SystemExit("RUNPOD_API_KEY is missing.")
 
     job_id = str(uuid.uuid4())
-    recipe = json.loads(Path(parsed.recipe).read_text(encoding="utf-8"))
+    recipe = json.loads(Path(parsed.recipe).read_text(encoding="utf-8-sig"))
     output_prefix = parsed.output_prefix or f"outputs/ring99/{job_id}"
     payload = {
         "input": {
