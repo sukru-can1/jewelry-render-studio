@@ -51,8 +51,26 @@ def socket_value(socket):
     if value is None:
         return None
     if hasattr(value, "__iter__") and not isinstance(value, str):
-        return list(value)
+        converted = []
+        for item in value:
+            if hasattr(item, "__iter__") and not isinstance(item, str):
+                converted.append([float(inner) if isinstance(inner, (int, float)) else str(inner) for inner in item])
+            elif isinstance(item, (int, float)):
+                converted.append(float(item))
+            else:
+                converted.append(str(item))
+        return converted
+    if isinstance(value, (int, float)):
+        return float(value)
     return value
+
+
+def json_default(value):
+    if isinstance(value, (int, float)):
+        return float(value)
+    if hasattr(value, "__iter__") and not isinstance(value, str):
+        return [json_default(item) for item in value]
+    return str(value)
 
 
 def material_summary(material):
@@ -125,7 +143,7 @@ def main():
         "objects": [object_summary(obj) for obj in bpy.data.objects],
         "materials": [material_summary(material) for material in bpy.data.materials],
     }
-    Path(parsed.output).write_text(json.dumps(inventory, indent=2), encoding="utf-8")
+    Path(parsed.output).write_text(json.dumps(inventory, indent=2, default=json_default), encoding="utf-8")
 
 
 if __name__ == "__main__":

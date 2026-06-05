@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./styles.css";
 
 export const metadata: Metadata = {
-  title: "Jewelry Render Studio",
-  description: "Cloud render lab for photorealistic jewelry imagery"
+  title: "Jewelry Catalog Renderer",
+  description: "Production jewelry catalog rendering pipeline"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,4 +13,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

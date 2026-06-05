@@ -12,3 +12,11 @@ node_modules/
 
 .vercel
 .env*.local
+
+# Nested legacy Flask renderer — reference only, has its own git repo
+external-work/
+
+# Dev server logs
+*.log
+next-dev.err.log
+next-dev.out.log

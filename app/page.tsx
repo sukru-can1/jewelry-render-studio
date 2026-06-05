@@ -1,6 +1,5 @@
-import Studio from "./studio";
+import EnterpriseApp from "./enterprise-app";
 
 export default function Page() {
-  return <Studio />;
+  return <EnterpriseApp />;
 }
-

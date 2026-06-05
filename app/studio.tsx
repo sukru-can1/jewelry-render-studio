@@ -2,7 +2,7 @@
 
 import defaultRecipeSource from "./default-recipe.json";
 import { upload } from "@vercel/blob/client";
-import { FileSearch, Images, ImageUp, Play, RefreshCw, UploadCloud } from "lucide-react";
+import { FileSearch, Images, ImageUp, Play, RefreshCw, Star, UploadCloud } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type BlobAsset = {
@@ -481,9 +481,15 @@ export default function Studio() {
           <p className="eyebrow">Vercel Blob + RunPod</p>
           <h1>Jewelry Render Studio</h1>
         </div>
-        <button className="iconButton" onClick={refreshJobs} title="Refresh jobs">
-          <RefreshCw size={18} />
-        </button>
+        <div className="raterTools">
+          <a className="secondary" href="/rater">
+            <Star size={18} />
+            Rate Results
+          </a>
+          <button className="iconButton" onClick={refreshJobs} title="Refresh jobs">
+            <RefreshCw size={18} />
+          </button>
+        </div>
       </section>
 
       <section className="workspace">

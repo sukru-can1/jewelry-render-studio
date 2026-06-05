@@ -152,6 +152,180 @@ def import_model(path: Path):
     return [obj for obj in bpy.data.objects if obj not in before and obj.type == "MESH"]
 
 
+def source_scene_mesh_objects(recipe):
+    config = recipe.get("source_scene", {})
+    include = [token.lower() for token in config.get("metadata_include_contains", [])]
+    exclude = [token.lower() for token in config.get("metadata_exclude_contains", [])]
+    selected = []
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        signature = object_signature(obj)
+        if include and not any(token in signature for token in include):
+            continue
+        if exclude and any(token in signature for token in exclude):
+            continue
+        selected.append(obj)
+    return selected
+
+
+def setup_source_scene(path: Path, recipe):
+    config = recipe.get("source_scene", {})
+    bpy.ops.wm.open_mainfile(filepath=str(path))
+
+    scene_name = config.get("scene_name")
+    if scene_name and scene_name in bpy.data.scenes:
+        bpy.context.window.scene = bpy.data.scenes[scene_name]
+
+    camera_name = config.get("camera_name")
+    if camera_name and camera_name in bpy.data.objects and bpy.data.objects[camera_name].type == "CAMERA":
+        bpy.context.scene.camera = bpy.data.objects[camera_name]
+
+    setup_render(recipe)
+
+    if config.get("use_recipe_camera", False):
+        setup_camera(recipe)
+
+    if config.get("apply_recipe_materials", False):
+        assign_materials(source_scene_mesh_objects(recipe), recipe)
+
+    apply_source_scene_adjustments(recipe)
+    apply_source_camera_adjustment(recipe)
+    add_reflection_cards_from_configs(config.get("reflection_cards", []))
+
+    return source_scene_mesh_objects(recipe)
+
+
+def look_at(obj, target):
+    direction = Vector(target) - obj.location
+    obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+
+
+def source_camera_target(config):
+    tokens = [token.lower() for token in config.get("target_contains", ["Diamond_Round_11"])]
+    objects = [obj for obj in bpy.context.scene.objects if obj.type == "MESH" and any(token in object_signature(obj) for token in tokens)]
+    if objects:
+        mins, maxs = object_bounds(objects)
+        return (mins + maxs) * 0.5
+    return Vector(config.get("target", [0.0, 0.0, 0.0]))
+
+
+def apply_source_camera_adjustment(recipe):
+    config = recipe.get("source_scene", {}).get("camera_orbit", {})
+    if not config.get("enabled", False):
+        return
+    camera = bpy.context.scene.camera
+    if camera is None:
+        return
+
+    target = source_camera_target(config)
+    if "target_offset" in config:
+        target += Vector(config["target_offset"])
+
+    relative = camera.location - target
+    distance_scale = float(config.get("distance_scale", 1.0))
+    relative *= distance_scale
+
+    yaw = math.radians(float(config.get("yaw_degrees", 0.0)))
+    cos_y = math.cos(yaw)
+    sin_y = math.sin(yaw)
+    relative = Vector((relative.x * cos_y - relative.y * sin_y, relative.x * sin_y + relative.y * cos_y, relative.z))
+
+    if "height_scale" in config:
+        relative.z *= float(config["height_scale"])
+    if "height_offset" in config:
+        relative.z += float(config["height_offset"])
+
+    camera.location = target + relative
+    look_at(camera, target)
+
+    if "focal_length" in config and hasattr(camera.data, "lens"):
+        camera.data.lens = float(config["focal_length"])
+    if "shift_x" in config and hasattr(camera.data, "shift_x"):
+        camera.data.shift_x = float(config["shift_x"])
+    if "shift_y" in config and hasattr(camera.data, "shift_y"):
+        camera.data.shift_y = float(config["shift_y"])
+
+
+def apply_source_scene_adjustments(recipe):
+    config = recipe.get("source_scene", {})
+    for adjustment in config.get("group_adjustments", []):
+        tokens = [token.lower() for token in adjustment.get("contains", [])]
+        if not tokens:
+            continue
+        matched = [
+            obj
+            for obj in bpy.context.scene.objects
+            if obj.type == "MESH" and not obj.hide_render and any(token in object_signature(obj) for token in tokens)
+        ]
+        if not matched:
+            continue
+        mins, maxs = object_bounds(matched)
+        pivot = (mins + maxs) * 0.5
+        if "pivot" in adjustment:
+            pivot = Vector(adjustment["pivot"])
+        rotation = [math.radians(float(v)) for v in adjustment.get("rotation_degrees", [0.0, 0.0, 0.0])]
+        rotation_matrix = Euler(rotation, "XYZ").to_matrix().to_4x4()
+        scale = transform_vector(adjustment.get("scale", 1.0), 1.0)
+        translation = transform_vector(adjustment.get("translation", [0, 0, 0]), 0.0)
+        for obj in matched:
+            relative = obj.location - pivot
+            relative = Vector((relative.x * scale.x, relative.y * scale.y, relative.z * scale.z))
+            obj.location = pivot + (rotation_matrix @ relative) + translation
+            obj.rotation_euler.rotate(Euler(rotation, "XYZ"))
+            obj.scale.x *= scale.x
+            obj.scale.y *= scale.y
+            obj.scale.z *= scale.z
+
+    for adjustment in config.get("object_adjustments", []):
+        tokens = [token.lower() for token in adjustment.get("contains", [])]
+        if not tokens:
+            continue
+        for obj in bpy.context.scene.objects:
+            if obj.type != "MESH" or not any(token in object_signature(obj) for token in tokens):
+                continue
+            if "hide_render" in adjustment:
+                obj.hide_render = bool(adjustment["hide_render"])
+            if "hide_viewport" in adjustment:
+                obj.hide_viewport = bool(adjustment["hide_viewport"])
+            if "position" in adjustment:
+                obj.location = Vector(adjustment["position"])
+            if "rotation_degrees" in adjustment:
+                obj.rotation_euler = [math.radians(v) for v in adjustment["rotation_degrees"]]
+            if "scale" in adjustment:
+                obj.scale = transform_vector(adjustment["scale"])
+            material_adjust = adjustment.get("source_material_adjust")
+            if material_adjust:
+                for slot in obj.material_slots:
+                    if slot.material:
+                        slot.material = adjust_source_material(slot.material, material_adjust)
+
+    for adjustment in config.get("light_adjustments", []):
+        tokens = [token.lower() for token in adjustment.get("contains", [])]
+        if not tokens:
+            continue
+        for obj in bpy.context.scene.objects:
+            if obj.type != "LIGHT" or not any(token in obj.name.lower() for token in tokens):
+                continue
+            data = obj.data
+            if "hide_render" in adjustment:
+                obj.hide_render = bool(adjustment["hide_render"])
+            if "position" in adjustment:
+                obj.location = Vector(adjustment["position"])
+            if "rotation_degrees" in adjustment:
+                obj.rotation_euler = [math.radians(v) for v in adjustment["rotation_degrees"]]
+            if "power" in adjustment:
+                data.energy = float(adjustment["power"])
+            if "power_scale" in adjustment:
+                data.energy *= float(adjustment["power_scale"])
+            if "size" in adjustment and hasattr(data, "size"):
+                data.size = float(adjustment["size"])
+            if "size_y" in adjustment and hasattr(data, "size_y"):
+                data.size_y = float(adjustment["size_y"])
+            if "color" in adjustment:
+                data.color = adjustment["color"][:3]
+
+
 def filter_product_objects(objects, settings):
     include = [token.lower() for token in settings.get("include_contains", [])]
     exclude = [token.lower() for token in settings.get("exclude_contains", [])]
@@ -202,6 +376,99 @@ def normalize(objects, settings):
         if settings.get("auto_center", True):
             obj.location -= center
         obj.scale *= scale
+
+
+def transform_vector(value, default=1.0):
+    if isinstance(value, (int, float)):
+        return Vector((float(value), float(value), float(value)))
+    if isinstance(value, list):
+        values = [float(item) for item in value]
+        if len(values) == 2:
+            return Vector((values[0], values[1], default))
+        if len(values) >= 3:
+            return Vector((values[0], values[1], values[2]))
+    return Vector((default, default, default))
+
+
+def apply_object_transforms(objects, model_settings):
+    transforms = model_settings.get("object_transforms", [])
+    if not transforms:
+        return
+
+    for transform in transforms:
+        contains = [token.lower() for token in transform.get("contains", [])]
+        if not contains:
+            continue
+        matched = [obj for obj in objects if any(token in object_signature(obj) for token in contains)]
+        if not matched:
+            continue
+
+        mins, maxs = object_bounds(matched)
+        pivot = (mins + maxs) * 0.5
+        scale = transform_vector(transform.get("scale", 1.0), 1.0)
+        translation = transform_vector(transform.get("translation", [0, 0, 0]), 0.0)
+
+        for obj in matched:
+            relative = obj.location - pivot
+            obj.location = pivot + Vector((relative.x * scale.x, relative.y * scale.y, relative.z * scale.z)) + translation
+            obj.scale.x *= scale.x
+            obj.scale.y *= scale.y
+            obj.scale.z *= scale.z
+
+
+def add_generated_band(objects, model_settings):
+    config = model_settings.get("generated_band") or {}
+    if not config.get("enabled", False):
+        return []
+
+    segments = max(24, int(config.get("segments", 128)))
+    tube_segments = max(8, int(config.get("tube_segments", 18)))
+    radius_x = float(config.get("radius_x", 0.86))
+    radius_z = float(config.get("radius_z", 0.48))
+    tube_radius = float(config.get("tube_radius", 0.055))
+    tube_y_scale = float(config.get("tube_y_scale", 1.0))
+    center = Vector(transform_vector(config.get("center", [0, 0, 0]), 0.0))
+
+    vertices = []
+    faces = []
+    for i in range(segments):
+        theta = 2.0 * math.pi * i / segments
+        ring_center = center + Vector((radius_x * math.cos(theta), 0.0, radius_z * math.sin(theta)))
+        normal = Vector((radius_z * math.cos(theta), 0.0, radius_x * math.sin(theta)))
+        if normal.length < 0.00001:
+            normal = Vector((1.0, 0.0, 0.0))
+        else:
+            normal.normalize()
+        binormal = Vector((0.0, 1.0, 0.0))
+        for j in range(tube_segments):
+            phi = 2.0 * math.pi * j / tube_segments
+            point = ring_center + normal * (math.cos(phi) * tube_radius) + binormal * (math.sin(phi) * tube_radius * tube_y_scale)
+            vertices.append(tuple(point))
+
+    for i in range(segments):
+        next_i = (i + 1) % segments
+        for j in range(tube_segments):
+            next_j = (j + 1) % tube_segments
+            faces.append(
+                (
+                    i * tube_segments + j,
+                    next_i * tube_segments + j,
+                    next_i * tube_segments + next_j,
+                    i * tube_segments + next_j,
+                )
+            )
+
+    mesh = bpy.data.meshes.new(config.get("mesh_name", "generated_plain_band_mesh"))
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    band = bpy.data.objects.new(config.get("name", "generated_metal_band_shank"), mesh)
+    bpy.context.collection.objects.link(band)
+    band.select_set(True)
+    bpy.context.view_layer.objects.active = band
+    bpy.ops.object.shade_smooth()
+    band.select_set(False)
+    objects.append(band)
+    return [band]
 
 
 def object_bounds(objects):
@@ -529,8 +796,45 @@ def setup_background(recipe):
     plane.data.materials.append(mat)
 
 
-def add_reflection_cards(recipe):
-    for config in recipe.get("reflection_cards", []):
+def add_contact_shadows(recipe):
+    for config in recipe.get("contact_shadows", []):
+        layers = max(1, int(config.get("layers", 3)))
+        base_alpha = float(config.get("alpha", 0.18))
+        position = config.get("position", [0, 0, recipe["background"].get("plane_z", -0.04) + 0.002])
+        size = config.get("size", [2.0, 0.55])
+        color = config.get("color", [0.0, 0.0, 0.0])
+        vertices_count = max(32, int(config.get("vertices", 96)))
+
+        for layer in range(layers):
+            scale_factor = 1.0 + (layer / max(1, layers - 1)) * float(config.get("spread", 0.55))
+            alpha = base_alpha * (1.0 - layer / (layers + 0.5))
+            z_offset = 0.001 + layer * 0.0005
+            bpy.ops.mesh.primitive_circle_add(
+                vertices=vertices_count,
+                radius=1.0,
+                fill_type="TRIFAN",
+                location=(float(position[0]), float(position[1]), float(position[2]) + z_offset),
+                rotation=(0, 0, math.radians(float(config.get("rotation_degrees", 0)))),
+            )
+            shadow = bpy.context.object
+            shadow.name = f"{config.get('name', 'soft_contact_shadow')}_{layer + 1}"
+            shadow.scale = (float(size[0]) * scale_factor, float(size[1]) * scale_factor, 1)
+            mat = make_material(
+                shadow.name + "_material",
+                {
+                    "base_color": [color[0], color[1], color[2], alpha],
+                    "alpha": alpha,
+                    "roughness": 0.85,
+                },
+            )
+            shadow.data.materials.append(mat)
+            shadow.visible_shadow = False
+            shadow.visible_glossy = False
+            shadow.visible_transmission = False
+
+
+def add_reflection_cards_from_configs(configs):
+    for config in configs:
         bpy.ops.mesh.primitive_plane_add(
             size=1.0,
             location=config["position"],
@@ -543,6 +847,20 @@ def add_reflection_cards(recipe):
         mat = make_material(config["name"] + "_material", {"base_color": config.get("color", [0.1, 0.1, 0.1, 1]), "roughness": 0.5})
         card.data.materials.append(mat)
         card.visible_camera = config.get("visible_to_camera", False)
+        visibility_map = {
+            "visible_shadow": config.get("visible_to_shadow", True),
+            "visible_diffuse": config.get("visible_to_diffuse", True),
+            "visible_glossy": config.get("visible_to_glossy", True),
+            "visible_transmission": config.get("visible_to_transmission", True),
+            "visible_volume_scatter": config.get("visible_to_volume_scatter", True),
+        }
+        for attribute, value in visibility_map.items():
+            if hasattr(card, attribute):
+                setattr(card, attribute, bool(value))
+
+
+def add_reflection_cards(recipe):
+    add_reflection_cards_from_configs(recipe.get("reflection_cards", []))
 
 
 def add_lights(recipe):
@@ -646,9 +964,11 @@ def setup_camera(recipe):
     direction = Vector(camera["target"]) - cam.location
     cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
     cam_data.lens = camera.get("focal_length", 90)
+    cam_data.shift_x = float(camera.get("shift_x", 0.0))
+    cam_data.shift_y = float(camera.get("shift_y", 0.0))
     dof = camera.get("depth_of_field", {})
     cam_data.dof.use_dof = dof.get("enabled", False)
-    cam_data.dof.focus_distance = direction.length
+    cam_data.dof.focus_distance = dof.get("focus_distance", direction.length)
     cam_data.dof.aperture_fstop = dof.get("f_stop", 7.5)
     bpy.context.scene.camera = cam
 
@@ -661,18 +981,30 @@ def object_image_bounds(objects):
     bounds = []
     for obj in objects:
         projected = []
-        for corner in obj.bound_box:
-            co = world_to_camera_view(scene, camera, obj.matrix_world @ Vector(corner))
-            if co.z >= 0:
-                projected.append((co.x, co.y))
+        mesh = obj.data
+        vertices = getattr(mesh, "vertices", [])
+        stride = max(1, math.ceil(len(vertices) / 4000)) if vertices else 1
+        for index, vertex in enumerate(vertices):
+            if index % stride:
+                continue
+            co = world_to_camera_view(scene, camera, obj.matrix_world @ vertex.co)
+            projected.append((co.x, co.y))
         if not projected:
             continue
         x_values = [point[0] for point in projected]
         y_values = [point[1] for point in projected]
-        x0 = max(0.0, min(x_values))
-        x1 = min(1.0, max(x_values))
-        y0 = max(0.0, min(y_values))
-        y1 = min(1.0, max(y_values))
+        raw_x0 = min(x_values)
+        raw_x1 = max(x_values)
+        raw_y0 = min(y_values)
+        raw_y1 = max(y_values)
+        if raw_x1 < 0.0 or raw_x0 > 1.0 or raw_y1 < 0.0 or raw_y0 > 1.0:
+            continue
+        x0 = max(0.0, raw_x0)
+        x1 = min(1.0, raw_x1)
+        y0 = max(0.0, raw_y0)
+        y1 = min(1.0, raw_y1)
+        if x1 <= x0 or y1 <= y0:
+            continue
         material_names = [slot.material.name for slot in obj.material_slots if slot.material]
         bounds.append(
             {
@@ -689,6 +1021,32 @@ def object_image_bounds(objects):
 def main():
     parsed = args()
     recipe = deep_merge(DEFAULT_RECIPE, json.loads(Path(parsed.recipe).read_text(encoding="utf-8")))
+    if recipe.get("source_scene", {}).get("enabled", False):
+        objects = setup_source_scene(Path(parsed.model), recipe)
+        if not objects:
+            raise RuntimeError("Source scene contains no visible mesh objects for metadata.")
+        image_bounds = object_image_bounds(objects)
+        bpy.context.scene.render.filepath = parsed.output
+        bpy.ops.render.render(write_still=True)
+        Path(parsed.metadata).write_text(
+            json.dumps(
+                {
+                    "recipe": recipe,
+                    "source_scene": True,
+                    "scene": bpy.context.scene.name,
+                    "camera": bpy.context.scene.camera.name if bpy.context.scene.camera else None,
+                    "selected_objects": [obj.name for obj in objects],
+                    "lights": [obj.name for obj in bpy.context.scene.objects if obj.type == "LIGHT" and not obj.hide_render],
+                    "world": bpy.context.scene.world.name if bpy.context.scene.world else None,
+                    "object_image_bounds": image_bounds,
+                    "materials": [material.name for material in bpy.data.materials],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        return
+
     clear_scene()
     setup_render(recipe)
     setup_world(recipe)
@@ -699,10 +1057,14 @@ def main():
     imported_bounds = bounds_summary(objects)
     normalize(objects, recipe["model"])
     normalized_bounds = bounds_summary(objects)
+    apply_object_transforms(objects, recipe["model"])
+    generated_objects = add_generated_band(objects, recipe["model"])
+    object_transformed_bounds = bounds_summary(objects)
     transform_model(objects, recipe["model"], recipe["background"])
     transformed_bounds = bounds_summary(objects)
     assign_materials(objects, recipe)
     setup_background(recipe)
+    add_contact_shadows(recipe)
     add_reflection_cards(recipe)
     add_lights(recipe)
     setup_camera(recipe)
@@ -717,9 +1079,11 @@ def main():
                 "model_bounds": {
                     "imported": imported_bounds,
                     "normalized": normalized_bounds,
+                    "object_transformed": object_transformed_bounds,
                     "transformed": transformed_bounds,
                 },
                 "selected_objects": [obj.name for obj in objects],
+                "generated_objects": [obj.name for obj in generated_objects],
                 "overlay_objects": [obj.name for obj in overlay_objects],
                 "object_image_bounds": image_bounds,
                 "materials": [material.name for material in bpy.data.materials],

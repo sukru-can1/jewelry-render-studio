@@ -5,8 +5,11 @@ export const runtime = "nodejs";
 
 const allowedContentTypes = [
   "application/octet-stream",
+  "application/x-fbx",
+  "application/vnd.autodesk.fbx",
   "model/gltf-binary",
   "model/gltf+json",
+  "model/fbx",
   "application/json",
   "image/png",
   "image/jpeg",
@@ -35,4 +38,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Upload token failed" }, { status: 400 });
   }
 }
-

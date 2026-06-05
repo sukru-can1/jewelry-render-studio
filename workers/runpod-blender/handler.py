@@ -118,6 +118,13 @@ def handler(job):
                     "stdout": completed.stdout[-4000:],
                     "stderr": completed.stderr[-4000:],
                 }
+            if not inspect_path.exists():
+                return {
+                    "error": "Blender material inspection produced no inventory file",
+                    "returncode": completed.returncode,
+                    "stdout": completed.stdout[-4000:],
+                    "stderr": completed.stderr[-4000:],
+                }
 
             inventory_key = f"{prefix.rstrip('/')}/{job_id}_material_inventory.json"
             inventory = json.loads(inspect_path.read_text(encoding="utf-8"))
@@ -150,6 +157,15 @@ def handler(job):
         if completed.returncode != 0:
             return {
                 "error": "Blender render failed",
+                "stdout": completed.stdout[-4000:],
+                "stderr": completed.stderr[-4000:],
+            }
+        if not metadata_path.exists() or not render_path.exists():
+            return {
+                "error": "Blender render produced no output files",
+                "returncode": completed.returncode,
+                "has_render": render_path.exists(),
+                "has_metadata": metadata_path.exists(),
                 "stdout": completed.stdout[-4000:],
                 "stderr": completed.stderr[-4000:],
             }
