@@ -1,0 +1,150 @@
+// Prisma schema — Phase 1 DATA-01 relational foundation.
+// Datasource uses the pooled DATABASE_URL for app traffic (serverless-safe,
+// connection_limit=1 set in the URL value) and DIRECT_URL for migrations only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled: ...?pgbouncer=true&connection_limit=1
+  directUrl = env("DIRECT_URL")   // direct connection: migrations only
+}
+
+enum Role {
+  Admin
+  Operator
+}
+
+// Defined up front so the Phase-8 importer can normalize legacy mixed-case statuses.
+enum JobStatus {
+  queued
+  submitted
+  in_queue
+  in_progress
+  completed
+  failed
+  cancelled
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(Operator)
+  disabled     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+// Admin-editable domain tables (NOT enums — PROJECT.md requires editability)
+model CameraView {
+  id        String @id @default(cuid())
+  key       String @unique
+  label     String
+  azimuth   Float
+  elevation Float
+  focalMm   Float
+  fStop     Float
+}
+
+model Metal {
+  id    String  @id @default(cuid())
+  key   String  @unique
+  label String
+  hex   String?
+}
+
+model StoneType {
+  id     String @id @default(cuid())
+  key    String @unique
+  label  String
+  preset Json?
+}
+
+model ObjectGroup {
+  id        String @id @default(cuid())
+  key       String @unique
+  label     String
+  sortOrder Int    @default(0)
+}
+
+model QualityPreset {
+  id      String @id @default(cuid())
+  key     String @unique
+  label   String
+  samples Int
+  width   Int    @default(1920)
+  height  Int    @default(1920)
+}
+
+// Core relational stubs (full use in later phases; created now so the model is stable — DATA-01)
+model Project {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id            String                  @id @default(cuid())
+  projectId     String?
+  project       Project?                @relation(fields: [projectId], references: [id])
+  name          String
+  modelUrl      String?
+  modelFormat   String?
+  inspectionUrl String?
+  status        String                  @default("draft")
+  createdAt     DateTime                @default(now())
+  assignments   ObjectGroupAssignment[]
+  batches       Batch[]
+}
+
+model ObjectGroupAssignment {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  group        String
+  objectTokens String[]
+}
+
+model Batch {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  createdById String?
+  status      String   @default("draft")
+  matrix      Json?
+  jobCount    Int      @default(0)
+  createdAt   DateTime @default(now())
+  jobs        Job[]
+}
+
+model Job {
+  id           String    @id @default(cuid())
+  batchId      String
+  batch        Batch     @relation(fields: [batchId], references: [id])
+  status       JobStatus @default(queued)
+  runpodJobId  String? // Phase-8 backfill: upsert legacy jobs by RunPod id
+  recipe       Json?
+  combo        Json?
+  attempt      Int       @default(0)
+  error        String?
+  outputPrefix String?
+  submittedAt  DateTime?
+  finishedAt   DateTime?
+  layers       Layer[]
+
+  @@index([batchId, status])
+}
+
+model Layer {
+  id          String  @id @default(cuid())
+  jobId       String
+  job         Job     @relation(fields: [jobId], references: [id])
+  pass        String
+  format      String
+  url         String
+  metadataUrl String?
+  isFlattened Boolean @default(false)
+}
