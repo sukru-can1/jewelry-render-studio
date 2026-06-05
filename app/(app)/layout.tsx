@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { auth } from "@/lib/auth/auth";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import { Toaster } from "@/app/components/ui/sonner";
 import { Sidebar } from "@/app/components/app-shell/sidebar";
 import { Topbar } from "@/app/components/app-shell/topbar";
 
@@ -32,6 +33,7 @@ export default async function AppLayout({
           </div>
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }
