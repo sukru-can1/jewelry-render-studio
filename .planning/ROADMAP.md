@@ -34,9 +34,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. An unauthenticated request to any app or API route is denied by default; only login and the secret-verified RunPod webhook are public, and an Operator session is rejected from Admin-only actions server-side
   4. An Admin can create, disable, and assign Admin/Operator roles to accounts
   5. Structured state persists in Railway Postgres via a pooled Prisma singleton (no pool exhaustion), seeded with the real 4 views / 3 metals / 4 groups / quality presets / 1920×1920 defaults; Blob outputs are private and served via an auth-gated proxy route
-**Plans**: 6 plans
+**Plans**: 7 plans
 Plans:
-- [ ] 01-01-PLAN.md — Foundation scaffold: pinned deps, Prisma schema + singleton + typed env, Vitest harness, shadcn/Tailwind v4 token layer (Wave 0)
+- [ ] 01-01-PLAN.md — Foundation scaffold: pinned deps, Prisma schema + singleton + typed env, Vitest harness (Wave 0)
+- [ ] 01-01b-PLAN.md — Design-token layer: shadcn/Tailwind v4 init + UI-SPEC teal tokens + Geist fonts, single reconciled globals.css (Wave 0)
 - [ ] 01-02-PLAN.md — DB live: [BLOCKING] migrate to Railway + exact domain seed (DATA-03) + pool-health test (Wave 1)
 - [ ] 01-03-PLAN.md — Auth core: split edge/Node config, Credentials login, requireRole RBAC, deny-by-default middleware, webhook secret (Wave 1)
 - [ ] 01-04-PLAN.md — Security hardening: lock Blob upload route, private-blob proxy (SEC-02), rotate leaked secrets (SEC-01) (Wave 2)
@@ -136,7 +137,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Secure Foundation (Secrets + DB + Auth) | 0/6 | Not started | - |
+| 1. Secure Foundation (Secrets + DB + Auth) | 0/7 | Not started | - |
 | 2. Product Workspace | 0/TBD | Not started | - |
 | 3. Batch Builder with Cost Guardrails | 0/TBD | Not started | - |
 | 4. Orchestration & Status | 0/TBD | Not started | - |
