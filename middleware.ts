@@ -1,0 +1,19 @@
+import NextAuth from "next-auth";
+
+import { authConfig } from "@/lib/auth/auth.config";
+
+// SEC-03 deny-by-default route gate. This runs on the Next.js EDGE runtime, so
+// it imports ONLY the edge-safe auth.config.ts — never auth.ts/Prisma/bcrypt
+// (RESEARCH Pitfall 1: importing Node modules here crashes the edge runtime).
+// The `authorized` callback in auth.config.ts denies every request without a
+// session except the matcher allowlist below.
+export const { auth: middleware } = NextAuth(authConfig);
+
+// Every route is gated EXCEPT: the Auth.js API (so users can sign in), /login,
+// Next static assets, the favicon, and the RunPod webhook (machine-to-machine;
+// authenticated by a shared secret inside its own handler — SEC-04).
+export const config = {
+  matcher: [
+    "/((?!api/auth|login|_next/static|_next/image|favicon.ico|api/webhooks/runpod).*)",
+  ],
+};
