@@ -19,7 +19,7 @@ beforeAll(async () => {
   // Run the seed twice up front to prove idempotency does not duplicate rows.
   await seedDomain();
   await seedDomain();
-});
+}, 60_000); // remote Railway round-trips + bcrypt(12) exceed the default 10s hook timeout
 
 afterAll(async () => {
   await prisma.$disconnect();
@@ -93,5 +93,5 @@ describe("DATA-03 domain seed", () => {
     expect(await prisma.objectGroup.count()).toBe(4);
     expect(await prisma.qualityPreset.count()).toBe(4);
     expect(await prisma.user.count({ where: { email: ADMIN_EMAIL } })).toBe(1);
-  });
+  }, 30_000);
 });
