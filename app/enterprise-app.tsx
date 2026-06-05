@@ -1,5 +1,6 @@
 "use client";
 
+import "./styles.css";
 import { upload } from "@vercel/blob/client";
 import {
   BadgeCheck,
