@@ -114,13 +114,55 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmap) | — | Pending |
+| SEC-01 | Phase 1 | Pending |
+| SEC-02 | Phase 1 | Pending |
+| SEC-03 | Phase 1 | Pending |
+| SEC-04 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| PROD-01 | Phase 2 | Pending |
+| PROD-02 | Phase 2 | Pending |
+| PROD-03 | Phase 2 | Pending |
+| PROD-04 | Phase 2 | Pending |
+| PROD-05 | Phase 2 | Pending |
+| DATA-04 | Phase 2 | Pending |
+| BATCH-01 | Phase 3 | Pending |
+| BATCH-02 | Phase 3 | Pending |
+| BATCH-03 | Phase 3 | Pending |
+| BATCH-04 | Phase 3 | Pending |
+| BATCH-05 | Phase 3 | Pending |
+| BATCH-06 | Phase 3 | Pending |
+| BATCH-07 | Phase 3 | Pending |
+| ORCH-01 | Phase 4 | Pending |
+| ORCH-02 | Phase 4 | Pending |
+| ORCH-03 | Phase 4 | Pending |
+| ORCH-04 | Phase 4 | Pending |
+| ORCH-05 | Phase 4 | Pending |
+| OUT-01 | Phase 5 | Pending |
+| OUT-02 | Phase 5 | Pending |
+| OUT-03 | Phase 5 | Pending |
+| COMP-01 | Phase 6 | Pending |
+| COMP-02 | Phase 6 | Pending |
+| COMP-03 | Phase 6 | Pending |
+| UI-01 | Phase 7 | Pending |
+| UI-02 | Phase 7 | Pending |
+| SEC-05 | Phase 8 | Pending |
+| DATA-05 | Phase 8 | Pending |
+| DEPLOY-01 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 38 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 38 ⚠️
+- v1 requirements: 41 total
+- Mapped to phases: 41 (100%) ✓
+- Unmapped: 0 ✓
+
+> Note: the prior summary line read "38 total" but the requirement list enumerates 41 distinct REQ-IDs (SEC×5, AUTH×5, DATA×5, PROD×5, BATCH×7, ORCH×5, OUT×3, COMP×3, UI×2, DEPLOY×1). All 41 are mapped.
 
 ---
 *Requirements defined: 2026-06-05*
-*Last updated: 2026-06-05 after initial definition*
+*Last updated: 2026-06-05 after roadmap creation (traceability mapped, 41/41 covered)*
