@@ -9,8 +9,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Security & Hardening
 
-- [ ] **SEC-01**: Previously-exposed RunPod API key is rotated and all secrets live only in environment variables (none committed)
-- [ ] **SEC-02**: Vercel Blob assets (models, renders, deliverables) are private, served via signed/time-limited URLs rather than public URLs
+- [x] **SEC-01**: Previously-exposed RunPod API key is rotated and all secrets live only in environment variables (none committed)
+- [x] **SEC-02**: Vercel Blob assets (models, renders, deliverables) are private, served via signed/time-limited URLs rather than public URLs
 - [x] **SEC-03**: Every app and API route denies access by default to unauthenticated requests
 - [x] **SEC-04**: Machine-to-machine endpoints (RunPod status webhook) authenticate via a shared secret, not open access
 - [ ] **SEC-05**: Hardcoded `ring99` model URL and local fallback recipe path are removed from API routes
@@ -114,8 +114,8 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | Phase 1 | Pending |
-| SEC-02 | Phase 1 | Pending |
+| SEC-01 | Phase 1 | Complete |
+| SEC-02 | Phase 1 | Complete |
 | SEC-03 | Phase 1 | Complete |
 | SEC-04 | Phase 1 | Complete |
 | AUTH-01 | Phase 1 | Complete |
