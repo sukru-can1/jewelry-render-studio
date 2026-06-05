@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 1 UI-SPEC approved
-last_updated: "2026-06-05T07:47:19.147Z"
+last_updated: "2026-06-05T12:17:01.407Z"
 last_activity: 2026-06-05
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 ## Current Position
 
 Phase: 01 (secure-foundation-secrets-db-auth) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-06-05
 
-Progress: [████░░░░░░] 43%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [████░░░░░░] 43%
 | Phase 01 P01-01 | 7 | 3 tasks | 10 files |
 | Phase 01 P01-01b | 16min | 1 tasks | 24 files |
 | Phase 01 P01-02 | 11 | 3 tasks | 6 files |
+| Phase 01 P01-03 | 25 | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 1: Added opposite-side Prisma relation fields the RESEARCH schema sketch omitted so prisma validate passes.
 - [Phase 01]: Phase 1 (01-01b): geist package for Geist Sans/Mono; shadcn aliases re-pointed to app/components/ui; legacy styles.css scoped to enterprise-app.tsx so layout.tsx keeps one global stylesheet (globals.css) with the UI-SPEC teal token layer.
 - [Phase ?]: Phase 1 (01-02): Applied init migration to live Railway Postgres; DATA-03 seeded with exact values (metal hex white #C4C4C4 / yellow #FFC356 / red #E09973, all presets 1920x1920); env-driven first Admin; pool healthy under 25-way concurrency.
+- [Phase ?]: Phase 1 (01-03): Split Auth.js v5 (beta.31) edge-safe auth.config.ts + Node auth.ts (Credentials authorize: prisma.findUnique + bcrypt.compare + disabled guard); requireRole() is the fail-closed RBAC boundary; deny-by-default middleware allowlists only /api/auth, /login, static, /api/webhooks/runpod; webhook gated by crypto.timingSafeEqual.
+- [Phase ?]: Phase 1 (01-03): Vitest needs resolve.alias next/server -> next/server.js + server.deps.inline next-auth/@auth/core to import the Node NextAuth instance; harness-only, runtime edge-safety unaffected.
 
 ### Pending Todos
 
@@ -97,6 +100,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-05T07:47:07.081Z
+Last session: 2026-06-05T12:14:27.604Z
 Stopped at: Phase 1 UI-SPEC approved
 Resume file: None

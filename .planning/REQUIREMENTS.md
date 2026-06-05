@@ -11,15 +11,15 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [ ] **SEC-01**: Previously-exposed RunPod API key is rotated and all secrets live only in environment variables (none committed)
 - [ ] **SEC-02**: Vercel Blob assets (models, renders, deliverables) are private, served via signed/time-limited URLs rather than public URLs
-- [ ] **SEC-03**: Every app and API route denies access by default to unauthenticated requests
-- [ ] **SEC-04**: Machine-to-machine endpoints (RunPod status webhook) authenticate via a shared secret, not open access
+- [x] **SEC-03**: Every app and API route denies access by default to unauthenticated requests
+- [x] **SEC-04**: Machine-to-machine endpoints (RunPod status webhook) authenticate via a shared secret, not open access
 - [ ] **SEC-05**: Hardcoded `ring99` model URL and local fallback recipe path are removed from API routes
 
 ### Authentication & Roles
 
-- [ ] **AUTH-01**: A team member can log in with credentials and stay logged in across browser refresh (JWT in HTTP-only cookie)
-- [ ] **AUTH-02**: A user can log out from any page
-- [ ] **AUTH-03**: Users have a role of Admin or Operator, stored and enforced server-side
+- [x] **AUTH-01**: A team member can log in with credentials and stay logged in across browser refresh (JWT in HTTP-only cookie)
+- [x] **AUTH-02**: A user can log out from any page
+- [x] **AUTH-03**: Users have a role of Admin or Operator, stored and enforced server-side
 - [ ] **AUTH-04**: An Admin can create, disable, and assign roles to user accounts
 - [ ] **AUTH-05**: Operators are blocked from Admin-only actions (domain settings, user management) by server-side checks, not just hidden UI
 
@@ -116,11 +116,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 |-------------|-------|--------|
 | SEC-01 | Phase 1 | Pending |
 | SEC-02 | Phase 1 | Pending |
-| SEC-03 | Phase 1 | Pending |
-| SEC-04 | Phase 1 | Pending |
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| SEC-03 | Phase 1 | Complete |
+| SEC-04 | Phase 1 | Complete |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Pending |
 | AUTH-05 | Phase 1 | Pending |
 | DATA-01 | Phase 1 | Complete |
