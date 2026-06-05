@@ -41,7 +41,7 @@ Plans:
 - [x] 01-02-PLAN.md — DB live: [BLOCKING] migrate to Railway + exact domain seed (DATA-03) + pool-health test (Wave 1)
 - [x] 01-03-PLAN.md — Auth core: split edge/Node config, Credentials login, requireRole RBAC, deny-by-default middleware, webhook secret (Wave 1)
 - [x] 01-04-PLAN.md — Security hardening: lock Blob upload route, private-blob proxy (SEC-02), rotate leaked secrets (SEC-01) (Wave 2)
-- [ ] 01-05-PLAN.md — Login + app shell vertical slice: login page, sidebar/topbar/user-menu/logout, 403 surface (Wave 2)
+- [x] 01-05-PLAN.md — Login + app shell vertical slice: login page, sidebar/topbar/user-menu/logout, 403 surface (Wave 2)
 - [ ] 01-06-PLAN.md — Admin slice: user CRUD + role assign behind requireRole(Admin), domain-settings view (Wave 3)
 **UI hint**: yes
 
@@ -137,7 +137,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Secure Foundation (Secrets + DB + Auth) | 5/7 | In Progress|  |
+| 1. Secure Foundation (Secrets + DB + Auth) | 6/7 | In Progress|  |
 | 2. Product Workspace | 0/TBD | Not started | - |
 | 3. Batch Builder with Cost Guardrails | 0/TBD | Not started | - |
 | 4. Orchestration & Status | 0/TBD | Not started | - |

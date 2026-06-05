@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-06-05T12:47:07.217Z"
+last_updated: "2026-06-05T13:43:34.274Z"
 last_activity: 2026-06-05
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 ## Current Position
 
 Phase: 01 (secure-foundation-secrets-db-auth) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-06-05
 
-Progress: [███████░░░] 71%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [███████░░░] 71%
 | Phase 01 P01-02 | 11 | 3 tasks | 6 files |
 | Phase 01 P01-03 | 25 | 3 tasks | 12 files |
 | Phase 01 P04 | 13 | 3 tasks | 5 files |
+| Phase 01 P01-05 | 25 | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Private-blob via auth-gated /api/file proxy using get with access private; no time-limited URLs (SEC-02)
 - [Phase ?]: Blob upload-token route locked behind requireSession in onBeforeGenerateToken; unauth POST = 401 with no token minted (SEC-02)
 - [Phase ?]: RunPod/Blob secret rotation recorded PENDING operator attestation in docs/SECRET_ROTATION.md; no secret literal in tracked source (SEC-01)
+- [Phase ?]: Phase 1 (01-05): Root app/page.tsx is now a thin auth-state redirect (no EnterpriseApp); authenticated landing at app/(app)/products/page.tsx so / no longer collides; login uses signIn(redirect:false) in a server action with generic error (no enumeration); sidebar ADMIN gating is UI-only (server requireRole authoritative in Plan 06).
 
 ### Pending Todos
 
@@ -104,6 +106,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-05T12:47:07.205Z
+Last session: 2026-06-05T13:42:57.373Z
 Stopped at: Completed 01-04-PLAN.md
 Resume file: None
