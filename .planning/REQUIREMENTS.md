@@ -72,7 +72,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### UI / Design System
 
 - [ ] **UI-01**: The interface is built with the `ui-ux-pro-max` skill, with a coherent design system (tokens, components) — influenced by Vercel, Notion, and RunPod: functional and cutting-edge, with no purple as the primary brand color
-- [ ] **UI-02**: Primary operator workflows (product workspace, batch builder, job monitor, gallery/compositing) are navigable, responsive, and show clear loading/empty/error/in-progress states
+- [x] **UI-02**: Primary operator workflows (product workspace, batch builder, job monitor, gallery/compositing) are navigable, responsive, and show clear loading/empty/error/in-progress states
 
 ### Deployment
 
@@ -151,7 +151,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | COMP-02 | Phase 6 | Pending |
 | COMP-03 | Phase 6 | Pending |
 | UI-01 | Phase 7 | Pending |
-| UI-02 | Phase 7 | Pending |
+| UI-02 | Phase 7 | Complete |
 | SEC-05 | Phase 8 | Pending |
 | DATA-05 | Phase 8 | Pending |
 | DEPLOY-01 | Phase 8 | Pending |
