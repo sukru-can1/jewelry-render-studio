@@ -7,16 +7,19 @@ __pycache__/
 node_modules/
 .next/
 .env
+.env.local
 .env.*
+.env*.local
 !.env.example
 
 .vercel
-.env*.local
 
 # Nested legacy Flask renderer — reference only, has its own git repo
 external-work/
 
 # Dev server logs
 *.log
+next-dev.*.log
 next-dev.err.log
 next-dev.out.log
+outputs/*.log
