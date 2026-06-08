@@ -34,6 +34,23 @@ const objectGroups = ["alloycolour", "diamond", "stone2", "stone3"].map((k, i) =
   sortOrder: i,
 }));
 
+// DATA-04 prerequisite (Phase 2): StoneType was never seeded in Phase 1, so the
+// Admin "Stone types" editor would edit an empty table. Seed a canonical set drawn
+// from the domain material system (CLAUDE.md). `preset` carries { type } (+ grade
+// where the domain encodes a quality grade). Upserted by `key` → idempotent.
+const stoneTypes = [
+  { key: "diamond", label: "Diamond", preset: { type: "diamond" } },
+  { key: "black_diamond", label: "Black Diamond", preset: { type: "black_diamond" } },
+  { key: "moissanite", label: "Moissanite", preset: { type: "moissanite" } },
+  { key: "ruby", label: "Ruby", preset: { type: "ruby" } },
+  { key: "sapphire", label: "Sapphire", preset: { type: "sapphire" } },
+  { key: "pink_sapphire", label: "Pink Sapphire", preset: { type: "pink_sapphire" } },
+  { key: "emerald", label: "Emerald", preset: { type: "emerald" } },
+  { key: "amethyst", label: "Amethyst", preset: { type: "amethyst" } },
+  { key: "aquamarine", label: "Aquamarine", preset: { type: "aquamarine" } },
+  { key: "morganite", label: "Morganite", preset: { type: "morganite" } },
+];
+
 const qualityPresets = [
   { key: "preview", label: "Preview", samples: 64, width: 1920, height: 1920 },
   { key: "medium", label: "Medium", samples: 256, width: 1920, height: 1920 },
@@ -53,6 +70,9 @@ export async function seedDomain(): Promise<void> {
   }
   for (const m of metals) {
     await prisma.metal.upsert({ where: { key: m.key }, update: m, create: m });
+  }
+  for (const s of stoneTypes) {
+    await prisma.stoneType.upsert({ where: { key: s.key }, update: s, create: s });
   }
   for (const g of objectGroups) {
     await prisma.objectGroup.upsert({ where: { key: g.key }, update: g, create: g });

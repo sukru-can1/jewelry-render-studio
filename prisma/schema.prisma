@@ -94,10 +94,30 @@ model Product {
   modelUrl      String?
   modelFormat   String?
   inspectionUrl String?
+  // Phase 2 status value convention: needs_inspection|inspecting|needs_groups|ready|inspection_failed
   status        String                  @default("draft")
   createdAt     DateTime                @default(now())
   assignments   ObjectGroupAssignment[]
   batches       Batch[]
+  inspections   Inspection[]
+}
+
+// Phase 2 PROD-02 — material inspection record. Deliberately NOT a Job (Job.batchId
+// is required, non-null; an inspection has no batch). status value convention:
+// in_queue|in_progress|completed|failed. `inventory` holds the parsed
+// inspect_materials.py output (MESH objects + materials).
+model Inspection {
+  id          String    @id @default(cuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  runpodJobId String?
+  status      String    @default("in_queue")
+  inventory   Json?
+  error       String?
+  createdAt   DateTime  @default(now())
+  finishedAt  DateTime?
+
+  @@index([productId])
 }
 
 model ObjectGroupAssignment {
