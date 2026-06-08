@@ -37,7 +37,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **PROD-02**: An operator can run material inspection on a product model and see the detected objects, material slots, and BSDF values
 - [x] **PROD-03**: An operator can assign each detected object to a group (alloycolour / diamond / stone2 / stone3) and save the assignment to the product
 - [x] **PROD-04**: A product's saved group assignment drives which objects are rendered or held out in each pass
-- [ ] **PROD-05**: An operator can browse and reopen previously created products
+- [x] **PROD-05**: An operator can browse and reopen previously created products
 
 ### Batch / Render-Job Builder
 
@@ -130,7 +130,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | PROD-02 | Phase 2 | Complete |
 | PROD-03 | Phase 2 | Complete |
 | PROD-04 | Phase 2 | Complete |
-| PROD-05 | Phase 2 | Pending |
+| PROD-05 | Phase 2 | Complete |
 | DATA-04 | Phase 2 | Complete |
 | BATCH-01 | Phase 3 | Pending |
 | BATCH-02 | Phase 3 | Pending |

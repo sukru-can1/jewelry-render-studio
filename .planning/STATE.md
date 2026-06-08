@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: verifying
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-06-08T13:51:08.320Z"
+last_updated: "2026-06-08T14:52:48.913Z"
 last_activity: 2026-06-08
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 12
-  completed_plans: 11
-  percent: 13
+  completed_plans: 12
+  percent: 25
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 
 Phase: 02 (product-workspace) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-08
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [█████████░] 92%
 | Phase 02 P02 | 50min | 2 tasks | 6 files |
 | Phase 02 P02-05 | 23min | 2 tasks | 6 files |
 | Phase 02 P02-03 | 23min | 2 tasks | 7 files |
+| Phase 02 P02-04 | 42 | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 02-05: settings save action is the AUTH-05 boundary (requireRole Admin first line); page redirect is convenience only
 - [Phase ?]: 02-05: StoneType editable list = deleteMany notIn(present keys) + per-row upsert in one transaction
 - [Phase ?]: 02-03: inspect dispatch uses an app-minted worker job_id (sidecar key) DISTINCT from the persisted RunPod job id (poll key); inventory sidecar read privately by pathname via get(access:private), never inventory_url (SEC-02); inspection polled on-demand (interval+focus, no webhook); Groups tab is a 02-04 placeholder
+- [Phase ?]: 02-04: ObjectGroupAssignment saved one-row-per-non-empty-group (delete-and-recreate transaction); objectTokens are signatures = Phase-3 holdout contains shape (PROD-04, persist-only)
+- [Phase ?]: 02-04 ASSUMPTION (RESEARCH Open Q4): ready = alloycolour>=1 AND no clearly-stone mesh unassigned; Phase 3 MUST revisit when consuming token shape for holdout
 
 ### Pending Todos
 
@@ -116,6 +119,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T13:50:12.281Z
+Last session: 2026-06-08T14:52:41.950Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
