@@ -13,7 +13,7 @@ This milestone wraps a new, hardened, multi-user product layer around the existi
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Secure Foundation (Secrets + DB + Auth)** - Rotate the leaked key, stand up pooled Prisma/Postgres seeded with real domain settings, and gate every route behind Admin/Operator auth with private Blob (completed 2026-06-08)
-- [x] **Phase 2: Product Workspace** - An operator uploads a model, inspects materials, assigns detected objects to groups, and an Admin can edit the seeded domain settings (completed 2026-06-08)
+- [x] **Phase 2: Product Workspace** - An operator uploads a model, inspects materials, assigns detected objects to groups, and an Admin can edit the seeded domain settings (completed 2026-06-08)
 - [ ] **Phase 3: Batch Builder with Cost Guardrails** - An operator builds a render matrix (angles × metals × per-group stones × passes) with a live count/cost estimate, hard cap, and preview-quality default
 - [ ] **Phase 4: Orchestration & Status** - Submitted batches render on RunPod with webhook-driven status, cron reconciliation, idempotent retry, progress, and cancel
 - [ ] **Phase 5: Outputs Gallery & Layered Passes** - Completed renders appear as layered holdout outputs (metal JPEG + per-stone transparent PNG) browsable by product/metal/angle/pass with per-layer download
@@ -75,7 +75,11 @@ Plans:
   2. The builder shows a live job count and cost/time estimate of the current selection before submission
   3. The builder enforces a hard cap on jobs per batch, defaults to preview quality, and requires explicit confirmation above a threshold
   4. Submitting expands the matrix into one job per (angle × metal × stone-assignment × pass) combination, each with a generated recipe, created transactionally (all-or-none)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 03-01-PLAN.md — Wave 0 contracts: pure estimate/cap config + domain→recipe binding + selection zod schema + failing E2E scaffold (BATCH-03/05/06/07) (Wave 0)
+- [ ] 03-02-PLAN.md — Fan-out core: combo expansion + recipe-per-combo (reuse buildEnterpriseRecipe) + createBatch action (auth/IDOR/server-cap/transaction) (BATCH-04/06/07) (Wave 1)
+- [ ] 03-03-PLAN.md — Builder UI slice: live estimate panel + multi-select selectors + stone-type picker + confirm/cap + submit + Build-batch launch button (BATCH-01/02/03/04/05/06) (Wave 2)
 **UI hint**: yes
 
 ### Phase 4: Orchestration & Status
@@ -145,7 +149,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 |-------|----------------|--------|-----------|
 | 1. Secure Foundation (Secrets + DB + Auth) | 7/7 | Complete   | 2026-06-08 |
 | 2. Product Workspace | 5/5 | Complete   | 2026-06-08 |
-| 3. Batch Builder with Cost Guardrails | 0/TBD | Not started | - |
+| 3. Batch Builder with Cost Guardrails | 0/3 | Not started | - |
 | 4. Orchestration & Status | 0/TBD | Not started | - |
 | 5. Outputs Gallery & Layered Passes | 0/TBD | Not started | - |
 | 6. Compositing & Deliverable | 0/TBD | Not started | - |
