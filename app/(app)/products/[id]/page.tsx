@@ -17,6 +17,7 @@ import { loadAssignments } from "@/lib/products/assignments";
 
 import { InspectPanel } from "./inspect-panel";
 import { GroupAssignment } from "./group-assignment";
+import { BuildBatchButton } from "./build-batch-button";
 
 // UI-SPEC §3 — Product detail (Overview | Materials | Groups). requireSession()
 // first line (T-02-12; an Operator must be authenticated to view a product).
@@ -92,6 +93,9 @@ export default async function ProductDetailPage({
             {product.name}
           </h1>
           <Badge variant={pill.variant}>{pill.label}</Badge>
+          <div className="ml-auto">
+            <BuildBatchButton productId={product.id} status={product.status} />
+          </div>
         </div>
         <p className="font-mono text-xs text-muted-foreground">
           {formatModelLine(product.modelUrl, product.modelFormat)}
