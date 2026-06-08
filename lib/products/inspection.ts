@@ -16,6 +16,8 @@ import { randomUUID } from "node:crypto";
 import { get } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 
+import type { Prisma } from "@prisma/client";
+
 import { requireSession } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { workerModelUrl } from "@/lib/blob";
@@ -113,7 +115,9 @@ export async function pollInspection(inspectionId: string): Promise<ActionResult
       where: { id: inspectionId },
       data: {
         status: "completed",
-        inventory: inventory ?? undefined,
+        // ParsedInventory is a plain JSON-serializable object; cast to Prisma's
+        // JSON input type (it lacks a string index signature ParsedInventory misses).
+        inventory: (inventory ?? undefined) as Prisma.InputJsonValue | undefined,
         finishedAt: new Date(),
       },
     });
