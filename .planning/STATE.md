@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-06-08T12:47:00.269Z"
+last_updated: "2026-06-08T13:15:43.718Z"
 last_activity: 2026-06-08
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 12
-  completed_plans: 9
+  completed_plans: 10
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 ## Current Position
 
 Phase: 02 (product-workspace) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-06-08
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [████████░░] 75%
 | Phase 01 P01-05 | 25 | 3 tasks | 11 files |
 | Phase 02 P02-01 | 38 | 3 tasks | 13 files |
 | Phase 02 P02 | 50min | 2 tasks | 6 files |
+| Phase 02 P02-05 | 23min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Phase 2 (02-01): Dedicated Inspection model migrated to live DB; StoneType seeded (10 rows) idempotently; upload tokens access:private + workerModelUrl signed-GET URL via issueSignedToken+presignUrl, no public fallback (SEC-02).
 - [Phase ?]: 02-02: createProduct returns { ok, id } instead of server-side redirect (unit-testable); client form router.pushes
 - [Phase ?]: 02-02: store blob pathname into Product.modelUrl (never the url); private delivery via /api/file proxy (T-02-06)
+- [Phase ?]: 02-05: settings save action is the AUTH-05 boundary (requireRole Admin first line); page redirect is convenience only
+- [Phase ?]: 02-05: StoneType editable list = deleteMany notIn(present keys) + per-row upsert in one transaction
 
 ### Pending Todos
 
@@ -111,6 +114,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T12:43:15.657Z
+Last session: 2026-06-08T13:15:27.594Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
