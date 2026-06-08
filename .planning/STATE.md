@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-06-08T10:50:38.221Z"
+last_updated: "2026-06-08T12:47:00.269Z"
 last_activity: 2026-06-08
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 12
-  completed_plans: 8
+  completed_plans: 9
   percent: 13
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 ## Current Position
 
 Phase: 02 (product-workspace) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-06-08
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [███████░░░] 67%
 | Phase 01 P04 | 13 | 3 tasks | 5 files |
 | Phase 01 P01-05 | 25 | 3 tasks | 11 files |
 | Phase 02 P02-01 | 38 | 3 tasks | 13 files |
+| Phase 02 P02 | 50min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase ?]: RunPod/Blob secret rotation recorded PENDING operator attestation in docs/SECRET_ROTATION.md; no secret literal in tracked source (SEC-01)
 - [Phase ?]: Phase 1 (01-05): Root app/page.tsx is now a thin auth-state redirect (no EnterpriseApp); authenticated landing at app/(app)/products/page.tsx so / no longer collides; login uses signIn(redirect:false) in a server action with generic error (no enumeration); sidebar ADMIN gating is UI-only (server requireRole authoritative in Plan 06).
 - [Phase ?]: Phase 2 (02-01): Dedicated Inspection model migrated to live DB; StoneType seeded (10 rows) idempotently; upload tokens access:private + workerModelUrl signed-GET URL via issueSignedToken+presignUrl, no public fallback (SEC-02).
+- [Phase ?]: 02-02: createProduct returns { ok, id } instead of server-side redirect (unit-testable); client form router.pushes
+- [Phase ?]: 02-02: store blob pathname into Product.modelUrl (never the url); private delivery via /api/file proxy (T-02-06)
 
 ### Pending Todos
 
@@ -108,6 +111,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T10:50:38.201Z
+Last session: 2026-06-08T12:43:15.657Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
