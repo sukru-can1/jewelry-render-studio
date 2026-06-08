@@ -56,12 +56,15 @@ import { saveAssignments, loadAssignments } from "@/lib/products/assignments";
 
 // A small inventory: one metal mesh + one clearly-stone mesh (diamond). Used to
 // drive the status recompute (a stone mesh left unassigned must NOT be 'ready').
+// Shaped as raw inspect_materials output so parseInventory computes signatures
+// "band_metal gold" and "center_diamond glass".
 function inventory() {
   return {
     objects: [
-      { name: "band_metal", signature: "band_metal gold" },
-      { name: "center_diamond", signature: "center_diamond glass" },
+      { name: "band_metal", type: "MESH", material_slots: ["Gold"] },
+      { name: "center_diamond", type: "MESH", material_slots: ["Glass"] },
     ],
+    materials: [],
   };
 }
 
