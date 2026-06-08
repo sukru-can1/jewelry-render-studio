@@ -17,7 +17,7 @@ created: 2026-06-05
 
 | Property | Value |
 |----------|-------|
-| **Framework** | Vitest 2.x (already installed in Phase 1) |
+| **Framework** | Vitest 4.1.8 (already installed in Phase 1) |
 | **Config file** | `vitest.config.ts` (exists) |
 | **Quick run command** | `npx vitest run --reporter=dot` |
 | **Full suite command** | `npx vitest run` |
