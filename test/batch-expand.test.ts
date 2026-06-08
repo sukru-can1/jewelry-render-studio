@@ -14,6 +14,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildPasses, expandCombos } from "@/lib/batches/expand";
+import type { EnterpriseGroupTokens } from "@/lib/enterprise-recipes";
 
 describe("buildPasses (BATCH-04)", () => {
   it("always includes metal-only when 'metal' is selected", () => {
@@ -28,7 +29,8 @@ describe("buildPasses (BATCH-04)", () => {
       { pass: "stone", stoneGroup: "diamond" },
       { pass: "stone", stoneGroup: "stone2" },
     ]);
-    expect(passes.some((p) => p.pass === "full")).toBe(false);
+    // "full" is never produced — the pass values are only "metal" | "stone".
+    expect(passes.map((p) => p.pass)).not.toContain("full");
   });
 
   it("ignores a selected stone group the product does NOT have", () => {
@@ -47,12 +49,12 @@ describe("buildPasses (BATCH-04)", () => {
 });
 
 describe("expandCombos (BATCH-07/03)", () => {
-  const groupTokens = {
+  const groupTokens: EnterpriseGroupTokens = {
     alloycolour: ["band_metal gold"],
     diamond: ["center_diamond glass"],
     stone2: [],
     stone3: [],
-  } as const;
+  };
 
   it("emits exactly |angles|×|metals|×|passes| rows", () => {
     // 2 angles × 2 metals × 3 passes = 12.

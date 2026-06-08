@@ -44,13 +44,7 @@ vi.mock("@/lib/db/prisma", () => ({ prisma: prismaMock }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-// RED until 03-02 implements createBatch — this import currently fails to resolve.
-// The @ts-expect-error keeps `tsc --noEmit` green (the module is a planned 03-02
-// artifact) while the test still fails at RUNTIME import-resolution under vitest —
-// that runtime failure is the documented Wave-0 RED state. The directive itself
-// becomes unused (and will error) the moment 03-02 lands the module, prompting its
-// removal.
-// @ts-expect-error -- @/lib/batches/actions is implemented in 03-02 (documented RED).
+// 03-02 implemented createBatch — this resolves and the e2e suite is now GREEN.
 import { createBatch } from "@/lib/batches/actions";
 
 beforeEach(() => {

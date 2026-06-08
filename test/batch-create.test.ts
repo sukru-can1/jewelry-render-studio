@@ -28,13 +28,11 @@ vi.mock("@/lib/auth/rbac", () => ({
 const batchMock = vi.hoisted(() => ({ create: vi.fn() }));
 const jobMock = vi.hoisted(() => ({ createMany: vi.fn() }));
 const productMock = vi.hoisted(() => ({ findUnique: vi.fn() }));
-const assignmentMock = vi.hoisted(() => ({ findMany: vi.fn() }));
 const qualityMock = vi.hoisted(() => ({ findFirst: vi.fn() }));
 const prismaMock = vi.hoisted(() => ({
   batch: batchMock,
   job: jobMock,
   product: productMock,
-  objectGroupAssignment: assignmentMock,
   qualityPreset: qualityMock,
   $transaction: vi.fn(async (arg: unknown) => {
     if (typeof arg === "function") {
@@ -49,15 +47,18 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import { createBatch } from "@/lib/batches/actions";
 
-// A ready product with alloycolour + diamond groups assigned.
+// A ready product with alloycolour + diamond groups assigned (assignments embedded
+// via the findUnique include, matching the 03-01 e2e harness contract).
 function readyProduct() {
-  return { id: "p1", name: "Ring 99", status: "ready" };
-}
-function assignments() {
-  return [
-    { group: "alloycolour", objectTokens: ["band_metal gold"] },
-    { group: "diamond", objectTokens: ["center_diamond glass"] },
-  ];
+  return {
+    id: "p1",
+    name: "Ring 99",
+    status: "ready",
+    assignments: [
+      { group: "alloycolour", objectTokens: ["band_metal gold"] },
+      { group: "diamond", objectTokens: ["center_diamond glass"] },
+    ],
+  };
 }
 function quality() {
   return { key: "preview", samples: 64, width: 1024, height: 1024 };
@@ -79,14 +80,12 @@ beforeEach(() => {
   batchMock.create.mockReset();
   jobMock.createMany.mockReset();
   productMock.findUnique.mockReset();
-  assignmentMock.findMany.mockReset();
   qualityMock.findFirst.mockReset();
   prismaMock.$transaction.mockClear();
   requireSessionMock.mockReset();
   requireSessionMock.mockResolvedValue(fakeSession("Operator"));
 
   productMock.findUnique.mockResolvedValue(readyProduct());
-  assignmentMock.findMany.mockResolvedValue(assignments());
   qualityMock.findFirst.mockResolvedValue(quality());
   batchMock.create.mockResolvedValue({ id: "b1", jobCount: 4 });
   jobMock.createMany.mockResolvedValue({ count: 4 });
@@ -130,12 +129,34 @@ describe("createBatch — security boundary", () => {
 });
 
 describe("createBatch — server cap (BATCH-06)", () => {
-  it("rejects > HARD_CAP recomputed server-side with NO write (201 jobs)", async () => {
-    // 201 angles × 1 metal × 1 pass = 201 jobs > HARD_CAP (200).
-    const manyAngles = Array.from({ length: 201 }, (_, i) => `view${i + 1}`);
-    qualityMock.findFirst.mockResolvedValue(quality());
+  // The cap is recomputed from the VALIDATED selection using the same formula as the
+  // client estimate: |angleViewKeys| × |metalKeys| × passCount. A product with two
+  // present stone groups lets passCount reach 3 (metal+diamond+stone2) so the 200
+  // boundary is exercisable within the zod array caps (angles<=50, valid metals<=3).
+  function twoStoneProduct() {
+    return {
+      id: "p1",
+      name: "Ring 99",
+      status: "ready",
+      assignments: [
+        { group: "alloycolour", objectTokens: ["band_metal gold"] },
+        { group: "diamond", objectTokens: ["center_diamond glass"] },
+        { group: "stone2", objectTokens: ["accent stone2"] },
+      ],
+    };
+  }
+  const angles50 = Array.from({ length: 50 }, (_, i) => `view${i + 1}`);
+
+  it("rejects > HARD_CAP recomputed server-side with NO write", async () => {
+    // 50 angles × 2 metals × 3 passes (metal+diamond+stone2) = 300 > HARD_CAP (200).
+    productMock.findUnique.mockResolvedValue(twoStoneProduct());
     const result = await createBatch(
-      validInput({ angleViewKeys: manyAngles, passes: ["metal"], stoneTypeByGroup: {} }),
+      validInput({
+        angleViewKeys: angles50,
+        metalKeys: ["white", "yellow"],
+        stoneTypeByGroup: { diamond: "diamond", stone2: "sapphire" },
+        passes: ["metal", "diamond", "stone2"],
+      }),
     );
     expect(result.ok).toBe(false);
     expect(batchMock.create).not.toHaveBeenCalled();
@@ -143,15 +164,17 @@ describe("createBatch — server cap (BATCH-06)", () => {
   });
 
   it("accepts exactly HARD_CAP jobs (200 boundary, inclusive)", async () => {
-    // 200 angles × 1 metal × 1 pass = 200 == HARD_CAP -> allowed.
     expect(BATCH_LIMITS.HARD_CAP).toBe(200);
-    const angles = Array.from({ length: 200 }, (_, i) => `view${i + 1}`);
+    // 50 angles × 2 metals × 2 passes (metal+diamond) = 200 == HARD_CAP -> allowed.
+    productMock.findUnique.mockResolvedValue(twoStoneProduct());
     const result = await createBatch(
-      validInput({ angleViewKeys: angles, passes: ["metal"], stoneTypeByGroup: {} }),
+      validInput({
+        angleViewKeys: angles50,
+        metalKeys: ["white", "yellow"],
+        stoneTypeByGroup: { diamond: "diamond" },
+        passes: ["metal", "diamond"],
+      }),
     );
-    // Note: only 4 angles map (binding caps at 4); but the SERVER cap test is about
-    // the count computed from the validated selection — here resolved angles drive
-    // it. With binding curating >4 views to null, the realized count is 4 -> ok.
     expect(result.ok).toBe(true);
   });
 });
