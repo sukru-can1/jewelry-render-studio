@@ -78,7 +78,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 03-01-PLAN.md — Wave 0 contracts: pure estimate/cap config + domain→recipe binding + selection zod schema + failing E2E scaffold (BATCH-03/05/06/07) (Wave 0)
-- [ ] 03-02-PLAN.md — Fan-out core: combo expansion + recipe-per-combo (reuse buildEnterpriseRecipe) + createBatch action (auth/IDOR/server-cap/transaction) (BATCH-04/06/07) (Wave 1)
+- [x] 03-02-PLAN.md — Fan-out core: combo expansion + recipe-per-combo (reuse buildEnterpriseRecipe) + createBatch action (auth/IDOR/server-cap/transaction) (BATCH-04/06/07) (Wave 1)
 - [ ] 03-03-PLAN.md — Builder UI slice: live estimate panel + multi-select selectors + stone-type picker + confirm/cap + submit + Build-batch launch button (BATCH-01/02/03/04/05/06) (Wave 2)
 **UI hint**: yes
 
@@ -149,7 +149,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 |-------|----------------|--------|-----------|
 | 1. Secure Foundation (Secrets + DB + Auth) | 7/7 | Complete   | 2026-06-08 |
 | 2. Product Workspace | 5/5 | Complete   | 2026-06-08 |
-| 3. Batch Builder with Cost Guardrails | 1/3 | In Progress|  |
+| 3. Batch Builder with Cost Guardrails | 2/3 | In Progress|  |
 | 4. Orchestration & Status | 0/TBD | Not started | - |
 | 5. Outputs Gallery & Layered Passes | 0/TBD | Not started | - |
 | 6. Compositing & Deliverable | 0/TBD | Not started | - |

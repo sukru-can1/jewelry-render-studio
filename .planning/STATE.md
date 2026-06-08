@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-06-08T16:47:58.843Z"
+last_updated: "2026-06-08T17:24:20.532Z"
 last_activity: 2026-06-08
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 ## Current Position
 
 Phase: 03 (batch-builder-with-cost-guardrails) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-06-08
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [█████████░] 87%
 | Phase 02 P02-03 | 23min | 2 tasks | 7 files |
 | Phase 02 P02-04 | 42 | 3 tasks | 12 files |
 | Phase 03 P03-01 | 24 | 3 tasks | 6 files |
+| Phase 03 P03-02 | 30m | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 02-03: inspect dispatch uses an app-minted worker job_id (sidecar key) DISTINCT from the persisted RunPod job id (poll key); inventory sidecar read privately by pathname via get(access:private), never inventory_url (SEC-02); inspection polled on-demand (interval+focus, no webhook); Groups tab is a 02-04 placeholder
 - [Phase ?]: 02-04: ObjectGroupAssignment saved one-row-per-non-empty-group (delete-and-recreate transaction); objectTokens are signatures = Phase-3 holdout contains shape (PROD-04, persist-only)
 - [Phase ?]: 02-04 ASSUMPTION (RESEARCH Open Q4): ready = alloycolour>=1 AND no clearly-stone mesh unassigned; Phase 3 MUST revisit when consuming token shape for holdout
+- [Phase ?]: 03-02 createBatch re-enforces HARD_CAP server-side; Batch+N Jobs in one all-or-none transaction status queued; no RunPod in Phase 3
 
 ### Pending Todos
 
@@ -120,6 +122,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T16:44:44.301Z
+Last session: 2026-06-08T17:23:56.375Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
