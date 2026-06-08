@@ -12,7 +12,7 @@ This milestone wraps a new, hardened, multi-user product layer around the existi
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Secure Foundation (Secrets + DB + Auth)** - Rotate the leaked key, stand up pooled Prisma/Postgres seeded with real domain settings, and gate every route behind Admin/Operator auth with private Blob
+- [x] **Phase 1: Secure Foundation (Secrets + DB + Auth)** - Rotate the leaked key, stand up pooled Prisma/Postgres seeded with real domain settings, and gate every route behind Admin/Operator auth with private Blob (completed 2026-06-08)
 - [ ] **Phase 2: Product Workspace** - An operator uploads a model, inspects materials, assigns detected objects to groups, and an Admin can edit the seeded domain settings
 - [ ] **Phase 3: Batch Builder with Cost Guardrails** - An operator builds a render matrix (angles × metals × per-group stones × passes) with a live count/cost estimate, hard cap, and preview-quality default
 - [ ] **Phase 4: Orchestration & Status** - Submitted batches render on RunPod with webhook-driven status, cron reconciliation, idempotent retry, progress, and cancel
@@ -42,7 +42,7 @@ Plans:
 - [x] 01-03-PLAN.md — Auth core: split edge/Node config, Credentials login, requireRole RBAC, deny-by-default middleware, webhook secret (Wave 1)
 - [x] 01-04-PLAN.md — Security hardening: lock Blob upload route, private-blob proxy (SEC-02), rotate leaked secrets (SEC-01) (Wave 2)
 - [x] 01-05-PLAN.md — Login + app shell vertical slice: login page, sidebar/topbar/user-menu/logout, 403 surface (Wave 2)
-- [ ] 01-06-PLAN.md — Admin slice: user CRUD + role assign behind requireRole(Admin), domain-settings view (Wave 3)
+- [x] 01-06-PLAN.md — Admin slice: user CRUD + role assign behind requireRole(Admin), domain-settings view (Wave 3)
 **UI hint**: yes
 
 ### Phase 2: Product Workspace
@@ -137,7 +137,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Secure Foundation (Secrets + DB + Auth) | 6/7 | In Progress|  |
+| 1. Secure Foundation (Secrets + DB + Auth) | 7/7 | Complete   | 2026-06-08 |
 | 2. Product Workspace | 0/TBD | Not started | - |
 | 3. Batch Builder with Cost Guardrails | 0/TBD | Not started | - |
 | 4. Orchestration & Status | 0/TBD | Not started | - |

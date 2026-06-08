@@ -20,8 +20,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **AUTH-01**: A team member can log in with credentials and stay logged in across browser refresh (JWT in HTTP-only cookie)
 - [x] **AUTH-02**: A user can log out from any page
 - [x] **AUTH-03**: Users have a role of Admin or Operator, stored and enforced server-side
-- [ ] **AUTH-04**: An Admin can create, disable, and assign roles to user accounts
-- [ ] **AUTH-05**: Operators are blocked from Admin-only actions (domain settings, user management) by server-side checks, not just hidden UI
+- [x] **AUTH-04**: An Admin can create, disable, and assign roles to user accounts
+- [x] **AUTH-05**: Operators are blocked from Admin-only actions (domain settings, user management) by server-side checks, not just hidden UI
 
 ### Data & Domain Settings
 
