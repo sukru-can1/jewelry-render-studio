@@ -41,11 +41,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Batch / Render-Job Builder
 
-- [ ] **BATCH-01**: An operator can build a render batch for a product by selecting multiple camera angles
-- [ ] **BATCH-02**: An operator can select multiple metals for a batch
+- [x] **BATCH-01**: An operator can build a render batch for a product by selecting multiple camera angles
+- [x] **BATCH-02**: An operator can select multiple metals for a batch
 - [x] **BATCH-03**: An operator can select a stone type per stone group (center/diamond, stone2, stone3) for a batch
 - [x] **BATCH-04**: An operator can choose which layered passes to produce: metal-only (alloycolour) plus each selected stone group separately
-- [ ] **BATCH-05**: The builder shows a live count and cost/time estimate of the jobs the current selection will generate before submission
+- [x] **BATCH-05**: The builder shows a live count and cost/time estimate of the jobs the current selection will generate before submission
 - [x] **BATCH-06**: The builder enforces a hard cap on total jobs per batch and defaults to a preview-quality setting to prevent runaway GPU cost
 - [x] **BATCH-07**: Submitting a batch expands the matrix into one job per (angle × metal × stone-assignment × pass) combination, each with a generated recipe
 
@@ -132,11 +132,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | PROD-04 | Phase 2 | Complete |
 | PROD-05 | Phase 2 | Complete |
 | DATA-04 | Phase 2 | Complete |
-| BATCH-01 | Phase 3 | Pending |
-| BATCH-02 | Phase 3 | Pending |
+| BATCH-01 | Phase 3 | Complete |
+| BATCH-02 | Phase 3 | Complete |
 | BATCH-03 | Phase 3 | Complete |
 | BATCH-04 | Phase 3 | Complete |
-| BATCH-05 | Phase 3 | Pending |
+| BATCH-05 | Phase 3 | Complete |
 | BATCH-06 | Phase 3 | Complete |
 | BATCH-07 | Phase 3 | Complete |
 | ORCH-01 | Phase 4 | Pending |

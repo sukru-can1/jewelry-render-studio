@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: verifying
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-06-08T17:24:20.532Z"
+last_updated: "2026-06-08T17:50:44.041Z"
 last_activity: 2026-06-08
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 14
-  percent: 25
+  completed_plans: 15
+  percent: 38
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 
 Phase: 03 (batch-builder-with-cost-guardrails) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-08
 
-Progress: [█████████░] 93%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [█████████░] 93%
 | Phase 02 P02-04 | 42 | 3 tasks | 12 files |
 | Phase 03 P03-01 | 24 | 3 tasks | 6 files |
 | Phase 03 P03-02 | 30m | 2 tasks | 5 files |
+| Phase 03 P03-03 | 25 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 02-04: ObjectGroupAssignment saved one-row-per-non-empty-group (delete-and-recreate transaction); objectTokens are signatures = Phase-3 holdout contains shape (PROD-04, persist-only)
 - [Phase ?]: 02-04 ASSUMPTION (RESEARCH Open Q4): ready = alloycolour>=1 AND no clearly-stone mesh unassigned; Phase 3 MUST revisit when consuming token shape for holdout
 - [Phase ?]: 03-02 createBatch re-enforces HARD_CAP server-side; Batch+N Jobs in one all-or-none transaction status queued; no RunPod in Phase 3
+- [Phase ?]: Batch builder consumes single-source BATCH_LIMITS/countJobs/estimate/zone; no redefined thresholds in components
+- [Phase ?]: Builder page branch/selector shape lives in pure lib/batches/builder-data.ts for harness-style unit testing of the no-assignment guard
 
 ### Pending Todos
 
@@ -122,6 +125,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T17:23:56.375Z
+Last session: 2026-06-08T17:50:34.665Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
