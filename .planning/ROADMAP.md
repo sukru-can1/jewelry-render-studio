@@ -61,7 +61,7 @@ Plans:
 - [x] 02-01-PLAN.md — Wave 0 foundation: Inspection model + migration, StoneType seed, private upload-token fix, inventory parser + token-assist, validation schemas, workerModelUrl (Wave 0)
 - [x] 02-02-PLAN.md — Product create + private model upload slice (PROD-01) (Wave 1)
 - [x] 02-05-PLAN.md — Admin domain-settings edit incl. StoneType CRUD (DATA-04) (Wave 1)
-- [ ] 02-03-PLAN.md — Inspection dispatch + poll + inventory viewer; product detail tabs (PROD-02) (Wave 2)
+- [x] 02-03-PLAN.md — Inspection dispatch + poll + inventory viewer; product detail tabs (PROD-02) (Wave 2)
 - [ ] 02-04-PLAN.md — Object→group assignment + products list/reopen (PROD-03/04/05) (Wave 3)
 **UI hint**: yes
 
@@ -144,7 +144,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Secure Foundation (Secrets + DB + Auth) | 7/7 | Complete   | 2026-06-08 |
-| 2. Product Workspace | 3/5 | In Progress|  |
+| 2. Product Workspace | 4/5 | In Progress|  |
 | 3. Batch Builder with Cost Guardrails | 0/TBD | Not started | - |
 | 4. Orchestration & Status | 0/TBD | Not started | - |
 | 5. Outputs Gallery & Layered Passes | 0/TBD | Not started | - |
