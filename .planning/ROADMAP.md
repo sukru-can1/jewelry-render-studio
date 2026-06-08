@@ -58,7 +58,7 @@ Plans:
   5. An Admin can view and edit domain settings (camera views, metals, stone types, quality presets) and the changes apply to new batches
 **Plans**: 5 plans
 Plans:
-- [ ] 02-01-PLAN.md — Wave 0 foundation: Inspection model + migration, StoneType seed, private upload-token fix, inventory parser + token-assist, validation schemas, workerModelUrl (Wave 0)
+- [x] 02-01-PLAN.md — Wave 0 foundation: Inspection model + migration, StoneType seed, private upload-token fix, inventory parser + token-assist, validation schemas, workerModelUrl (Wave 0)
 - [ ] 02-02-PLAN.md — Product create + private model upload slice (PROD-01) (Wave 1)
 - [ ] 02-05-PLAN.md — Admin domain-settings edit incl. StoneType CRUD (DATA-04) (Wave 1)
 - [ ] 02-03-PLAN.md — Inspection dispatch + poll + inventory viewer; product detail tabs (PROD-02) (Wave 2)
@@ -144,7 +144,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Secure Foundation (Secrets + DB + Auth) | 7/7 | Complete   | 2026-06-08 |
-| 2. Product Workspace | 0/5 | Not started | - |
+| 2. Product Workspace | 1/5 | In Progress|  |
 | 3. Batch Builder with Cost Guardrails | 0/TBD | Not started | - |
 | 4. Orchestration & Status | 0/TBD | Not started | - |
 | 5. Outputs Gallery & Layered Passes | 0/TBD | Not started | - |

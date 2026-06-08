@@ -28,15 +28,15 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **DATA-01**: Structured state (users, projects, products, object-group assignments, batches, jobs, outputs) is persisted in Postgres via Prisma
 - [x] **DATA-02**: Prisma uses a pooled connection configuration safe for Vercel serverless (no pool exhaustion under concurrent requests)
 - [x] **DATA-03**: Domain settings are seeded from the rendering team's real values: 4 camera views (view1 az30/el25, view2 az180/el15, view3 az−30/el10, view4 az0/el75), 3 metals (white = White Gold/Platinum, yellow = 18K Yellow Gold, red = Rose Gold), 4 object groups (alloycolour, diamond, stone2, stone3), quality presets (preview 64 / medium 256 / high 512 / ultra), default 1920×1920
-- [ ] **DATA-04**: An Admin can view and edit domain settings (camera views, metals, stone types, quality presets) and changes apply to new batches
+- [x] **DATA-04**: An Admin can view and edit domain settings (camera views, metals, stone types, quality presets) and changes apply to new batches
 - [ ] **DATA-05**: Existing render history from the prior Blob job-state is preserved or migrated into the new store (no silent loss of past work)
 
 ### Product Workspace
 
-- [ ] **PROD-01**: An operator can create a product and upload its 3D model (GLB/FBX/BLEND/OBJ/STL) via direct-to-Blob client upload
-- [ ] **PROD-02**: An operator can run material inspection on a product model and see the detected objects, material slots, and BSDF values
-- [ ] **PROD-03**: An operator can assign each detected object to a group (alloycolour / diamond / stone2 / stone3) and save the assignment to the product
-- [ ] **PROD-04**: A product's saved group assignment drives which objects are rendered or held out in each pass
+- [x] **PROD-01**: An operator can create a product and upload its 3D model (GLB/FBX/BLEND/OBJ/STL) via direct-to-Blob client upload
+- [x] **PROD-02**: An operator can run material inspection on a product model and see the detected objects, material slots, and BSDF values
+- [x] **PROD-03**: An operator can assign each detected object to a group (alloycolour / diamond / stone2 / stone3) and save the assignment to the product
+- [x] **PROD-04**: A product's saved group assignment drives which objects are rendered or held out in each pass
 - [ ] **PROD-05**: An operator can browse and reopen previously created products
 
 ### Batch / Render-Job Builder
@@ -126,12 +126,12 @@ Which phases cover which requirements. Populated during roadmap creation.
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
 | DATA-03 | Phase 1 | Complete |
-| PROD-01 | Phase 2 | Pending |
-| PROD-02 | Phase 2 | Pending |
-| PROD-03 | Phase 2 | Pending |
-| PROD-04 | Phase 2 | Pending |
+| PROD-01 | Phase 2 | Complete |
+| PROD-02 | Phase 2 | Complete |
+| PROD-03 | Phase 2 | Complete |
+| PROD-04 | Phase 2 | Complete |
 | PROD-05 | Phase 2 | Pending |
-| DATA-04 | Phase 2 | Pending |
+| DATA-04 | Phase 2 | Complete |
 | BATCH-01 | Phase 3 | Pending |
 | BATCH-02 | Phase 3 | Pending |
 | BATCH-03 | Phase 3 | Pending |

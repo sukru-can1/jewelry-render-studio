@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 1 complete (verified, passed-with-pending-manual)
-last_updated: "2026-06-08T07:02:17.406Z"
-last_activity: 2026-06-05
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-06-08T10:50:38.221Z"
+last_activity: 2026-06-08
 progress:
   total_phases: 8
   completed_phases: 1
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 12
+  completed_plans: 8
   percent: 13
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-05)
 
 **Core value:** An operator can take one jewelry model and reliably produce the full set of catalog images — every angle × metal × stone variant, in correctly separated metal/stone layers — without touching Blender or hand-editing recipes.
-**Current focus:** Phase 01 — secure-foundation-secrets-db-auth
+**Current focus:** Phase 02 — product-workspace
 
 ## Current Position
 
-Phase: 01 (secure-foundation-secrets-db-auth) — EXECUTING
-Plan: 7 of 7
+Phase: 02 (product-workspace) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-06-05
+Last activity: 2026-06-08
 
-Progress: [█████████░] 86%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [█████████░] 86%
 | Phase 01 P01-03 | 25 | 3 tasks | 12 files |
 | Phase 01 P04 | 13 | 3 tasks | 5 files |
 | Phase 01 P01-05 | 25 | 3 tasks | 11 files |
+| Phase 02 P02-01 | 38 | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Blob upload-token route locked behind requireSession in onBeforeGenerateToken; unauth POST = 401 with no token minted (SEC-02)
 - [Phase ?]: RunPod/Blob secret rotation recorded PENDING operator attestation in docs/SECRET_ROTATION.md; no secret literal in tracked source (SEC-01)
 - [Phase ?]: Phase 1 (01-05): Root app/page.tsx is now a thin auth-state redirect (no EnterpriseApp); authenticated landing at app/(app)/products/page.tsx so / no longer collides; login uses signIn(redirect:false) in a server action with generic error (no enumeration); sidebar ADMIN gating is UI-only (server requireRole authoritative in Plan 06).
+- [Phase ?]: Phase 2 (02-01): Dedicated Inspection model migrated to live DB; StoneType seeded (10 rows) idempotently; upload tokens access:private + workerModelUrl signed-GET URL via issueSignedToken+presignUrl, no public fallback (SEC-02).
 
 ### Pending Todos
 
@@ -106,6 +108,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-08T07:02:17.386Z
-Stopped at: Phase 1 complete (verified, passed-with-pending-manual)
-Resume file: .planning/phases/01-secure-foundation-secrets-db-auth/01-VERIFICATION.md
+Last session: 2026-06-08T10:50:38.201Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None
