@@ -36,6 +36,10 @@ export async function POST(request: Request) {
         // which surfaces through the catch below (no token is minted).
         await requireSession();
         return {
+          // SEC-02 (T-02-02): mint PRIVATE tokens. Without this, Vercel defaults
+          // the token to PUBLIC and model blobs leak by URL. Private blobs are
+          // delivered only via the auth-gated GET /api/file proxy.
+          access: "private",
           allowedContentTypes,
           addRandomSuffix: true,
           tokenPayload: JSON.stringify({ pathname }),

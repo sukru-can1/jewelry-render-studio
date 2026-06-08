@@ -1,4 +1,4 @@
-import { put } from "@vercel/blob";
+import { issueSignedToken, presignUrl, put } from "@vercel/blob";
 
 // SEC-02 (RESEARCH Pattern 4 — corrected private-blob model): all NEW blob writes
 // must be private. Private blobs are NOT delivered via signed URLs (that API does
@@ -31,4 +31,33 @@ export async function putPrivate(
  */
 export function privateUrl(pathname: string): string {
   return `/api/file?pathname=${encodeURIComponent(pathname)}`;
+}
+
+/**
+ * Mint a tokenless, CDN-verified GET URL for a PRIVATE model blob that the
+ * unauthenticated RunPod worker can fetch (decision #1 / T-02-03).
+ *
+ * The worker downloads the model with a plain `requests.get` (handler.py) — it
+ * has no app session, so it cannot use the auth-gated /api/file proxy. We instead
+ * mint a short-lived (~1h) signed GET URL via the verified @vercel/blob 2.4 server
+ * API: issueSignedToken (server-only; uses BLOB_READ_WRITE_TOKEN/OIDC) →
+ * presignUrl → { presignedUrl }.
+ *
+ * SEC-02: there is NO public/obscurity fallback. The presigned URL is minted on
+ * demand at dispatch and never persisted. If issueSignedToken throws because OIDC
+ * / BLOB_STORE_ID is unresolved, the error surfaces (a `user_setup` env gap) — we
+ * never downgrade to a public URL.
+ */
+export async function workerModelUrl(pathname: string): Promise<string> {
+  const signedToken = await issueSignedToken({
+    pathname,
+    operations: ["get"],
+    validUntil: Date.now() + 60 * 60 * 1000, // ~1h TTL
+  });
+  const { presignedUrl } = await presignUrl(signedToken, {
+    operation: "get",
+    pathname,
+    access: "private",
+  });
+  return presignedUrl;
 }
