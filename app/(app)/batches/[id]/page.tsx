@@ -24,10 +24,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Render a job's combo Json into the "view1 · white · diamond · stone" mono string.
+// Reads the CANONICAL combo keys (angleKey/metalKey/stoneGroup/pass) the expander
+// persists — the old angle/metal/stone keys never existed, so every label used to
+// collapse to "render".
 function comboLabel(combo: unknown): string {
   if (combo && typeof combo === "object") {
     const c = combo as Record<string, unknown>;
-    const parts = [c.angle, c.metal, c.stone, c.pass]
+    const parts = [c.angleKey, c.metalKey, c.stoneGroup, c.pass]
       .filter((v) => typeof v === "string" && v.length > 0)
       .map((v) => String(v));
     if (parts.length > 0) return parts.join(" · ");
