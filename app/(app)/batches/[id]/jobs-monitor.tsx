@@ -367,9 +367,9 @@ export function JobsMonitor({
   );
 }
 
-// Completed-job light preview: a 160×160 thumbnail + "View in gallery" link target
-// (the P5 Gallery surface is reserved — this phase does NOT build the layered
-// browser). Falls back to a placeholder when no Layer thumbnail is persisted yet.
+// Completed-job light preview: a 160×160 thumbnail + "View in gallery" link into
+// the P5 outputs gallery (/batches/[id]/gallery, deep-linked by job id). Falls
+// back to a placeholder when no Layer thumbnail is persisted yet.
 function CompletedPreview({
   thumbnailUrl,
   batchId,
@@ -398,7 +398,7 @@ function CompletedPreview({
         )}
       </div>
       <Link
-        href={`/batches/${batchId}?job=${jobId}`}
+        href={`/batches/${batchId}/gallery#${jobId}`}
         className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
       >
         View in gallery
