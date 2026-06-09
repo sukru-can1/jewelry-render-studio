@@ -22,14 +22,16 @@ vi.mock("@/lib/db/prisma", () => ({
 const getMock = vi.fn();
 vi.mock("@vercel/blob", () => ({ get: (...a: unknown[]) => getMock(...a) }));
 
-// archiver is mocked so the route's stream wiring can be asserted without a real zip.
+// archiver 8 is ESM: the route imports the named `ZipArchive` class and does
+// `new ZipArchive()`. Mock the class so the route's stream wiring can be asserted
+// without building a real zip.
 vi.mock("archiver", () => ({
-  default: () => ({
-    on: vi.fn(),
-    append: vi.fn(),
-    finalize: vi.fn(),
-    pipe: vi.fn(),
-  }),
+  ZipArchive: class {
+    on = vi.fn();
+    append = vi.fn();
+    finalize = vi.fn();
+    pipe = vi.fn();
+  },
 }));
 
 beforeEach(() => {
@@ -42,7 +44,6 @@ beforeEach(() => {
 describe("batch zip download route (OUT-03)", () => {
   it("denies an unauthenticated request with 401", async () => {
     requireSession.mockRejectedValueOnce(new Response("Unauthorized", { status: 401 }));
-    // @ts-expect-error RED scaffold: the zip route is created in Plan 03.
     const { GET } = await import("@/app/(app)/batches/[id]/download/route");
 
     const req = new Request("http://localhost/batches/batch-1/download");
@@ -68,7 +69,6 @@ describe("batch zip download route (OUT-03)", () => {
       blob: { contentType: "image/png", pathname: "outputs/a.png" },
     });
 
-    // @ts-expect-error RED scaffold: the zip route is created in Plan 03.
     const { GET } = await import("@/app/(app)/batches/[id]/download/route");
     const req = new Request("http://localhost/batches/batch-1/download");
     const res = await GET(req as never, { params: Promise.resolve({ id: "batch-1" }) });

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 // SEC-02 blob-guard: prove the upload-token route refuses to mint a token for an
@@ -132,4 +133,26 @@ describe("private-blob proxy /api/file (SEC-02 — auth next to get())", () => {
 
     expect(res.status).toBe(404);
   });
+});
+
+// SEC-02 / T-05-07 source guard: prove the delivery routes only ever read private
+// blobs (access:"private") and never construct a public/signed delivery URL. This
+// is a static source assertion — a regression that adds `.publicUrl`/`access:
+// "public"` to either route fails here before it can leak a private asset.
+describe("blob delivery source guard (OUT-03 — no public-URL construction)", () => {
+  const ROUTES = [
+    "app/api/file/route.ts",
+    "app/(app)/batches/[id]/download/route.ts",
+  ];
+
+  for (const route of ROUTES) {
+    it(`${route} reads private and never builds a public URL`, () => {
+      const src = readFileSync(new URL(`../${route}`, import.meta.url), "utf8");
+      // Private read present.
+      expect(src).toMatch(/access:\s*["']private["']/);
+      // No public-access read and no public-URL helper.
+      expect(src).not.toMatch(/access:\s*["']public["']/);
+      expect(src).not.toMatch(/getDownloadUrl|publicUrl|\.url\s*=\s*["']https/);
+    });
+  }
 });
