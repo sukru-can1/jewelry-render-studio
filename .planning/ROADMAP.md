@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Secure Foundation (Secrets + DB + Auth)** - Rotate the leaked key, stand up pooled Prisma/Postgres seeded with real domain settings, and gate every route behind Admin/Operator auth with private Blob (completed 2026-06-08)
 - [x] **Phase 2: Product Workspace** - An operator uploads a model, inspects materials, assigns detected objects to groups, and an Admin can edit the seeded domain settings (completed 2026-06-08)
-- [x] **Phase 3: Batch Builder with Cost Guardrails** - An operator builds a render matrix (angles × metals × per-group stones × passes) with a live count/cost estimate, hard cap, and preview-quality default (completed 2026-06-08)
+- [x] **Phase 3: Batch Builder with Cost Guardrails** - An operator builds a render matrix (angles Ã metals Ã per-group stones Ã passes) with a live count/cost estimate, hard cap, and preview-quality default (completed 2026-06-08)
 - [x] **Phase 4: Orchestration & Status** - Submitted batches render on RunPod with webhook-driven status, cron reconciliation, idempotent retry, progress, and cancel (completed 2026-06-09)
 - [x] **Phase 5: Outputs Gallery & Layered Passes** - Completed renders appear as layered holdout outputs (metal JPEG + per-stone transparent PNG) browsable by product/metal/angle/pass with per-layer download (completed 2026-06-09)
 - [ ] **Phase 6: Compositing & Deliverable** - An operator previews stacked layers in-browser and the server flattens each variant into a downloadable catalog-ready deliverable
@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A team member can log in with credentials, stays logged in across browser refresh (JWT in HTTP-only cookie), and can log out from any page
   3. An unauthenticated request to any app or API route is denied by default; only login and the secret-verified RunPod webhook are public, and an Operator session is rejected from Admin-only actions server-side
   4. An Admin can create, disable, and assign Admin/Operator roles to accounts
-  5. Structured state persists in Railway Postgres via a pooled Prisma singleton (no pool exhaustion), seeded with the real 4 views / 3 metals / 4 groups / quality presets / 1920×1920 defaults; Blob outputs are private and served via an auth-gated proxy route
+  5. Structured state persists in Railway Postgres via a pooled Prisma singleton (no pool exhaustion), seeded with the real 4 views / 3 metals / 4 groups / quality presets / 1920Ã1920 defaults; Blob outputs are private and served via an auth-gated proxy route
 **Plans**: 7 plans
 Plans:
 - [x] 01-01-PLAN.md — Foundation scaffold: pinned deps, Prisma schema + singleton + typed env, Vitest harness (Wave 0)
@@ -74,7 +74,7 @@ Plans:
   1. An operator can select multiple camera angles, multiple metals, a stone type per stone group, and which layered passes (metal-only plus each selected stone group) to produce
   2. The builder shows a live job count and cost/time estimate of the current selection before submission
   3. The builder enforces a hard cap on jobs per batch, defaults to preview quality, and requires explicit confirmation above a threshold
-  4. Submitting expands the matrix into one job per (angle × metal × stone-assignment × pass) combination, each with a generated recipe, created transactionally (all-or-none)
+  4. Submitting expands the matrix into one job per (angle Ã metal Ã stone-assignment Ã pass) combination, each with a generated recipe, created transactionally (all-or-none)
 **Plans**: 3 plans
 Plans:
 - [x] 03-01-PLAN.md — Wave 0 contracts: pure estimate/cap config + domain→recipe binding + selection zod schema + failing E2E scaffold (BATCH-03/05/06/07) (Wave 0)
@@ -90,7 +90,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Each job is submitted to RunPod and tracked with a status (queued / running / completed / failed / cancelled)
   2. Status updates arrive via a secret-verified RunPod webhook with a Vercel Cron reconciliation fallback — user page loads are DB-only reads, never per-request RunPod fan-out
-  3. A failed job retries automatically up to ~2× idempotently (checks the existing RunPod request id; no duplicate successful renders)
+  3. A failed job retries automatically up to ~2Ã idempotently (checks the existing RunPod request id; no duplicate successful renders)
   4. An operator can view a batch's progress (completed / failed / total), read the error/log for any failed job, and cancel a queued or running batch/job
 **Plans**: 6 plans
 Plans:
@@ -128,7 +128,11 @@ Plans:
   1. An operator can stack a variant's metal + stone layers in-browser and toggle layers on/off to preview the assembled image
   2. The server flattens a variant's layers into a single correctly-aligned catalog-ready deliverable per variant, validating identical dimensions and non-trivial alpha coverage (empty/mismatched layers warn rather than silently flatten)
   3. An operator can download the flattened deliverable for a variant or a whole batch
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 06-01-PLAN.md — Server flatten core: PURE (angle×metal) grouping + z-order, validation gate, sharp composite + auth-gated per-variant flatten route, Wave-0 RED scaffolds, persistence decision (Wave 0)
+- [ ] 06-02-PLAN.md — COMP-01 in-browser LayerCompositor (stacked toggle-able layers) + DB-only compositing/ page + segment switcher + per-variant flatten-and-download (Wave 1)
+- [ ] 06-03-PLAN.md — COMP-03 downloads: single deliverable attachment + whole-batch zip of flattened deliverables with capped lazy flatten (Wave 1)
 **UI hint**: yes
 
 ### Phase 7: UI Design System & Workflow Polish
