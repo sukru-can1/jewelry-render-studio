@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Secure Foundation (Secrets + DB + Auth)** - Rotate the leaked key, stand up pooled Prisma/Postgres seeded with real domain settings, and gate every route behind Admin/Operator auth with private Blob (completed 2026-06-08)
 - [x] **Phase 2: Product Workspace** - An operator uploads a model, inspects materials, assigns detected objects to groups, and an Admin can edit the seeded domain settings (completed 2026-06-08)
 - [x] **Phase 3: Batch Builder with Cost Guardrails** - An operator builds a render matrix (angles × metals × per-group stones × passes) with a live count/cost estimate, hard cap, and preview-quality default (completed 2026-06-08)
-- [x] **Phase 4: Orchestration & Status** - Submitted batches render on RunPod with webhook-driven status, cron reconciliation, idempotent retry, progress, and cancel (completed 2026-06-09)
+- [x] **Phase 4: Orchestration & Status** - Submitted batches render on RunPod with webhook-driven status, cron reconciliation, idempotent retry, progress, and cancel (completed 2026-06-09)
 - [ ] **Phase 5: Outputs Gallery & Layered Passes** - Completed renders appear as layered holdout outputs (metal JPEG + per-stone transparent PNG) browsable by product/metal/angle/pass with per-layer download
 - [ ] **Phase 6: Compositing & Deliverable** - An operator previews stacked layers in-browser and the server flattens each variant into a downloadable catalog-ready deliverable
 - [ ] **Phase 7: UI Design System & Workflow Polish** - The operator workflows share a coherent, non-purple Vercel/Notion/RunPod-influenced design system with clear loading/empty/error/in-progress states
@@ -111,7 +111,12 @@ Plans:
   1. Completed renders are produced as layered outputs: the metal pass as JPEG and each stone group as a transparent PNG via holdout
   2. An operator can browse a batch's outputs in a gallery organized by product / metal / angle / pass, reading layer records from the DB (terminal jobs are never re-fetched from RunPod)
   3. An operator can preview any output and download an individual layer or the full set via signed URLs
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 05-01-PLAN.md — Wave 0: [BLOCKING] Layer.jobId @unique migration + 6 failing test scaffolds + archiver dependency checkpoint (Wave 0)
+- [ ] 05-02-PLAN.md — OUT-01: stone-pass recipe transparency (true holdout) + deriveLayerFromResult idempotent completion hook (Wave 1)
+- [ ] 05-03-PLAN.md — OUT-03: /api/file attachment download + auth-gated batch-scoped streaming zip route (Wave 1)
+- [ ] 05-04-PLAN.md — OUT-02/03: DB-only gallery Server Component + card/controls/lightbox + combo-key fix + "View in gallery" wiring (Wave 2)
 **UI hint**: yes
 
 ### Phase 6: Compositing & Deliverable
@@ -158,7 +163,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 2. Product Workspace | 5/5 | Complete   | 2026-06-08 |
 | 3. Batch Builder with Cost Guardrails | 3/3 | Complete   | 2026-06-08 |
 | 4. Orchestration & Status | 6/6 | Complete   | 2026-06-09 |
-| 5. Outputs Gallery & Layered Passes | 0/TBD | Not started | - |
+| 5. Outputs Gallery & Layered Passes | 0/4 | Not started | - |
 | 6. Compositing & Deliverable | 0/TBD | Not started | - |
 | 7. UI Design System & Workflow Polish | 0/TBD | Not started | - |
 | 8. Cutover & Deploy | 0/TBD | Not started | - |
