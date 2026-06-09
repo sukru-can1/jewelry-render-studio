@@ -10,10 +10,12 @@ import { authConfig } from "@/lib/auth/auth.config";
 export const { auth: middleware } = NextAuth(authConfig);
 
 // Every route is gated EXCEPT: the Auth.js API (so users can sign in), /login,
-// Next static assets, the favicon, and the RunPod webhook (machine-to-machine;
-// authenticated by a shared secret inside its own handler — SEC-04).
+// Next static assets, the favicon, the RunPod webhook, and the Vercel Cron
+// routes (all machine-to-machine; authenticated by a shared secret inside their
+// own handlers — SEC-04 / CRON_SECRET — so they must bypass the session gate or
+// Vercel Cron would be redirected to /login and the orchestration would never run).
 export const config = {
   matcher: [
-    "/((?!api/auth|login|_next/static|_next/image|favicon.ico|api/webhooks/runpod).*)",
+    "/((?!api/auth|login|_next/static|_next/image|favicon.ico|api/webhooks/runpod|api/cron).*)",
   ],
 };
