@@ -12,7 +12,6 @@ import { TERMINAL_STATUSES, mapRunPodStatus } from "@/lib/orchestration/status-m
 const jobMock = vi.hoisted(() => ({ findFirst: vi.fn(), updateMany: vi.fn(), update: vi.fn() }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: { job: jobMock } }));
 
-// @ts-expect-error — Wave 1 helper not built yet; import is RED by design.
 import { applyWebhookResult } from "@/lib/orchestration/webhook";
 
 beforeEach(() => {
