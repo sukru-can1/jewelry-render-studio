@@ -7,10 +7,11 @@ import { batchProgress, deriveBatchStatus } from "@/lib/orchestration/batch-stat
 // ORCH-04 / ORCH-02 — the client freshness poll source. requireSession() FIRST
 // (T-04-10, fail-closed), IDOR-load the batch by id (T-04-11, 404 if missing),
 // then return a DB-derived snapshot: counts + derived status + per-job statuses.
-// DB-ONLY: this route reads Postgres only and MUST NOT import lib/runpod — it
-// never fans out to RunPod (T-04-12, bounded constant-cost). The payload exposes
-// only id/status/attempt/timestamps — never secrets, env names, or raw recipe
-// (T-04-13).
+// DB-ONLY: this route reads Postgres only and MUST NOT import the GPU dispatch
+// client — it never fans out to the GPU provider (T-04-12, bounded constant-cost).
+// The payload exposes only id/status/attempt/timestamps — never secrets, env
+// names, or raw recipe (T-04-13). (Source guard: test/orch-db-only.test.ts forbids
+// the dispatch-client token in this file.)
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 

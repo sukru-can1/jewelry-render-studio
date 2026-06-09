@@ -1,32 +1,38 @@
 // ORCH-02 — source-text guard (mirrors deny-default.test.ts readFileSync style).
-// The batches pages must read job/batch state from the DB ONLY — never import
-// lib/runpod or call submitRunPod/getRunPodStatus directly from a page (the
-// webhook + reconcile cron own all RunPod I/O).
+// The batches pages + the freshness status route must read job/batch state from
+// the DB ONLY — never import lib/runpod or call submitRunPod/getRunPodStatus/
+// cancelRunPod directly (the webhook + reconcile cron own all RunPod I/O).
 //
-// Wave 3 creates app/(app)/batches/page.tsx and .../batches/[id]/page.tsx. Until
-// then this test is GREEN-BY-VACUITY (files absent → skip). Once Wave 3 creates a
-// file, it HARD-FAILS if that file imports runpod. So it is the Wave 3 gate.
+// Wave 3 created app/(app)/batches/page.tsx; Wave 4 (04-06) creates
+// .../batches/[id]/page.tsx. Both files now exist, so this is a HARD gate (not
+// the Wave 0 skip-if-absent vacuity): a present file that imports RunPod fails.
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const PAGES = [
+// DB-only contract surfaces: both batches pages AND the client freshness route.
+const DB_ONLY_FILES = [
   "app/(app)/batches/page.tsx",
   "app/(app)/batches/[id]/page.tsx",
+  "app/api/batches/[id]/status/route.ts",
 ];
 
-const FORBIDDEN = [/@\/lib\/runpod/, /submitRunPod/, /getRunPodStatus/, /\brunpod\b/i];
+const FORBIDDEN = [
+  /@\/lib\/runpod/,
+  /submitRunPod/,
+  /getRunPodStatus/,
+  /cancelRunPod/,
+  /\brunpod\b/i,
+];
 
-describe("batches pages are DB-only (ORCH-02 source guard)", () => {
-  for (const rel of PAGES) {
-    it(`${rel} imports no RunPod I/O (skip-if-absent at Wave 0)`, () => {
+describe("batches pages + status route are DB-only (ORCH-02 source guard)", () => {
+  for (const rel of DB_ONLY_FILES) {
+    it(`${rel} exists and imports no RunPod I/O (hard gate)`, () => {
       const path = resolve(process.cwd(), rel);
-      if (!existsSync(path)) {
-        // Green-by-vacuity: the file does not exist yet (Wave 3 creates it).
-        expect(true).toBe(true);
-        return;
-      }
+      // Both batches pages and the status route are shipped (04-05 + 04-06) — the
+      // file MUST exist now; absence is a regression, not green-by-vacuity.
+      expect(existsSync(path)).toBe(true);
       const source = readFileSync(path, "utf8");
       for (const pattern of FORBIDDEN) {
         expect(source).not.toMatch(pattern);
