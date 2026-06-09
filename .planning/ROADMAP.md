@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Batch Builder with Cost Guardrails** - An operator builds a render matrix (angles Ã metals Ã per-group stones Ã passes) with a live count/cost estimate, hard cap, and preview-quality default (completed 2026-06-08)
 - [x] **Phase 4: Orchestration & Status** - Submitted batches render on RunPod with webhook-driven status, cron reconciliation, idempotent retry, progress, and cancel (completed 2026-06-09)
 - [x] **Phase 5: Outputs Gallery & Layered Passes** - Completed renders appear as layered holdout outputs (metal JPEG + per-stone transparent PNG) browsable by product/metal/angle/pass with per-layer download (completed 2026-06-09)
-- [ ] **Phase 6: Compositing & Deliverable** - An operator previews stacked layers in-browser and the server flattens each variant into a downloadable catalog-ready deliverable
+- [x] **Phase 6: Compositing & Deliverable** - An operator previews stacked layers in-browser and the server flattens each variant into a downloadable catalog-ready deliverable (completed 2026-06-09)
 - [ ] **Phase 7: UI Design System & Workflow Polish** - The operator workflows share a coherent, non-purple Vercel/Notion/RunPod-influenced design system with clear loading/empty/error/in-progress states
 - [ ] **Phase 8: Cutover & Deploy** - Hardcoded references removed, legacy Blob job history migrated without loss, and the app deployed to the existing Vercel project
 
@@ -132,7 +132,7 @@ Plans:
 Plans:
 - [x] 06-01-PLAN.md — Server flatten core: PURE (angle×metal) grouping + z-order, validation gate, sharp composite + auth-gated per-variant flatten route, Wave-0 RED scaffolds, persistence decision (Wave 0) (completed 2026-06-09)
 - [x] 06-02-PLAN.md — COMP-01 in-browser LayerCompositor (stacked toggle-able layers) + DB-only compositing/ page + segment switcher + per-variant flatten-and-download (Wave 1)
-- [ ] 06-03-PLAN.md — COMP-03 downloads: single deliverable attachment + whole-batch zip of flattened deliverables with capped lazy flatten (Wave 1)
+- [x] 06-03-PLAN.md — COMP-03 downloads: single deliverable attachment + whole-batch zip of flattened deliverables with capped lazy flatten (Wave 1)
 **UI hint**: yes
 
 ### Phase 7: UI Design System & Workflow Polish
@@ -168,6 +168,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 3. Batch Builder with Cost Guardrails | 3/3 | Complete   | 2026-06-08 |
 | 4. Orchestration & Status | 6/6 | Complete   | 2026-06-09 |
 | 5. Outputs Gallery & Layered Passes | 4/4 | Complete   | 2026-06-09 |
-| 6. Compositing & Deliverable | 2/3 | In Progress|  |
+| 6. Compositing & Deliverable | 3/3 | Complete   | 2026-06-09 |
 | 7. UI Design System & Workflow Polish | 0/TBD | Not started | - |
 | 8. Cutover & Deploy | 0/TBD | Not started | - |
