@@ -21,7 +21,6 @@ vi.mock("@/lib/env", () => ({
   resolveAppBaseUrl: vi.fn(() => "https://app.example"),
 }));
 
-// @ts-expect-error — Wave 2 module not built yet; import is RED by design.
 import { reconcileJobs, sweepStrandedJobs } from "@/lib/orchestration/reconcile";
 
 beforeEach(() => {

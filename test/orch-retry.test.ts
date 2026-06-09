@@ -9,7 +9,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const jobMock = vi.hoisted(() => ({ findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: { job: jobMock } }));
 
-// @ts-expect-error — Wave 2 module not built yet; import is RED by design.
 import { RETRY_CAP, retryFailedJobs } from "@/lib/orchestration/retry";
 
 beforeEach(() => {
