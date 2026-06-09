@@ -94,7 +94,7 @@ Plans:
   4. An operator can view a batch's progress (completed / failed / total), read the error/log for any failed job, and cancel a queued or running batch/job
 **Plans**: 6 plans
 Plans:
-- [ ] 04-01-PLAN.md — Wave 0: [BLOCKING] additive migration + CRON_SECRET/APP_URL env + shared status-map + 7 failing test scaffolds (Wave 0)
+- [x] 04-01-PLAN.md — Wave 0: [BLOCKING] additive migration + CRON_SECRET/APP_URL env + shared status-map + 7 failing test scaffolds (Wave 0)
 - [ ] 04-02-PLAN.md — Chunked cron dispatcher (60s-safe) + idempotent webhook receiver (ORCH-01/02) (Wave 1)
 - [ ] 04-04-PLAN.md — cancelRunPod helper + cancelBatch/cancelJob Server Actions (requireSession + IDOR) (ORCH-05) (Wave 1)
 - [ ] 04-03-PLAN.md — Reconcile cron (webhook-missed fallback) + idempotent failed-under-cap retry (ORCH-02/03) (Wave 2)
@@ -157,7 +157,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 1. Secure Foundation (Secrets + DB + Auth) | 7/7 | Complete   | 2026-06-08 |
 | 2. Product Workspace | 5/5 | Complete   | 2026-06-08 |
 | 3. Batch Builder with Cost Guardrails | 3/3 | Complete   | 2026-06-08 |
-| 4. Orchestration & Status | 0/6 | Not started | - |
+| 4. Orchestration & Status | 1/6 | In Progress|  |
 | 5. Outputs Gallery & Layered Passes | 0/TBD | Not started | - |
 | 6. Compositing & Deliverable | 0/TBD | Not started | - |
 | 7. UI Design System & Workflow Polish | 0/TBD | Not started | - |

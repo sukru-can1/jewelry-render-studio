@@ -51,11 +51,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Orchestration & Status
 
-- [ ] **ORCH-01**: Each job is submitted to RunPod and tracked with a status (queued / running / completed / failed / cancelled)
-- [ ] **ORCH-02**: Job status updates arrive via RunPod webhook with a Vercel Cron reconciliation fallback — not per-request polling fan-out
-- [ ] **ORCH-03**: A failed job retries automatically up to a configured limit (~2), with retries idempotent (no duplicate successful renders)
-- [ ] **ORCH-04**: An operator can view a batch's progress (completed / failed / total) and read the error/log for any failed job
-- [ ] **ORCH-05**: An operator can cancel a queued or running batch/job
+- [x] **ORCH-01**: Each job is submitted to RunPod and tracked with a status (queued / running / completed / failed / cancelled)
+- [x] **ORCH-02**: Job status updates arrive via RunPod webhook with a Vercel Cron reconciliation fallback — not per-request polling fan-out
+- [x] **ORCH-03**: A failed job retries automatically up to a configured limit (~2), with retries idempotent (no duplicate successful renders)
+- [x] **ORCH-04**: An operator can view a batch's progress (completed / failed / total) and read the error/log for any failed job
+- [x] **ORCH-05**: An operator can cancel a queued or running batch/job
 
 ### Outputs & Gallery
 
@@ -139,11 +139,11 @@ Which phases cover which requirements. Populated during roadmap creation.
 | BATCH-05 | Phase 3 | Complete |
 | BATCH-06 | Phase 3 | Complete |
 | BATCH-07 | Phase 3 | Complete |
-| ORCH-01 | Phase 4 | Pending |
-| ORCH-02 | Phase 4 | Pending |
-| ORCH-03 | Phase 4 | Pending |
-| ORCH-04 | Phase 4 | Pending |
-| ORCH-05 | Phase 4 | Pending |
+| ORCH-01 | Phase 4 | Complete |
+| ORCH-02 | Phase 4 | Complete |
+| ORCH-03 | Phase 4 | Complete |
+| ORCH-04 | Phase 4 | Complete |
+| ORCH-05 | Phase 4 | Complete |
 | OUT-01 | Phase 5 | Pending |
 | OUT-02 | Phase 5 | Pending |
 | OUT-03 | Phase 5 | Pending |
