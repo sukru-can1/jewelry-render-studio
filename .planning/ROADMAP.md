@@ -115,7 +115,7 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — Wave 0: [BLOCKING] Layer.jobId @unique migration + 6 failing test scaffolds + archiver dependency checkpoint (Wave 0)
 - [x] 05-02-PLAN.md — OUT-01: stone-pass recipe transparency (true holdout) + deriveLayerFromResult idempotent completion hook (Wave 1)
-- [ ] 05-03-PLAN.md — OUT-03: /api/file attachment download + auth-gated batch-scoped streaming zip route (Wave 1)
+- [x] 05-03-PLAN.md — OUT-03: /api/file attachment download + auth-gated batch-scoped streaming zip route (Wave 1)
 - [ ] 05-04-PLAN.md — OUT-02/03: DB-only gallery Server Component + card/controls/lightbox + combo-key fix + "View in gallery" wiring (Wave 2)
 **UI hint**: yes
 
@@ -163,7 +163,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 2. Product Workspace | 5/5 | Complete   | 2026-06-08 |
 | 3. Batch Builder with Cost Guardrails | 3/3 | Complete   | 2026-06-08 |
 | 4. Orchestration & Status | 6/6 | Complete   | 2026-06-09 |
-| 5. Outputs Gallery & Layered Passes | 2/4 | In Progress|  |
+| 5. Outputs Gallery & Layered Passes | 3/4 | In Progress|  |
 | 6. Compositing & Deliverable | 0/TBD | Not started | - |
 | 7. UI Design System & Workflow Polish | 0/TBD | Not started | - |
 | 8. Cutover & Deploy | 0/TBD | Not started | - |

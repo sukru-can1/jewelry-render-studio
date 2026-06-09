@@ -61,7 +61,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **OUT-01**: Completed renders are produced as layered outputs: the metal pass as JPEG and each stone group as a transparent PNG via holdout
 - [ ] **OUT-02**: An operator can browse a batch's outputs in a gallery organized by product / metal / angle / pass
-- [ ] **OUT-03**: An operator can preview any output and download an individual layer or the full set
+- [x] **OUT-03**: An operator can preview any output and download an individual layer or the full set
 
 ### Compositing & Deliverable
 
@@ -146,7 +146,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | ORCH-05 | Phase 4 | Complete |
 | OUT-01 | Phase 5 | Complete |
 | OUT-02 | Phase 5 | Pending |
-| OUT-03 | Phase 5 | Pending |
+| OUT-03 | Phase 5 | Complete |
 | COMP-01 | Phase 6 | Pending |
 | COMP-02 | Phase 6 | Pending |
 | COMP-03 | Phase 6 | Pending |
