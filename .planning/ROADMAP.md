@@ -131,7 +131,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 06-01-PLAN.md — Server flatten core: PURE (angle×metal) grouping + z-order, validation gate, sharp composite + auth-gated per-variant flatten route, Wave-0 RED scaffolds, persistence decision (Wave 0) (completed 2026-06-09)
-- [ ] 06-02-PLAN.md — COMP-01 in-browser LayerCompositor (stacked toggle-able layers) + DB-only compositing/ page + segment switcher + per-variant flatten-and-download (Wave 1)
+- [x] 06-02-PLAN.md — COMP-01 in-browser LayerCompositor (stacked toggle-able layers) + DB-only compositing/ page + segment switcher + per-variant flatten-and-download (Wave 1)
 - [ ] 06-03-PLAN.md — COMP-03 downloads: single deliverable attachment + whole-batch zip of flattened deliverables with capped lazy flatten (Wave 1)
 **UI hint**: yes
 
@@ -168,6 +168,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 3. Batch Builder with Cost Guardrails | 3/3 | Complete   | 2026-06-08 |
 | 4. Orchestration & Status | 6/6 | Complete   | 2026-06-09 |
 | 5. Outputs Gallery & Layered Passes | 4/4 | Complete   | 2026-06-09 |
-| 6. Compositing & Deliverable | 1/3 | In progress | - |
+| 6. Compositing & Deliverable | 2/3 | In Progress|  |
 | 7. UI Design System & Workflow Polish | 0/TBD | Not started | - |
 | 8. Cutover & Deploy | 0/TBD | Not started | - |

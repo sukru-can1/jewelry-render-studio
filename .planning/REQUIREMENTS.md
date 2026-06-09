@@ -65,9 +65,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Compositing & Deliverable
 
-- [ ] **COMP-01**: An operator can stack a variant's metal + stone layers in-browser to preview the assembled image, toggling layers on/off
-- [ ] **COMP-02**: The server flattens a variant's layers into a single catalog-ready deliverable image (correctly aligned), generated per variant
-- [ ] **COMP-03**: An operator can download the flattened catalog-ready deliverable for a variant or a whole batch
+- [x] **COMP-01**: An operator can stack a variant's metal + stone layers in-browser to preview the assembled image, toggling layers on/off
+- [x] **COMP-02**: The server flattens a variant's layers into a single catalog-ready deliverable image (correctly aligned), generated per variant
+- [x] **COMP-03**: An operator can download the flattened catalog-ready deliverable for a variant or a whole batch
 
 ### UI / Design System
 
@@ -147,9 +147,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | OUT-01 | Phase 5 | Complete |
 | OUT-02 | Phase 5 | Complete |
 | OUT-03 | Phase 5 | Complete |
-| COMP-01 | Phase 6 | Pending |
-| COMP-02 | Phase 6 | Pending |
-| COMP-03 | Phase 6 | Pending |
+| COMP-01 | Phase 6 | Complete |
+| COMP-02 | Phase 6 | Complete |
+| COMP-03 | Phase 6 | Complete |
 | UI-01 | Phase 7 | Pending |
 | UI-02 | Phase 7 | Complete |
 | SEC-05 | Phase 8 | Pending |
