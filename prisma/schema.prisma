@@ -170,7 +170,10 @@ model Job {
 
 model Layer {
   id          String  @id @default(cuid())
-  jobId       String
+  // T-05-01: one job = exactly one layer (expand.ts emits one row per
+  // angle×metal×pass; handler.py uploads exactly one image per job). @unique
+  // makes prisma.layer.upsert({where:{jobId}}) race-free against duplicate/late webhooks.
+  jobId       String  @unique
   job         Job     @relation(fields: [jobId], references: [id])
   pass        String
   format      String
