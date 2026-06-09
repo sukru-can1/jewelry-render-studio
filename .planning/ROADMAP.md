@@ -92,7 +92,14 @@ Plans:
   2. Status updates arrive via a secret-verified RunPod webhook with a Vercel Cron reconciliation fallback — user page loads are DB-only reads, never per-request RunPod fan-out
   3. A failed job retries automatically up to ~2× idempotently (checks the existing RunPod request id; no duplicate successful renders)
   4. An operator can view a batch's progress (completed / failed / total), read the error/log for any failed job, and cancel a queued or running batch/job
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] 04-01-PLAN.md — Wave 0: [BLOCKING] additive migration + CRON_SECRET/APP_URL env + shared status-map + 7 failing test scaffolds (Wave 0)
+- [ ] 04-02-PLAN.md — Chunked cron dispatcher (60s-safe) + idempotent webhook receiver (ORCH-01/02) (Wave 1)
+- [ ] 04-04-PLAN.md — cancelRunPod helper + cancelBatch/cancelJob Server Actions (requireSession + IDOR) (ORCH-05) (Wave 1)
+- [ ] 04-03-PLAN.md — Reconcile cron (webhook-missed fallback) + idempotent failed-under-cap retry (ORCH-02/03) (Wave 2)
+- [ ] 04-05-PLAN.md — DB-only batch-status engine + status pills + aggregate bar + Batches list + freshness route (ORCH-04) (Wave 3)
+- [ ] 04-06-PLAN.md — Batch detail jobs monitor + error-log + freshness poll + cancel/retry UI + DB-only-reads source gate (ORCH-04/05/03) (Wave 4)
 **UI hint**: yes
 
 ### Phase 5: Outputs Gallery & Layered Passes
@@ -150,7 +157,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 1. Secure Foundation (Secrets + DB + Auth) | 7/7 | Complete   | 2026-06-08 |
 | 2. Product Workspace | 5/5 | Complete   | 2026-06-08 |
 | 3. Batch Builder with Cost Guardrails | 3/3 | Complete   | 2026-06-08 |
-| 4. Orchestration & Status | 0/TBD | Not started | - |
+| 4. Orchestration & Status | 0/6 | Not started | - |
 | 5. Outputs Gallery & Layered Passes | 0/TBD | Not started | - |
 | 6. Compositing & Deliverable | 0/TBD | Not started | - |
 | 7. UI Design System & Workflow Polish | 0/TBD | Not started | - |
