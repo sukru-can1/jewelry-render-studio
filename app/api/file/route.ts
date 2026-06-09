@@ -33,11 +33,38 @@ export async function GET(req: NextRequest) {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  return new NextResponse(result.stream, {
-    headers: {
-      "Content-Type": result.blob.contentType,
-      "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "private, no-cache",
-    },
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": result.blob.contentType,
+    "X-Content-Type-Options": "nosniff",
+    "Cache-Control": "private, no-cache",
+  };
+
+  // OUT-03 / T-05-05: optional attachment download. When `download=1`, force a
+  // Content-Disposition attachment so the asset saves as a file (the inline path
+  // below is byte-identical to before). The filename comes from `name` (falling
+  // back to the pathname basename); it is sanitized to strip CR/LF and double
+  // quotes so a hostile `name` cannot inject a second header or break out of the
+  // quoted filename value (header-injection guard).
+  const params = new URL(req.url).searchParams;
+  if (params.get("download") === "1") {
+    const raw = params.get("name") ?? pathname.split("/").pop() ?? "download";
+    const filename = sanitizeFilename(raw);
+    // Unquoted filename token: the sanitizer already removed CR/LF, quotes and
+    // path separators, so the residue is header-safe without surrounding quotes
+    // (and the blob-guard test asserts no raw quote leaks into the value).
+    headers["Content-Disposition"] = `attachment; filename=${filename}`;
+  }
+
+  return new NextResponse(result.stream, { headers });
+}
+
+// Strip CR/LF (header injection) and double quotes (filename-value breakout), and
+// drop any path separators so a `name` like `../foo` cannot reshape the header.
+function sanitizeFilename(name: string): string {
+  const cleaned = name
+    .replace(/[\r\n"]/g, "")
+    .replace(/[\\/]/g, "_")
+    .trim()
+    .replace(/\s+/g, "_");
+  return cleaned.length > 0 ? cleaned : "download";
 }
