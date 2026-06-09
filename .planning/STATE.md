@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planned
-stopped_at: Phase 6 planned (UI-SPEC approved, 3 plans + VALIDATION, plan-check PASS-WITH-NOTES resolved) — ready for execution
-last_updated: "2026-06-09T19:30:00.000Z"
+status: in_progress
+stopped_at: Completed 06-01-PLAN.md (server flatten core, COMP-02) — Wave 0 of Phase 6
+last_updated: "2026-06-09T17:08:00.000Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 28
-  completed_plans: 25
-  percent: 63
+  completed_plans: 26
+  percent: 65
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 
 ## Current Position
 
-Phase: 06 (compositing-deliverable) — PLANNED, ready for execution
-Plan: 0 of 3 executed (06-01, 06-02, 06-03 + 06-VALIDATION written)
-Status: UI-SPEC approved (6/6 dimensions); plan-check PASS-WITH-NOTES, notes resolved (blob-only persistence drift fixed in 10be964)
+Phase: 06 (compositing-deliverable) — IN PROGRESS
+Plan: 1 of 3 executed (06-01 done; 06-02 + 06-03 pending)
+Status: 06-01 server flatten core shipped (COMP-02) — full suite 243 green, tsc clean, build emits flatten route
 Last activity: 2026-06-09
 
-Progress: [██████████] Phase 5 complete · Phase 6 planned
+Progress: [██████████] Phase 5 complete · Phase 6 Wave 0 (06-01) done
 
 ### Phase 6 execution notes (for the executor)
 - **Persistence is BLOB-ONLY.** Deliverables write to `renders/<batchId>/deliverables/<angle>_<metal>.png` via `putPrivate(allowOverwrite:true)`. Do NOT create a `Layer` row for deliverables — `Layer.jobId` is `@unique` AND a required FK to `Job.id`, so a synthetic jobId is infeasible. The 06-01 Task-1 checkpoint already defaults to blob-only; treat that as authoritative over any residual `isFlattened` wording.
@@ -78,6 +78,7 @@ Progress: [██████████] Phase 5 complete · Phase 6 planned
 | Phase 04 P04-05 | 25m | 3 tasks | 5 files |
 | Phase 05 P05-02 | 14min | 2 tasks | 6 files |
 | Phase 05 P05-04 | 30min | 3 tasks | 12 files |
+| Phase 06 P06-01 | 10min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Batch builder consumes single-source BATCH_LIMITS/countJobs/estimate/zone; no redefined thresholds in components
 - [Phase ?]: Builder page branch/selector shape lives in pure lib/batches/builder-data.ts for harness-style unit testing of the no-assignment guard
 - [Phase ?]: 04-03: reconcile cron reuses applyWebhookResult to replay polls (mapping+terminal guard cannot drift from webhook); sweepStrandedJobs (W-1) releases non-terminal NULL-runpodJobId jobs older than 2min to queued; retryFailedJobs re-queues status:failed attempt<RETRY_CAP(2) idempotently (runpodJobId/error null), cancelled batches excluded via cancelRequestedAt null, completed never re-queued (Pattern 4)
+- [Phase 06]: 06-01 (COMP-02): deliverable persistence is BLOB-ONLY (renders/<batchId>/deliverables/<angle>_<metal>.png via putPrivate allowOverwrite) — NO Layer row (Layer.jobId @unique + required FK to Job.id makes a synthetic deliverable jobId infeasible); discovery by list({prefix}), never Layer.isFlattened.
+- [Phase 06]: 06-01: compositing variant key = (angleKey × metalKey) in a new PURE groupVariantsForCompositing (NOT group.ts variant mode which ignores angle); base = metal pass, overlays = stone passes z-ordered by (sortOrder ?? Infinity, stoneGroup); validateVariant gate WARNs (200 {ok:false,warnings}) and writes nothing — never a silent flatten; flatten.ts is the sole sharp importer; route reads layer bytes privately via get(access:private)→Buffer.
 
 ### Pending Todos
 
@@ -138,6 +141,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T15:44:08.562Z
-Stopped at: context exhaustion at 75% (2026-06-09)
+Last session: 2026-06-09T17:08:00.000Z
+Stopped at: Completed 06-01-PLAN.md (server flatten core, COMP-02)
 Resume file: None
