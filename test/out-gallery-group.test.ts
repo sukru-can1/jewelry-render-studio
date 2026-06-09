@@ -6,7 +6,6 @@
 // a single undefined-keyed bucket, proving groupLayers reads the canonical keys.
 import { describe, expect, it } from "vitest";
 
-// @ts-expect-error RED scaffold: @/lib/gallery/group is created in Plan 02/W2.
 import { groupLayers } from "@/lib/gallery/group";
 
 type Row = {

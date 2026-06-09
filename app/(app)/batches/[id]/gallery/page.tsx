@@ -1,0 +1,107 @@
+import Link from "next/link";
+
+import { requireSession } from "@/lib/auth/rbac";
+import { Button } from "@/app/components/ui/button";
+import {
+  deriveBatchStatus,
+  summarizeJobs,
+} from "@/lib/orchestration/batch-status";
+import { loadBatchGallery } from "@/lib/gallery/query";
+
+import { GalleryBody } from "./gallery-controls";
+import type { GalleryCardLayer } from "./layer-card";
+
+// OUT-02/03 — the outputs gallery. Async Server Component, Node runtime (Prisma),
+// force-dynamic so the first paint reflects the latest DB state. requireSession()
+// runs FIRST (T-05-04). The batch is IDOR-loaded by params.id (T-05-06); a missing
+// one renders the calm inline "Couldn't load these outputs." DB-ONLY: this page
+// imports loadBatchGallery + batch-status ONLY and MUST NOT import the GPU dispatch
+// client (T-05-09; test/orch-db-only.test.ts source guard covers it). Every <img
+// src> resolves through the auth-gated /api/file proxy (T-05-07) inside the cards.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export default async function BatchGalleryPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  await requireSession();
+  const { id } = await params;
+
+  const gallery = await loadBatchGallery(id);
+
+  if (!gallery) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="rounded-lg border border-border bg-card p-6">
+          <p className="text-sm text-foreground">
+            Couldn&apos;t load these outputs. Check your connection and try again.
+          </p>
+          <Button variant="secondary" className="mt-4" asChild>
+            <Link href="/batches">Retry</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const layers: GalleryCardLayer[] = gallery.layers.map((l) => ({
+    id: l.id,
+    jobId: l.jobId,
+    pass: l.pass,
+    format: l.format,
+    url: l.url,
+    combo: l.combo,
+  }));
+
+  // Partial-progress banner derived from DB counts only — no GPU dispatch poll.
+  const progress = summarizeJobs(
+    gallery.jobCounts.map((g) => ({
+      status: g.status as never,
+      _count: g.count,
+    })),
+  );
+  const batchStatus = deriveBatchStatus(progress);
+  const partial = batchStatus !== "completed" && progress.total > 0;
+
+  const downloadSetHref = `/batches/${gallery.id}/download`;
+
+  return (
+    <div className="flex flex-col gap-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-semibold leading-tight text-foreground">
+            {gallery.productName} · {gallery.id} — Outputs
+          </h1>
+          <span className="font-mono text-xs text-muted-foreground">
+            {layers.length} layers
+          </span>
+        </div>
+        {layers.length > 0 ? (
+          <Button asChild>
+            <a href={downloadSetHref}>Download full set</a>
+          </Button>
+        ) : null}
+      </header>
+
+      {partial ? (
+        <div className="rounded-lg border border-info/40 bg-info/10 p-4 text-sm text-foreground">
+          {progress.completed} of {progress.total} renders done — more outputs
+          will appear here as jobs finish.
+        </div>
+      ) : null}
+
+      {layers.length === 0 ? (
+        <div className="rounded-lg border border-border bg-card p-6">
+          <p className="text-sm text-foreground">No finished outputs yet.</p>
+          <Button variant="secondary" className="mt-4" asChild>
+            <Link href={`/batches/${gallery.id}`}>Back to job monitor</Link>
+          </Button>
+        </div>
+      ) : (
+        <GalleryBody layers={layers} downloadSetHref={downloadSetHref} />
+      )}
+    </div>
+  );
+}

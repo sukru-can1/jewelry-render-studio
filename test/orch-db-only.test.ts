@@ -16,6 +16,9 @@ const DB_ONLY_FILES = [
   "app/(app)/batches/page.tsx",
   "app/(app)/batches/[id]/page.tsx",
   "app/api/batches/[id]/status/route.ts",
+  // Phase 5 (OUT-02, T-05-09): the gallery Server Component reads completed-job
+  // Layer rows from the DB only — it must never re-fetch terminal jobs from RunPod.
+  "app/(app)/batches/[id]/gallery/page.tsx",
 ];
 
 const FORBIDDEN = [

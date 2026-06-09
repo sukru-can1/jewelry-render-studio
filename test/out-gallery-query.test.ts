@@ -10,7 +10,6 @@ vi.mock("@/lib/db/prisma", () => ({
   prisma: { batch: batchMock, job: jobMock },
 }));
 
-// @ts-expect-error RED scaffold: @/lib/gallery/query is created in Plan 02/W2.
 import { loadBatchGallery } from "@/lib/gallery/query";
 
 beforeEach(() => {
