@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-06-09T06:44:20.301Z"
+last_updated: "2026-06-09T07:36:18.955Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 21
-  completed_plans: 18
+  completed_plans: 19
   percent: 38
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 ## Current Position
 
 Phase: 04 (orchestration-status) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-06-09
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 86%
 | Phase 03 P03-03 | 25 min | 3 tasks | 9 files |
 | Phase 04 P04-01 | 25m | 4 tasks | 13 files |
 | Phase 04 P04 | 5 | 2 tasks | 3 files |
+| Phase 04 P04-03 | 100m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 03-02 createBatch re-enforces HARD_CAP server-side; Batch+N Jobs in one all-or-none transaction status queued; no RunPod in Phase 3
 - [Phase ?]: Batch builder consumes single-source BATCH_LIMITS/countJobs/estimate/zone; no redefined thresholds in components
 - [Phase ?]: Builder page branch/selector shape lives in pure lib/batches/builder-data.ts for harness-style unit testing of the no-assignment guard
+- [Phase ?]: 04-03: reconcile cron reuses applyWebhookResult to replay polls (mapping+terminal guard cannot drift from webhook); sweepStrandedJobs (W-1) releases non-terminal NULL-runpodJobId jobs older than 2min to queued; retryFailedJobs re-queues status:failed attempt<RETRY_CAP(2) idempotently (runpodJobId/error null), cancelled batches excluded via cancelRequestedAt null, completed never re-queued (Pattern 4)
 
 ### Pending Todos
 
@@ -127,6 +129,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T06:44:20.291Z
+Last session: 2026-06-09T07:35:56.285Z
 Stopped at: Completed 02-01-PLAN.md
 Resume file: None
