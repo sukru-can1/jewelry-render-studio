@@ -20,7 +20,9 @@ export type GalleryCardLayer = {
   combo: Record<string, unknown> | null;
 };
 
-const GROUP_CHIP: Record<string, string> = {
+// Inherited group-chip colors (diamond=accent, stone2=info, stone3=warning).
+// Exported so the Phase-6 LayerCompositor reuses the exact same map (no redefine).
+export const GROUP_CHIP: Record<string, string> = {
   diamond: "bg-accent/15 text-accent",
   stone2: "bg-info/15 text-info",
   stone3: "bg-warning/15 text-warning",
