@@ -143,6 +143,9 @@ describe("blob delivery source guard (OUT-03 — no public-URL construction)", (
   const ROUTES = [
     "app/api/file/route.ts",
     "app/(app)/batches/[id]/download/route.ts",
+    // Phase 6 (COMP-02): the flatten route reads layer bytes PRIVATELY and writes
+    // the deliverable via putPrivate — it must never build a public/signed URL.
+    "app/(app)/batches/[id]/flatten/route.ts",
   ];
 
   for (const route of ROUTES) {
