@@ -137,6 +137,9 @@ model Batch {
   matrix      Json?
   jobCount    Int      @default(0)
   createdAt   DateTime @default(now())
+  // ORCH-05: distinguishes a batch in the "cancelling" transition from a settled
+  // cancelled state. Batch status itself stays a derived String (A4), never stored.
+  cancelRequestedAt DateTime?
   jobs        Job[]
 }
 
@@ -153,6 +156,13 @@ model Job {
   outputPrefix String?
   submittedAt  DateTime?
   finishedAt   DateTime?
+  // ORCH-02/04: persists the webhook `output` so Phase 5 reads layers from the DB
+  // without re-fetching RunPod.
+  result            Json?
+  // ORCH-04: render start timestamp for live duration in the monitor.
+  startedAt         DateTime?
+  // ORCH-05: distinguishes "cancelling" from a settled "cancelled" state.
+  cancelRequestedAt DateTime?
   layers       Layer[]
 
   @@index([batchId, status])
