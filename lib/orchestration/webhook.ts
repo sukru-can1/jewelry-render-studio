@@ -8,6 +8,8 @@
 import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";
+import type { Combo } from "@/lib/batches/expand";
+import { deriveLayerFromResult } from "@/lib/orchestration/layers";
 import { TERMINAL_STATUSES, mapRunPodStatus, tail } from "@/lib/orchestration/status-map";
 
 // V5: validate the callback shape before use. RunPod sends { id, status, output?, error? }.
@@ -55,6 +57,19 @@ export async function applyWebhookResult(body: {
         finishedAt: new Date(),
       },
     });
+    // OUT-01: record exactly one Layer for this completion. deriveLayerFromResult
+    // upserts on {jobId} so a duplicate/late callback (the updateMany above already
+    // matched zero rows for a settled job) cannot create a second Layer. reconcile.ts
+    // replays through this same writer, so the cron fallback gets layer creation for
+    // free — no second code path. We need the Job's id + combo, which the webhook body
+    // (keyed by runpodJobId) does not carry, so look it up post-write.
+    const job = await prisma.job.findFirst({
+      where: { runpodJobId: id },
+      select: { id: true, combo: true },
+    });
+    if (job) {
+      await deriveLayerFromResult(job.id, job.combo as Combo | null, output);
+    }
     return;
   }
 

@@ -19,7 +19,6 @@ vi.mock("@/lib/db/prisma", () => ({
   prisma: { layer: layerMock },
 }));
 
-// @ts-expect-error RED scaffold: @/lib/orchestration/layers is created in Plan 02/W2.
 import { deriveLayerFromResult } from "@/lib/orchestration/layers";
 
 const workerResult = {
