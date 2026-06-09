@@ -148,9 +148,20 @@ function buildVisibility(request: EnterpriseRecipeRequest) {
   }
 
   if (request.pass === "stone" && request.stoneGroup) {
+    // OUT-01 / locked decision D-1: a precise SINGLE-GROUP transparent holdout.
+    // include = ONLY the target stone group's tokens (the `...metalTokens` spread was
+    // REMOVED — including metal tokens here would defeat the holdout). exclude = the
+    // alloycolour metal tokens (metal is explicitly held out, not merely hidden behind
+    // a background).
+    // HAZARD: the worker's filter_product_objects treats include_contains as a HARD
+    // allow-list — it HIDES every object that does NOT match. If the target stone
+    // group's tokens are sparse and under-match the model's object signatures, the
+    // include list will hide EVERYTHING and produce an empty render. The stone-group
+    // tokens MUST resolve to real object signatures; the BINDING proof is the live
+    // manual render (05-VALIDATION row), not this unit test (which only sees flags).
     return {
-      include: uniqueTokens([...metalTokens, ...tokensFor(request.groupTokens, request.stoneGroup)]),
-      exclude: []
+      include: uniqueTokens(tokensFor(request.groupTokens, request.stoneGroup)),
+      exclude: uniqueTokens(metalTokens)
     };
   }
 
@@ -196,7 +207,12 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       look: "Medium High Contrast",
       exposure: -0.58,
       gamma: 1.0,
-      transparent: false
+      // OUT-01 / D-1: stone passes render with a transparent film so the holdout layer
+      // carries real alpha; metal/full passes stay opaque. NOTE: the metal pass stays an
+      // opaque PNG here — emitting a literal JPEG would require a worker change and is
+      // explicitly DEFERRED. Forward-correct: this only affects NEW batches; existing
+      // Job.recipe rows were already generated and are unchanged.
+      transparent: request.pass === "stone"
     },
     camera: angle.camera,
     world: { color: [1.0, 1.0, 1.0], strength: 0.105 },
@@ -315,7 +331,9 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
     ],
     postprocess: {
       studio_background: {
-        enabled: true,
+        // OUT-01 / D-1: disable the opaque studio floor/background for stone passes so
+        // it is NOT composited over the transparent holdout's alpha; metal/full keep it.
+        enabled: request.pass !== "stone",
         top_color: [247, 247, 246],
         floor_color: [237, 237, 235],
         floor_start: 0.54,
