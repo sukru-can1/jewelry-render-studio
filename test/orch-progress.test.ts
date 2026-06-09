@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest";
 
 import { TERMINAL_STATUSES, isTerminal } from "@/lib/orchestration/status-map";
 
-// @ts-expect-error — Wave 3 module not built yet; import is RED by design.
+// Wave 3 module is now built (04-05) — these are the GREEN imports.
 import { deriveBatchStatus, summarizeJobs } from "@/lib/orchestration/batch-status";
 
 describe("status-map terminal contract (shared, GREEN)", () => {
