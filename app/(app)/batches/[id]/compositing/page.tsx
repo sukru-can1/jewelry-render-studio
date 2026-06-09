@@ -19,6 +19,7 @@ import {
 
 import { SegmentSwitcher } from "../segment-switcher";
 import { LayerCompositor } from "./compositor";
+import { DownloadAllDeliverables } from "./download-all-action";
 
 // COMP-01 — the compositing surface. Async Server Component, Node runtime (Prisma
 // + blob list), force-dynamic so the first paint reflects the latest DB + blob
@@ -124,9 +125,13 @@ export default async function BatchCompositingPage({
             {variants.length} variants · {flattenedKeys.size} flattened
           </span>
         </div>
-        {/* "Download all deliverables" primary action ships in Plan 03. Slot kept
-            so this page compiles standalone and the action drops in cleanly. */}
-        <div data-slot="download-all-deliverables" aria-hidden />
+        {/* COMP-03 — the one primary action per view. flattenedCount is
+            BLOB-DERIVED (flattenedKeys, from deliverablePrefix list) so empty-scope
+            disables correctly under blob-only persistence (06-01). */}
+        <DownloadAllDeliverables
+          batchId={gallery.id}
+          flattenedCount={flattenedKeys.size}
+        />
       </header>
 
       {partial ? (
