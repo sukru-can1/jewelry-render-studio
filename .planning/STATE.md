@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: context exhaustion at 75% (2026-06-09)
-last_updated: "2026-06-09T15:44:14.140Z"
+status: planned
+stopped_at: Phase 6 planned (UI-SPEC approved, 3 plans + VALIDATION, plan-check PASS-WITH-NOTES resolved) — ready for execution
+last_updated: "2026-06-09T19:30:00.000Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 8
   completed_phases: 5
-  total_plans: 25
+  total_plans: 28
   completed_plans: 25
   percent: 63
 ---
@@ -21,16 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-05)
 
 **Core value:** An operator can take one jewelry model and reliably produce the full set of catalog images — every angle × metal × stone variant, in correctly separated metal/stone layers — without touching Blender or hand-editing recipes.
-**Current focus:** Phase 05 — outputs-gallery-layered-passes
+**Current focus:** Phase 06 — compositing-deliverable (PLANNED, awaiting execution)
 
 ## Current Position
 
-Phase: 05 (outputs-gallery-layered-passes) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
+Phase: 06 (compositing-deliverable) — PLANNED, ready for execution
+Plan: 0 of 3 executed (06-01, 06-02, 06-03 + 06-VALIDATION written)
+Status: UI-SPEC approved (6/6 dimensions); plan-check PASS-WITH-NOTES, notes resolved (blob-only persistence drift fixed in 10be964)
 Last activity: 2026-06-09
 
-Progress: [██████████] 100%
+Progress: [██████████] Phase 5 complete · Phase 6 planned
+
+### Phase 6 execution notes (for the executor)
+- **Persistence is BLOB-ONLY.** Deliverables write to `renders/<batchId>/deliverables/<angle>_<metal>.png` via `putPrivate(allowOverwrite:true)`. Do NOT create a `Layer` row for deliverables — `Layer.jobId` is `@unique` AND a required FK to `Job.id`, so a synthetic jobId is infeasible. The 06-01 Task-1 checkpoint already defaults to blob-only; treat that as authoritative over any residual `isFlattened` wording.
+- Discovery (06-02 count, 06-03 zip) is by `list({prefix:'renders/<batchId>/deliverables/'})`, never `Layer.isFlattened`.
+- Wave order: 06-01 (server flatten core + RED tests) → then 06-02 (compositing UI) + 06-03 (downloads).
+- sharp@0.34.5 + archiver@^8 already installed; no new deps.
 
 ## Performance Metrics
 
