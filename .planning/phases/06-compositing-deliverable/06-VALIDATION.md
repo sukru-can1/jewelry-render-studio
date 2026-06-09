@@ -41,12 +41,12 @@ created: 2026-06-09
 | COMP-02 | z-order: base first, overlays sorted by (sortOrder, stoneGroup) deterministically across shuffled input | unit (pure) | `npx vitest run comp-zorder` | ⬜ pending |
 | COMP-02 | `validateVariant`: missing-base / dimension-mismatch / empty-layer / no-overlays warnings from mock metadata+stats numbers; clean variant returns [] | unit (pure) | `npx vitest run comp-validate` | ⬜ pending |
 | COMP-02 | gate PASS → composite produced + putPrivate once + 200 ok:true; gate FAIL → 200 ok:false warnings, NO blob write (never silent flatten) | unit (mock sharp+blob+prisma) | `npx vitest run comp-flatten-route` | ⬜ pending |
-| COMP-02 | flatten is idempotent — re-flatten writes the SAME deliverable pathname with allowOverwrite:true (no second distinct write) | unit (mock blob+prisma) | `npx vitest run comp-flatten-idempotent` | ⬜ pending |
+| COMP-02 | flatten is idempotent — re-flatten OVERWRITES the SAME deterministic blob pathname (`renders/<batchId>/deliverables/<angle>_<metal>.png`) via putPrivate allowOverwrite:true (no DB Layer row, no upsert) | unit (mock blob) | `npx vitest run comp-flatten-idempotent` | ⬜ pending |
 | COMP-02 | flatten route requires session + IDOR-scopes batch by params.id (unauth→401 no get(); unknown batch→404) | unit | `npx vitest run comp-flatten-auth` | ⬜ pending |
 | COMP-01 | compositing page imports no lib/runpod (DB-only source guard) | source | `npx vitest run comp-page-db-only` | ⬜ pending |
 | COMP-01/02 | flatten route + compositing page DB-only hard gate (shared list) | source | `npx vitest run orch-db-only` | ⬜ pending |
 | COMP-02/03 | compositing/flatten + download routes read private only, construct no public/signed URL | source guard | `npx vitest run blob-guard` | ⬜ pending |
-| COMP-03 | batch zip with ?deliverables=1 zips ONLY flattened deliverables (private reads); missing ones lazily flattened CAPPED; raw-layer path unchanged | unit (mock blob+prisma+sharp) | `npx vitest run comp-download-deliverables` | ⬜ pending |
+| COMP-03 | batch zip with ?deliverables=1 DISCOVERS deliverables via `list({prefix:'renders/<batchId>/deliverables/'})` (not a DB isFlattened flag) and zips ONLY those blobs (private reads); missing ones lazily flattened CAPPED; raw-layer path unchanged | unit (mock blob+prisma+sharp) | `npx vitest run comp-download-deliverables` | ⬜ pending |
 | COMP-03 | single-deliverable download via /api/file?download=1 attachment (sanitized filename) | integration | `npx vitest run out-file-download` | ✅ reuse |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
