@@ -20,9 +20,11 @@ const DB_ONLY_FILES = [
   // Layer rows from the DB only — it must never re-fetch terminal jobs from RunPod.
   "app/(app)/batches/[id]/gallery/page.tsx",
   // Phase 6 (COMP-02): the flatten route derives its layer set from completed-job
-  // Layer rows in the DB and composites them — it never touches RunPod. (The Plan-02
-  // compositing page is added to this list when that file lands.)
+  // Layer rows in the DB and composites them — it never touches RunPod.
   "app/(app)/batches/[id]/flatten/route.ts",
+  // Phase 6 (COMP-01, 06-02): the compositing Server Component reads completed-job
+  // Layer rows from the DB and discovers deliverables by blob prefix — never RunPod.
+  "app/(app)/batches/[id]/compositing/page.tsx",
 ];
 
 const FORBIDDEN = [
