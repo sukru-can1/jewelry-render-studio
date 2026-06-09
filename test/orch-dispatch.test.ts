@@ -24,7 +24,6 @@ vi.mock("@/lib/db/prisma", () => ({ prisma: { job: jobMock } }));
 const revalidatePath = vi.hoisted(() => vi.fn());
 vi.mock("next/cache", () => ({ revalidatePath }));
 
-// @ts-expect-error — Wave 1 module not built yet; import is RED by design.
 import { dispatchQueuedJobs } from "@/lib/orchestration/dispatch";
 
 beforeEach(() => {
