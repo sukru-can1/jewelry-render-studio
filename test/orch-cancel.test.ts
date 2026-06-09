@@ -23,7 +23,7 @@ vi.mock("@/lib/db/prisma", () => ({ prisma: { batch: batchMock, job: jobMock } }
 const revalidatePath = vi.hoisted(() => vi.fn());
 vi.mock("next/cache", () => ({ revalidatePath }));
 
-// @ts-expect-error — Wave 2 module not built yet; import is RED by design.
+// 04-04 turned this GREEN: lib/orchestration/cancel now exists and is type-correct.
 import { cancelBatch, cancelJob } from "@/lib/orchestration/cancel";
 
 beforeEach(() => {
