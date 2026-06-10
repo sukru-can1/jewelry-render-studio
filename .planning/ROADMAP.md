@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Orchestration & Status** - Submitted batches render on RunPod with webhook-driven status, cron reconciliation, idempotent retry, progress, and cancel (completed 2026-06-09)
 - [x] **Phase 5: Outputs Gallery & Layered Passes** - Completed renders appear as layered holdout outputs (metal JPEG + per-stone transparent PNG) browsable by product/metal/angle/pass with per-layer download (completed 2026-06-09)
 - [x] **Phase 6: Compositing & Deliverable** - An operator previews stacked layers in-browser and the server flattens each variant into a downloadable catalog-ready deliverable (completed 2026-06-09)
-- [ ] **Phase 7: UI Design System & Workflow Polish** - The operator workflows share a coherent, non-purple Vercel/Notion/RunPod-influenced design system with clear loading/empty/error/in-progress states
+- [x] **Phase 7: UI Design System & Workflow Polish** - The operator workflows share a coherent, non-purple Vercel/Notion/RunPod-influenced design system with clear loading/empty/error/in-progress states
 - [ ] **Phase 8: Cutover & Deploy** - Hardcoded references removed, legacy Blob job history migrated without loss, and the app deployed to the existing Vercel project
 
 ## Phase Details
@@ -143,7 +143,9 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. The interface is built with the `ui-ux-pro-max` skill into a coherent design system (tokens, components) influenced by Vercel, Notion, and RunPod — functional and cutting-edge, with no purple as the primary brand color
   2. The primary operator workflows (product workspace, batch builder, job monitor, gallery/compositing) are navigable, responsive, and show clear loading/empty/error/in-progress states
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [x] 07-01-PLAN.md — Status-token sweep (12 raw amber-/sky-/emerald- palette colors → semantic warning/info/success tokens across estimate-panel + batch-builder + group-assignment) + de-dupe stone-group chip map into one shared lib/groups/chip.ts; UI-02 confirmed already satisfied by audit (completed 2026-06-10)
 **UI hint**: yes
 
 ### Phase 8: Cutover & Deploy
@@ -169,5 +171,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 4. Orchestration & Status | 6/6 | Complete   | 2026-06-09 |
 | 5. Outputs Gallery & Layered Passes | 4/4 | Complete   | 2026-06-09 |
 | 6. Compositing & Deliverable | 3/3 | Complete   | 2026-06-09 |
-| 7. UI Design System & Workflow Polish | 0/TBD | Not started | - |
+| 7. UI Design System & Workflow Polish | 1/1 | Complete   | 2026-06-10 |
 | 8. Cutover & Deploy | 0/TBD | Not started | - |

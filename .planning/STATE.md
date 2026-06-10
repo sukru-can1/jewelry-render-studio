@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-01-PLAN.md (server flatten core, COMP-02)
-last_updated: "2026-06-09T17:47:57.340Z"
-last_activity: 2026-06-09
+stopped_at: Completed 07-01-PLAN.md (UI design-system coherence sweep, UI-01)
+last_updated: "2026-06-10T04:45:00.000Z"
+last_activity: 2026-06-10
 progress:
   total_phases: 8
-  completed_phases: 6
-  total_plans: 28
-  completed_plans: 28
-  percent: 75
+  completed_phases: 7
+  total_plans: 29
+  completed_plans: 29
+  percent: 88
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-05)
 
 **Core value:** An operator can take one jewelry model and reliably produce the full set of catalog images — every angle × metal × stone variant, in correctly separated metal/stone layers — without touching Blender or hand-editing recipes.
-**Current focus:** Phase 06 — compositing-deliverable (PLANNED, awaiting execution)
+**Current focus:** Phase 07 — UI design system & workflow polish (COMPLETE); next: Phase 08 cutover & deploy
 
 ## Current Position
 
-Phase: 06 (compositing-deliverable) — IN PROGRESS
-Plan: 3 of 3 executed (06-01 done; 06-02 + 06-03 pending)
-Status: Ready to execute
-Last activity: 2026-06-09
+Phase: 07 (ui-design-system-polish) — COMPLETE
+Plan: 1 of 1 executed (07-01 done)
+Status: Phase 7 complete; ready for Phase 8
+Last activity: 2026-06-10
 
-Progress: [██████████] 100%
+Progress: [█████████░] 88%
 
 ### Phase 6 execution notes (for the executor)
 
@@ -82,6 +82,7 @@ Progress: [██████████] 100%
 | Phase 06 P06-01 | 10min | 3 tasks | 13 files |
 | Phase 06 P02 | 12 | 2 tasks | 7 files |
 | Phase 06 P03 | 13m | 2 tasks | 5 files |
+| Phase 07 P07-01 | 7min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,7 @@ Recent decisions affecting current work:
 - [Phase 06]: 06-01: compositing variant key = (angleKey × metalKey) in a new PURE groupVariantsForCompositing (NOT group.ts variant mode which ignores angle); base = metal pass, overlays = stone passes z-ordered by (sortOrder ?? Infinity, stoneGroup); validateVariant gate WARNs (200 {ok:false,warnings}) and writes nothing — never a silent flatten; flatten.ts is the sole sharp importer; route reads layer bytes privately via get(access:private)→Buffer.
 - [Phase ?]: 06-02: compositing page is a DB-only Server Component (requireSession first, IDOR by params.id, force-dynamic, Node) under the orch-db-only hard guard + comp-page-db-only; every preview img src via privateUrl -> /api/file.
 - [Phase ?]: 06-02 (COMP-01): compositing flattened count is BLOB-DERIVED via list by deliverable prefix matched to enumerated variant pathnames; Layer.isFlattened stays all-false under blob-only persistence and is never read.
+- [Phase 07]: 07-01 (UI-01): audit-driven coherence sweep, NOT a redesign (app was 27/30). 12 raw amber-/sky-/emerald- status-palette classes → semantic warning/info/success tokens (intent-mapped) across estimate-panel + batch-builder + group-assignment; stone-group chip class map de-duped into one shared lib/groups/chip.ts (outline-style, distinct from gallery's filled GROUP_CHIP); guard test asserts no raw palette survives. UI-02 confirmed already satisfied by audit (no state-fill work).
 
 ### Pending Todos
 
@@ -146,6 +148,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-09T17:47:36.782Z
-Stopped at: Completed 06-01-PLAN.md (server flatten core, COMP-02)
+Last session: 2026-06-10T04:45:00.000Z
+Stopped at: Completed 07-01-PLAN.md (UI design-system coherence sweep, UI-01)
 Resume file: None
