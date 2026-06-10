@@ -27,6 +27,11 @@ export const env = createEnv({
     // Optional: only present when bootstrapping the first Admin via the seed.
     SEED_ADMIN_EMAIL: z.string().min(1).optional(),
     SEED_ADMIN_PASSWORD: z.string().min(1).optional(),
+    // Optional (AI auto-grouping, additive): a direct OpenAI key + model id. The
+    // feature is opt-in — when OPENAI_API_KEY is absent the route returns a clear
+    // "AI is not configured" error and the app otherwise builds/runs unchanged.
+    OPENAI_API_KEY: z.string().optional(),
+    AI_MODEL: z.string().optional(),
   },
   client: {},
   // Next.js only inlines NEXT_PUBLIC_* at build; server vars are read at runtime.
