@@ -164,6 +164,7 @@ export default async function ProductDetailPage({
             <GroupAssignment
               productId={product.id}
               objects={groupObjects}
+              materials={parsedInventory?.materials ?? []}
               initialAssignments={initialAssignments}
             />
           )}

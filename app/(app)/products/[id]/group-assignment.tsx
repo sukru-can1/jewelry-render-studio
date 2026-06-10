@@ -12,11 +12,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { HelpCircle, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, HelpCircle, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-import type { InventoryObject } from "@/lib/inventory";
-import { suggestGroup } from "@/lib/tokens";
+import type { InventoryObject, InventoryMaterial } from "@/lib/inventory";
+import { classifyObject } from "@/lib/tokens";
+import { detectScaleOutliers } from "@/lib/inspection/scale";
 import { saveAssignments, type GroupTokenMap } from "@/lib/products/assignments";
 import type { ObjectGroupKey } from "@/lib/validation/product";
 import { Button } from "@/app/components/ui/button";
@@ -93,10 +94,12 @@ function sameSelection(a: Selection, b: Selection): boolean {
 export function GroupAssignment({
   productId,
   objects,
+  materials,
   initialAssignments,
 }: {
   productId: string;
   objects: InventoryObject[];
+  materials: InventoryMaterial[];
   initialAssignments: GroupTokenMap;
 }) {
   const router = useRouter();
@@ -106,6 +109,9 @@ export function GroupAssignment({
   );
   const [selection, setSelection] = useState<Selection>(initial);
   const [saving, setSaving] = useState(false);
+
+  // Scale-outlier warning: a single giant object mis-frames every render.
+  const scaleOutliers = useMemo(() => detectScaleOutliers(objects), [objects]);
 
   const dirty = !sameSelection(selection, initial);
   const unassignedCount = objects.filter(
@@ -131,6 +137,31 @@ export function GroupAssignment({
       return next;
     });
     toast(`Assigned ${matches.length} matching *metal* → alloycolour.`, {
+      action: { label: "Undo", onClick: () => setSelection(before) },
+    });
+  }
+
+  // Bulk auto-assign: apply classifyObject() to every UNASSIGNED object (skip
+  // objects already assigned and objects with no suggestion). Operator still
+  // saves manually. Mirrors assignAllMetal's capture-before / Undo pattern.
+  function assignAllSuggestions() {
+    const targets = objects
+      .filter((o) => (selection[o.signature] ?? UNASSIGNED) === UNASSIGNED)
+      .map((o) => ({ obj: o, group: classifyObject(o, materials) }))
+      .filter((t): t is { obj: InventoryObject; group: string } => t.group !== null);
+    if (targets.length === 0) {
+      toast("No suggestions for the remaining unassigned objects.");
+      return;
+    }
+    const before = selection;
+    setSelection((prev) => {
+      const next = { ...prev };
+      for (const { obj, group } of targets) {
+        next[obj.signature] = group as ObjectGroupKey;
+      }
+      return next;
+    });
+    toast(`Auto-assigned ${targets.length} suggestion${targets.length === 1 ? "" : "s"}.`, {
       action: { label: "Undo", onClick: () => setSelection(before) },
     });
   }
@@ -178,20 +209,41 @@ export function GroupAssignment({
         </Popover>
       </div>
 
+      {/* Scale-outlier warning banner — a giant object mis-frames every render. */}
+      {scaleOutliers.length > 0 ? (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-warning/40 bg-warning/10 px-4 py-3">
+          {scaleOutliers.slice(0, 3).map((o) => (
+            <div key={o.name} className="flex items-start gap-2 text-sm text-warning">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
+              <span>
+                <span className="font-mono">{o.name || "—"}</span> is ~{o.ratio}× larger than
+                the other parts — likely a scale issue in the model; renders may be mis-framed.
+                Fix the model&apos;s scale before rendering.
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {/* Token-assist bar */}
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
         <Sparkles className="size-4 text-primary" strokeWidth={1.75} />
         <span className="text-sm text-muted-foreground">Token-assist</span>
-        <Button variant="secondary" size="sm" className="ml-auto" onClick={assignAllMetal}>
-          Assign all matching <span className="mx-1 font-mono">*metal*</span> → alloycolour
-        </Button>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={assignAllMetal}>
+            Assign all matching <span className="mx-1 font-mono">*metal*</span> → alloycolour
+          </Button>
+          <Button variant="secondary" size="sm" onClick={assignAllSuggestions}>
+            Auto-assign all suggestions
+          </Button>
+        </div>
       </div>
 
       {/* Assignment rows */}
       <div className="overflow-hidden rounded-lg border border-border">
         {objects.map((obj) => {
           const current = selection[obj.signature] ?? UNASSIGNED;
-          const suggestion = suggestGroup(obj.signature);
+          const suggestion = classifyObject(obj, materials);
           const showSuggestion =
             suggestion !== null && current === UNASSIGNED;
 
