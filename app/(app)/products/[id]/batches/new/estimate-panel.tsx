@@ -21,8 +21,8 @@ import {
 // Zone -> frame treatment (inherited status hues; NEVER accent/teal on the number).
 const FRAME: Record<Zone, string> = {
   idle: "border-border",
-  safe: "border-l-4 border-l-emerald-500/70 border-border",
-  warn: "border-l-4 border-l-amber-500 border-amber-500/40",
+  safe: "border-l-4 border-l-success/70 border-border",
+  warn: "border-l-4 border-l-warning border-warning/40",
   block: "border-l-4 border-l-destructive border-destructive/50",
 };
 
@@ -71,7 +71,7 @@ export function EstimatePanel({
           <TriangleAlert
             className={cn(
               "mt-2 size-6 shrink-0",
-              zone === "warn" ? "text-amber-500" : "text-destructive",
+              zone === "warn" ? "text-warning" : "text-destructive",
             )}
             strokeWidth={1.75}
             aria-hidden
@@ -116,7 +116,7 @@ export function EstimatePanel({
       </Tooltip>
 
       {submitting ? (
-        <p className="text-sm text-sky-500">Creating batch…</p>
+        <p className="text-sm text-info">Creating batch…</p>
       ) : null}
     </div>
   );
