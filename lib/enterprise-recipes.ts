@@ -1,3 +1,13 @@
+// INTEL-01: the named-knob override contract + the G2 clamp layer. knobs.ts also
+// holds the identity baselines (KNOB_DEFAULTS) this generator assembles with, so
+// "default knob value" there is provably this file's value (no duplicated magics).
+import {
+  clamp,
+  KNOB_DEFAULTS,
+  KNOB_RANGES,
+  type ProfileOverrides,
+} from "@/lib/intelligence/knobs";
+
 export type EnterpriseAngleKey = "hero" | "front" | "top" | "profile";
 export type EnterprisePass = "full" | "metal" | "stone";
 export type EnterpriseMetal = "white" | "yellow" | "rose";
@@ -16,6 +26,9 @@ export type EnterpriseRecipeRequest = {
   samples: number;
   stoneGroup?: Exclude<EnterpriseGroupKey, "alloycolour">;
   stoneMaterials: Record<Exclude<EnterpriseGroupKey, "alloycolour">, EnterpriseStoneMaterial>;
+  // INTEL-01: OPTIONAL clamped knob overrides applied at the END of assembly.
+  // Absent (or undefined) -> the output is byte-identical to the classic path.
+  profileOverrides?: ProfileOverrides;
 };
 
 const METAL_PRESETS: Record<EnterpriseMetal, { label: string; base: number[]; roughness: number }> = {
@@ -169,7 +182,13 @@ function buildVisibility(request: EnterpriseRecipeRequest) {
 }
 
 export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<string, unknown> {
-  const angle = ANGLES[request.angle];
+  const overrides = request.profileOverrides;
+  // INTEL-01 cameraPreset: when present, the FULL ANGLES bundle (camera, rotation,
+  // target size, label) for the preset is used INSTEAD of request.angle (symptom
+  // 6/9 — e.g. the lower front camera for a dull edge-on stone). The combo
+  // COORDINATE (name, enterprise.angle) keeps request.angle — job identity is
+  // unchanged. Absent -> behavior identical to today.
+  const angle = ANGLES[overrides?.cameraPreset ?? request.angle];
   const visibility = buildVisibility(request);
   const metal = METAL_PRESETS[request.metal];
   const centerTokens = uniqueTokens([
@@ -188,7 +207,7 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
     { contains: FALLBACK_TOKENS.alloycolour, material: "selected_metal" }
   ];
 
-  return {
+  const recipe = {
     name: `enterprise_${slug(request.productName)}_${request.pass}_${request.metal}_${request.stoneGroup || "all"}_${request.angle}`,
     enterprise: {
       workflow: "production_catalog",
@@ -205,7 +224,7 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       denoise: true,
       view_transform: "Filmic",
       look: "Medium High Contrast",
-      exposure: -0.58,
+      exposure: KNOB_DEFAULTS.exposure, // -0.58 — the INTEL-01 identity baseline
       gamma: 1.0,
       // OUT-01 / D-1: stone passes render with a transparent film so the holdout layer
       // carries real alpha; metal/full passes stay opaque. NOTE: the metal pass stays an
@@ -215,7 +234,7 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       transparent: request.pass === "stone"
     },
     camera: angle.camera,
-    world: { color: [1.0, 1.0, 1.0], strength: 0.105 },
+    world: { color: [1.0, 1.0, 1.0], strength: KNOB_DEFAULTS.worldStrength }, // 0.105
     background: { color: [0.965, 0.965, 0.955, 1.0], plane_size: 8.5, plane_z: -0.055 },
     model: {
       auto_center: true,
@@ -322,7 +341,7 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
     contact_shadows: [
       {
         layers: 4,
-        alpha: 0.115,
+        alpha: KNOB_DEFAULTS.contactShadowStrength, // 0.115 — INTEL-01 identity baseline
         position: [0, 0, -0.052],
         size: [2.4, 0.5],
         color: [0.08, 0.08, 0.08],
@@ -393,6 +412,44 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       }
     }
   };
+
+  // ── INTEL-01: apply clamped profileOverrides at the END of assembly (G2). ──
+  // Each present knob moves exactly one recipe surface, saturated to KNOB_RANGES
+  // before it touches the recipe — a hallucinated out-of-range value can never
+  // reach Blender. Absent knobs leave the identity values above untouched, so the
+  // no-override path is byte-identical to the pre-override generator (asserted by
+  // golden sha256 in test/intel-overrides.test.ts). Mutation (not respread) keeps
+  // JSON key order — and therefore JSON.stringify bytes — stable.
+  if (overrides) {
+    if (overrides.worldStrength !== undefined) {
+      recipe.world.strength = clamp(overrides.worldStrength, KNOB_RANGES.worldStrength);
+    }
+    if (overrides.exposure !== undefined) {
+      recipe.render.exposure = clamp(overrides.exposure, KNOB_RANGES.exposure);
+    }
+    if (overrides.contactShadowStrength !== undefined) {
+      const alpha = clamp(
+        overrides.contactShadowStrength,
+        KNOB_RANGES.contactShadowStrength
+      );
+      for (const shadow of recipe.contact_shadows) {
+        shadow.alpha = alpha;
+      }
+    }
+    if (overrides.cardDarkness !== undefined) {
+      // CARD-DARKNESS IDENTITY BASELINE = KNOB_DEFAULTS.cardDarkness (1.0): the
+      // knob is a direct multiplier on today's card RGB, so ABSENCE reproduces
+      // today's colors verbatim. An explicit value is clamped to the SAFE
+      // [0, 0.5] band (always darker than today; 0 = pure black) — LOWER =
+      // darker cards = readable facets, the DOMAIN-sanctioned direction.
+      const factor = clamp(overrides.cardDarkness, KNOB_RANGES.cardDarkness);
+      for (const card of recipe.reflection_cards) {
+        card.color = card.color.map((channel, i) => (i < 3 ? channel * factor : channel));
+      }
+    }
+  }
+
+  return recipe;
 }
 
 export const enterpriseAngles = ANGLES;
