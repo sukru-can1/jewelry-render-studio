@@ -31,6 +31,7 @@ import {
   PopoverTrigger,
 } from "@/app/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { GROUP_CHIP_CLASS } from "@/lib/groups/chip";
 
 const GROUP_OPTIONS: { key: ObjectGroupKey; label: string }[] = [
   { key: "alloycolour", label: "alloycolour" },
@@ -46,14 +47,9 @@ const INTRO_HINT =
 const HELPER_COPY =
   "alloycolour = the metal pass · diamond = the center stone · stone2 / stone3 = side stones. Unassigned objects won't appear in any pass.";
 
-// Group-colored chip per UI-SPEC §4 color contract.
-const CHIP_CLASS: Record<string, string> = {
-  alloycolour: "border-border text-foreground",
-  diamond: "border-primary/50 text-primary",
-  stone2: "border-sky-500/50 text-sky-500",
-  stone3: "border-amber-500/50 text-amber-500",
-  unassigned: "border-dashed border-border text-muted-foreground",
-};
+// Group-colored chip per UI-SPEC §4 color contract — single shared source of
+// truth (lib/groups/chip.ts), token-based, no raw palette colors.
+const CHIP_CLASS = GROUP_CHIP_CLASS;
 
 type Selection = Record<string, ObjectGroupKey | typeof UNASSIGNED>;
 
@@ -255,7 +251,7 @@ export function GroupAssignment({
 
       {/* Incomplete-on-save note (non-blocking) */}
       {unassignedCount > 0 ? (
-        <p className="text-sm text-amber-500">
+        <p className="text-sm text-warning">
           {unassignedCount} {unassignedCount === 1 ? "object is" : "objects are"} still
           unassigned and won&apos;t appear in any pass.
         </p>

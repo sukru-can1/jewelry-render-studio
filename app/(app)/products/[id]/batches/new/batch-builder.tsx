@@ -23,6 +23,7 @@ import {
 } from "@/lib/batches/estimate";
 import { createBatch } from "@/lib/batches/actions";
 import type { StoneGroupKey } from "@/lib/batches/builder-data";
+import { GROUP_CHIP_CLASS } from "@/lib/groups/chip";
 import { Button } from "@/app/components/ui/button";
 import {
   ToggleGroup,
@@ -64,12 +65,9 @@ const STONE_GROUP_LABEL: Record<StoneGroupKey, string> = {
   stone2: "stone2",
   stone3: "stone3",
 };
-// Inherited group color contract (Phase 2 §4): diamond=accent, stone2=info, stone3=warning.
-const STONE_GROUP_CHIP: Record<StoneGroupKey, string> = {
-  diamond: "border-primary/50 text-primary",
-  stone2: "border-sky-500/50 text-sky-500",
-  stone3: "border-amber-500/50 text-amber-500",
-};
+// Inherited group color contract (Phase 2 §4): diamond=primary, stone2=info, stone3=warning.
+// The class map is the single shared source of truth (lib/groups/chip.ts).
+const STONE_GROUP_CHIP = GROUP_CHIP_CLASS;
 
 const SELECTED_CHIP =
   "data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary border border-border";
@@ -229,7 +227,7 @@ export function BatchBuilder({
             ))}
           </ToggleGroup>
           {angleKeys.length === 0 ? (
-            <p className="text-sm text-amber-500">Select at least one angle to continue.</p>
+            <p className="text-sm text-warning">Select at least one angle to continue.</p>
           ) : null}
         </section>
 
@@ -262,7 +260,7 @@ export function BatchBuilder({
             ))}
           </ToggleGroup>
           {metalKeys.length === 0 ? (
-            <p className="text-sm text-amber-500">Select at least one metal to continue.</p>
+            <p className="text-sm text-warning">Select at least one metal to continue.</p>
           ) : null}
         </section>
 
@@ -354,7 +352,7 @@ export function BatchBuilder({
             ))}
           </ToggleGroup>
           {passes.length === 0 ? (
-            <p className="text-sm text-amber-500">Select at least one pass to continue.</p>
+            <p className="text-sm text-warning">Select at least one pass to continue.</p>
           ) : null}
         </section>
 
@@ -426,7 +424,7 @@ export function BatchBuilder({
 
         {/* Over-soft-threshold inline notice */}
         {overSoftThreshold ? (
-          <p className="text-sm text-amber-500">
+          <p className="text-sm text-warning">
             That&apos;s a large batch ({jobs} jobs, ~{Math.max(1, Math.round(est.minutes))}{" "}
             min, ~${est.costUsd.toFixed(2)}). You can still create it — you&apos;ll confirm
             first.
