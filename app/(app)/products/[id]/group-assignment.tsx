@@ -12,7 +12,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, HelpCircle, Loader2, Sparkles } from "lucide-react";
+import { AlertTriangle, Bot, HelpCircle, Info, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import type { InventoryObject, InventoryMaterial } from "@/lib/inventory";
@@ -53,6 +53,21 @@ const HELPER_COPY =
 const CHIP_CLASS = GROUP_CHIP_CLASS;
 
 type Selection = Record<string, ObjectGroupKey | typeof UNASSIGNED>;
+
+// Shape returned by POST /api/products/[id]/ai-analyze (success branch). The route
+// keys groupsBySignature by object signature so it applies directly to Selection.
+interface AiAssignment {
+  name: string;
+  group: ObjectGroupKey | "other";
+  reason: string;
+}
+interface AiAnalysisResult {
+  groupsBySignature: Record<string, ObjectGroupKey>;
+  assignments: AiAssignment[];
+  scaleAnomalies: { name: string; note: string }[];
+  warnings: string[];
+  summary: string;
+}
 
 function buildGroups(objects: InventoryObject[], selection: Selection): GroupTokenMap {
   const groups: GroupTokenMap = {
@@ -109,6 +124,20 @@ export function GroupAssignment({
   );
   const [selection, setSelection] = useState<Selection>(initial);
   const [saving, setSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<AiAnalysisResult | null>(null);
+
+  // Per-object AI reason (keyed by signature) for the subtle under-row hint.
+  const aiReasonBySignature = useMemo(() => {
+    if (!aiResult) return {} as Record<string, string>;
+    const byName = new Map(objects.map((o) => [o.name, o.signature]));
+    const map: Record<string, string> = {};
+    for (const a of aiResult.assignments) {
+      const sig = byName.get(a.name);
+      if (sig) map[sig] = a.reason;
+    }
+    return map;
+  }, [aiResult, objects]);
 
   // Scale-outlier warning: a single giant object mis-frames every render.
   const scaleOutliers = useMemo(() => detectScaleOutliers(objects), [objects]);
@@ -164,6 +193,58 @@ export function GroupAssignment({
     toast(`Auto-assigned ${targets.length} suggestion${targets.length === 1 ? "" : "s"}.`, {
       action: { label: "Undo", onClick: () => setSelection(before) },
     });
+  }
+
+  // AI auto-grouping: POST the product to the analyze route, then apply the
+  // returned groupsBySignature to the selection (capture before / Undo, like
+  // assignAllMetal). NEVER auto-saves — the operator reviews + Saves. On error
+  // (incl. "AI is not configured") surface a toast and leave the selection alone.
+  async function analyzeWithAi() {
+    setAnalyzing(true);
+    const pending = toast.loading("Analyzing with AI… this can take up to a minute.");
+    try {
+      const res = await fetch(`/api/products/${productId}/ai-analyze`, {
+        method: "POST",
+      });
+      const data = (await res.json()) as
+        | (AiAnalysisResult & { ok: true })
+        | { ok?: false; error?: string };
+
+      if (!res.ok || data.ok === false || !("groupsBySignature" in data)) {
+        const message =
+          ("error" in data && data.error) || "AI analysis failed. Try again.";
+        toast.error(message, { id: pending });
+        return;
+      }
+
+      const result = data as AiAnalysisResult & { ok: true };
+      setAiResult(result);
+
+      const entries = Object.entries(result.groupsBySignature).filter(
+        ([sig]) => sig in selection,
+      );
+      if (entries.length === 0) {
+        toast.message("AI analysis complete — no matching objects to pre-fill.", {
+          id: pending,
+        });
+        return;
+      }
+
+      const before = selection;
+      setSelection((prev) => {
+        const next = { ...prev };
+        for (const [sig, group] of entries) next[sig] = group;
+        return next;
+      });
+      toast.success(
+        `AI pre-filled ${entries.length} object${entries.length === 1 ? "" : "s"}. Review and Save.`,
+        { id: pending, action: { label: "Undo", onClick: () => setSelection(before) } },
+      );
+    } catch {
+      toast.error("AI analysis failed. Try again.", { id: pending });
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   async function onSave() {
@@ -236,8 +317,67 @@ export function GroupAssignment({
           <Button variant="secondary" size="sm" onClick={assignAllSuggestions}>
             Auto-assign all suggestions
           </Button>
+          <Button
+            size="sm"
+            onClick={analyzeWithAi}
+            disabled={analyzing}
+            className="gap-1.5"
+          >
+            {analyzing ? (
+              <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />
+            ) : (
+              <Bot className="size-4" strokeWidth={1.75} />
+            )}
+            {analyzing ? "Analyzing with AI…" : "Analyze with AI"}
+          </Button>
         </div>
       </div>
+
+      {/* AI analysis panel — appears after a successful analysis. Summary +
+          scale anomalies + warnings, rendered with semantic tokens only. */}
+      {aiResult ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-info/40 bg-info/10 px-4 py-3">
+          <div className="flex items-start gap-2 text-sm text-foreground">
+            <Bot className="mt-0.5 size-4 shrink-0 text-info" strokeWidth={1.75} />
+            <p>{aiResult.summary}</p>
+          </div>
+
+          {aiResult.scaleAnomalies.length > 0 ? (
+            <ul className="flex flex-col gap-1.5">
+              {aiResult.scaleAnomalies.map((a) => (
+                <li
+                  key={`anomaly-${a.name}`}
+                  className="flex items-start gap-2 text-sm text-warning"
+                >
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
+                  <span>
+                    <span className="font-mono">{a.name || "—"}</span> — {a.note}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {aiResult.warnings.length > 0 ? (
+            <ul className="flex flex-col gap-1.5">
+              {aiResult.warnings.map((w, i) => (
+                <li
+                  key={`warning-${i}`}
+                  className="flex items-start gap-2 text-sm text-warning"
+                >
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
+                  <span>{w}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Info className="size-3.5 shrink-0" strokeWidth={1.75} />
+            Reviewed by AI — confirm the groups and Save. Nothing was saved automatically.
+          </p>
+        </div>
+      ) : null}
 
       {/* Assignment rows */}
       <div className="overflow-hidden rounded-lg border border-border">
@@ -271,6 +411,12 @@ export function GroupAssignment({
                     </button>
                   ) : null}
                 </div>
+                {aiReasonBySignature[obj.signature] ? (
+                  <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <Bot className="mt-0.5 size-3 shrink-0 text-info" strokeWidth={1.75} />
+                    {aiReasonBySignature[obj.signature]}
+                  </p>
+                ) : null}
               </div>
 
               <RadioGroup
