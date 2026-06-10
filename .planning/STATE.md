@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: complete
-stopped_at: Completed 08-01-PLAN.md (cutover & deploy — SEC-05/DATA-05/DEPLOY-01); milestone closed 8/8
-last_updated: "2026-06-10T09:10:00.000Z"
+status: executing
+stopped_at: Completed 08-01-PLAN.md (cutover & deploy) — milestone v1.0 COMPLETE (8/8 phases, 41/41 requirements)
+last_updated: "2026-06-10T17:08:45.882Z"
 last_activity: 2026-06-10
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 8
-  total_plans: 30
-  completed_plans: 30
-  percent: 100
+  total_plans: 34
+  completed_plans: 31
+  percent: 89
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-05)
 
 **Core value:** An operator can take one jewelry model and reliably produce the full set of catalog images — every angle × metal × stone variant, in correctly separated metal/stone layers — without touching Blender or hand-editing recipes.
-**Current focus:** Phase 08 — cutover & deploy (COMPLETE). Milestone v1.0 closed — all 41 v1 requirements Complete.
+**Current focus:** Phase 09 — adaptive-render-intelligence
 
 ## Current Position
 
-Phase: 08 (cutover-deploy) — COMPLETE
-Plan: 1 of 1 executed (08-01 done)
-Status: Milestone v1.0 COMPLETE — 8/8 phases; legacy surfaces retired, SEC-05/DATA-05/DEPLOY-01 done
+Phase: 09 (adaptive-render-intelligence) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-06-10
 
-Progress: [██████████] 100%
+Progress: [█████████░] 91%
 
 ### Phase 8 execution notes
 
@@ -91,6 +91,7 @@ Progress: [██████████] 100%
 | Phase 06 P03 | 13m | 2 tasks | 5 files |
 | Phase 07 P07-01 | 7min | 2 tasks | 5 files |
 | Phase 08 P08-01 | 40min | 4 tasks | 16 files |
+| Phase 09 P01 | 47m | 4 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,9 @@ Recent decisions affecting current work:
 - [Phase ?]: 06-02: compositing page is a DB-only Server Component (requireSession first, IDOR by params.id, force-dynamic, Node) under the orch-db-only hard guard + comp-page-db-only; every preview img src via privateUrl -> /api/file.
 - [Phase ?]: 06-02 (COMP-01): compositing flattened count is BLOB-DERIVED via list by deliverable prefix matched to enumerated variant pathnames; Layer.isFlattened stays all-false under blob-only persistence and is never read.
 - [Phase 07]: 07-01 (UI-01): audit-driven coherence sweep, NOT a redesign (app was 27/30). 12 raw amber-/sky-/emerald- status-palette classes → semantic warning/info/success tokens (intent-mapped) across estimate-panel + batch-builder + group-assignment; stone-group chip class map de-duped into one shared lib/groups/chip.ts (outline-style, distinct from gallery's filled GROUP_CHIP); guard test asserts no raw palette survives. UI-02 confirmed already satisfied by audit (no state-fill work).
+- [Phase ?]: 09-01: cardDarkness = direct multiplier on card RGB; identity 1.0 via knob ABSENCE; explicit overrides clamp to [0,0.5] (always darker). 09-02 vision prompt must use NEGATIVE cardDarknessDelta = darker (research convention, not AI-SPEC 5.3 sign table).
+- [Phase ?]: 09-01: G5 extended — milky zeroes BOTH positive exposureDelta AND positive worldStrengthDelta; when guardrails zero EVERY delta decideLoop freezes best instead of a no-op autoCorrect re-render.
+- [Phase ?]: 09-01: Batch.optimizeWithAi Boolean default(false) column landed in the add_job_intel migration (applied to Railway) alongside Job.intelState/intel; createBatchSchema carries the optional default-false field, unconsumed until 09-02.
 
 ### Pending Todos
 
@@ -156,6 +160,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T09:10:00.000Z
+Last session: 2026-06-10T17:08:45.867Z
 Stopped at: Completed 08-01-PLAN.md (cutover & deploy) — milestone v1.0 COMPLETE (8/8 phases, 41/41 requirements)
 Resume file: None
