@@ -13,7 +13,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **SEC-02**: Vercel Blob assets (models, renders, deliverables) are private, served via signed/time-limited URLs rather than public URLs
 - [x] **SEC-03**: Every app and API route denies access by default to unauthenticated requests
 - [x] **SEC-04**: Machine-to-machine endpoints (RunPod status webhook) authenticate via a shared secret, not open access
-- [ ] **SEC-05**: Hardcoded `ring99` model URL and local fallback recipe path are removed from API routes
+- [x] **SEC-05**: Hardcoded `ring99` model URL and local fallback recipe path are removed from API routes
 
 ### Authentication & Roles
 
@@ -29,7 +29,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **DATA-02**: Prisma uses a pooled connection configuration safe for Vercel serverless (no pool exhaustion under concurrent requests)
 - [x] **DATA-03**: Domain settings are seeded from the rendering team's real values: 4 camera views (view1 az30/el25, view2 az180/el15, view3 az−30/el10, view4 az0/el75), 3 metals (white = White Gold/Platinum, yellow = 18K Yellow Gold, red = Rose Gold), 4 object groups (alloycolour, diamond, stone2, stone3), quality presets (preview 64 / medium 256 / high 512 / ultra), default 1920×1920
 - [x] **DATA-04**: An Admin can view and edit domain settings (camera views, metals, stone types, quality presets) and changes apply to new batches
-- [ ] **DATA-05**: Existing render history from the prior Blob job-state is preserved or migrated into the new store (no silent loss of past work)
+- [x] **DATA-05**: Existing render history from the prior Blob job-state is preserved or migrated into the new store (no silent loss of past work) — *Met-by-rationale (no migration): legacy job-state was disposable ring99 R&D in a rotated/inaccessible public Blob store; the enterprise product is clean-slate Postgres with no catalog history to migrate. See `phases/08-cutover-deploy/DATA-05-DECISION.md`.*
 
 ### Product Workspace
 
@@ -76,7 +76,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Deployment
 
-- [ ] **DEPLOY-01**: The app builds and deploys to the existing Vercel project `sukrus-projects-1b84f634/jewelry-render-studio` with the new env vars (DB URL, auth secret, webhook secret) configured
+- [x] **DEPLOY-01**: The app builds and deploys to the existing Vercel project `sukrus-projects-1b84f634/jewelry-render-studio` with the new env vars (DB URL, auth secret, webhook secret) configured — *Verified 2026-06-10: production `/` → 307 → `/login` (200), and all 9 required env vars present in Production (DATABASE_URL, DIRECT_URL, AUTH_SECRET, RUNPOD_API_KEY, RUNPOD_ENDPOINT_ID, BLOB_READ_WRITE_TOKEN, RUNPOD_WEBHOOK_SECRET, CRON_SECRET, APP_URL).*
 
 ## v2 Requirements
 
@@ -152,9 +152,9 @@ Which phases cover which requirements. Populated during roadmap creation.
 | COMP-03 | Phase 6 | Complete |
 | UI-01 | Phase 7 | Complete |
 | UI-02 | Phase 7 | Complete |
-| SEC-05 | Phase 8 | Pending |
-| DATA-05 | Phase 8 | Pending |
-| DEPLOY-01 | Phase 8 | Pending |
+| SEC-05 | Phase 8 | Complete |
+| DATA-05 | Phase 8 | Complete (met-by-rationale) |
+| DEPLOY-01 | Phase 8 | Complete |
 
 **Coverage:**
 - v1 requirements: 41 total
@@ -165,4 +165,4 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 ---
 *Requirements defined: 2026-06-05*
-*Last updated: 2026-06-09 — Phase 6 complete (COMP-01/02/03 shipped across plans 06-01/02/03; compositing + flatten + deliverable download surfaces verified Complete)*
+*Last updated: 2026-06-10 — Phase 8 (cutover & deploy) complete: SEC-05 (legacy surfaces retired + ring99 hardcodes removed), DATA-05 (Complete met-by-rationale, no migration), DEPLOY-01 (production deploy + 9 env vars verified). All 41 v1 requirements Complete — milestone closed.*

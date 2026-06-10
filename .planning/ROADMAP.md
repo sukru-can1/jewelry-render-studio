@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Outputs Gallery & Layered Passes** - Completed renders appear as layered holdout outputs (metal JPEG + per-stone transparent PNG) browsable by product/metal/angle/pass with per-layer download (completed 2026-06-09)
 - [x] **Phase 6: Compositing & Deliverable** - An operator previews stacked layers in-browser and the server flattens each variant into a downloadable catalog-ready deliverable (completed 2026-06-09)
 - [x] **Phase 7: UI Design System & Workflow Polish** - The operator workflows share a coherent, non-purple Vercel/Notion/RunPod-influenced design system with clear loading/empty/error/in-progress states
-- [ ] **Phase 8: Cutover & Deploy** - Hardcoded references removed, legacy Blob job history migrated without loss, and the app deployed to the existing Vercel project
+- [x] **Phase 8: Cutover & Deploy** - Legacy render surfaces retired entirely and ring99 hardcodes removed (SEC-05); legacy job history is disposable R&D with no migration (DATA-05 met-by-rationale); app deployed to the existing Vercel project with all env vars verified (DEPLOY-01) (completed 2026-06-10)
 
 ## Phase Details
 
@@ -154,9 +154,9 @@ Plans:
 **Depends on**: Phase 1, Phase 4
 **Requirements**: SEC-05, DATA-05, DEPLOY-01
 **Success Criteria** (what must be TRUE):
-  1. The hardcoded `ring99` model URL and the local fallback recipe path are removed from API routes
-  2. Existing render history from the prior Blob job-state is migrated into Postgres via an idempotent, cursor-paginated backfill (status normalized to the enum) with a dual-read window — no silent loss of past work
-  3. The app builds and deploys to the existing Vercel project `sukrus-projects-1b84f634/jewelry-render-studio` with the new env vars (DB URL, auth secret, webhook secret) configured
+  1. ✅ The hardcoded `ring99` model URL and the local fallback recipe path are removed from API routes — legacy surfaces deleted entirely (the only hardcode carriers); grep confirms zero live references
+  2. ✅ Existing render history requires no migration — it was disposable ring99 R&D in a rotated/inaccessible public Blob store; the enterprise product is clean-slate Postgres, so there is no catalog history to migrate and no silent loss (DATA-05 met-by-rationale; see `phases/08-cutover-deploy/DATA-05-DECISION.md`)
+  3. ✅ The app builds and deploys to the existing Vercel project `sukrus-projects-1b84f634/jewelry-render-studio` with the new env vars configured — verified: production `/` → 307 → `/login` (200); all 9 required env vars present in Production
 
 ## Progress
 
@@ -172,4 +172,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 5. Outputs Gallery & Layered Passes | 4/4 | Complete   | 2026-06-09 |
 | 6. Compositing & Deliverable | 3/3 | Complete   | 2026-06-09 |
 | 7. UI Design System & Workflow Polish | 1/1 | Complete   | 2026-06-10 |
-| 8. Cutover & Deploy | 0/TBD | Not started | - |
+| 8. Cutover & Deploy | 1/1 | Complete   | 2026-06-10 |

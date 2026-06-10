@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 07-01-PLAN.md (UI design-system coherence sweep, UI-01)
-last_updated: "2026-06-10T04:45:00.000Z"
+status: complete
+stopped_at: Completed 08-01-PLAN.md (cutover & deploy — SEC-05/DATA-05/DEPLOY-01); milestone closed 8/8
+last_updated: "2026-06-10T09:10:00.000Z"
 last_activity: 2026-06-10
 progress:
   total_phases: 8
-  completed_phases: 7
-  total_plans: 29
-  completed_plans: 29
-  percent: 88
+  completed_phases: 8
+  total_plans: 30
+  completed_plans: 30
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-05)
 
 **Core value:** An operator can take one jewelry model and reliably produce the full set of catalog images — every angle × metal × stone variant, in correctly separated metal/stone layers — without touching Blender or hand-editing recipes.
-**Current focus:** Phase 07 — UI design system & workflow polish (COMPLETE); next: Phase 08 cutover & deploy
+**Current focus:** Phase 08 — cutover & deploy (COMPLETE). Milestone v1.0 closed — all 41 v1 requirements Complete.
 
 ## Current Position
 
-Phase: 07 (ui-design-system-polish) — COMPLETE
-Plan: 1 of 1 executed (07-01 done)
-Status: Phase 7 complete; ready for Phase 8
+Phase: 08 (cutover-deploy) — COMPLETE
+Plan: 1 of 1 executed (08-01 done)
+Status: Milestone v1.0 COMPLETE — 8/8 phases; legacy surfaces retired, SEC-05/DATA-05/DEPLOY-01 done
 Last activity: 2026-06-10
 
-Progress: [█████████░] 88%
+Progress: [██████████] 100%
+
+### Phase 8 execution notes
+
+- SEC-05: deleted the legacy render cluster ENTIRELY (enterprise-app, studio, lab, rater + default-recipe.json + styles.css + the legacy API routes rating-sweeps/render-jobs/[id]/material-inspections/config + lib/jobs.ts). All verified unused by the enterprise app/(app)/ product before deletion. tsc/tests/build green; ring99/public-blob-URL/local-FS hardcodes gone from live source (only benign test fixtures remain).
+- lib/types.ts was left in place (NOT in deletion scope; now an unused orphan — harmless, tsc green).
+- DATA-05: NO migration — legacy job history was disposable ring99 R&D in a rotated/inaccessible public Blob store; clean-slate Postgres product. Met-by-rationale (phases/08-cutover-deploy/DATA-05-DECISION.md).
+- DEPLOY-01: production `/` → 307 → /login (200); all 9 required env vars present in Vercel Production (verified via `vercel env ls production`, names/presence only).
 
 ### Phase 6 execution notes (for the executor)
 
@@ -83,6 +90,7 @@ Progress: [█████████░] 88%
 | Phase 06 P02 | 12 | 2 tasks | 7 files |
 | Phase 06 P03 | 13m | 2 tasks | 5 files |
 | Phase 07 P07-01 | 7min | 2 tasks | 5 files |
+| Phase 08 P08-01 | 40min | 4 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -136,7 +144,7 @@ None yet.
 - SEC-01 (rotate exposed RunPod key) is a hard prerequisite — all downstream auth is moot until it ships in Phase 1.
 - Cost-estimate accuracy (Phase 3) needs calibration against real RunPod billing; use a configurable per-render cost factor.
 - Vercel sub-daily Cron is a Pro-plan feature (Phase 4) — confirm plan at plan time; fallback is an external scheduler or kick-on-stale-page-load.
-- Legacy public-Blob asset policy (re-upload private vs. accept burned) to resolve in Phase 1/8.
+- ~~Legacy public-Blob asset policy (re-upload private vs. accept burned) to resolve in Phase 1/8.~~ RESOLVED (Phase 8): accept burned — legacy public-Blob job history is disposable ring99 R&D in a rotated/inaccessible store; no migration (DATA-05 met-by-rationale).
 
 ## Deferred Items
 
@@ -148,6 +156,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T04:45:00.000Z
-Stopped at: Completed 07-01-PLAN.md (UI design-system coherence sweep, UI-01)
+Last session: 2026-06-10T09:10:00.000Z
+Stopped at: Completed 08-01-PLAN.md (cutover & deploy) — milestone v1.0 COMPLETE (8/8 phases, 41/41 requirements)
 Resume file: None
