@@ -4,11 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Activity,
   Box,
-  Image as ImageIcon,
   Layers,
-  Settings as SettingsIcon,
   SlidersHorizontal,
   Users,
   type LucideIcon,
@@ -20,20 +17,18 @@ type AppRole = "Admin" | "Operator";
 
 type NavItem = { label: string; href: string; icon: LucideIcon };
 
-// UI-SPEC §1 nav inventory + icons (exact).
+// Nav inventory. Only routes that actually exist: Jobs and Gallery are NOT
+// global pages — they live per-batch (the Monitor·Gallery·Compositing tabs
+// inside /batches/[id]), so they must NOT appear as top-level links (they 404).
 const MAIN: NavItem[] = [
   { label: "Products", href: "/products", icon: Box },
   { label: "Batches", href: "/batches", icon: Layers },
-  { label: "Jobs", href: "/jobs", icon: Activity },
-  { label: "Gallery", href: "/gallery", icon: ImageIcon },
 ];
 
 const ADMIN: NavItem[] = [
   { label: "Domain Settings", href: "/admin/settings", icon: SlidersHorizontal },
   { label: "Users", href: "/admin/users", icon: Users },
 ];
-
-const BOTTOM: NavItem = { label: "Settings", href: "/settings", icon: SettingsIcon };
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
@@ -98,10 +93,6 @@ export function Sidebar({ role }: { role: AppRole }) {
           </>
         ) : null}
       </nav>
-
-      <div className="border-t border-border px-2 py-3">
-        <NavLink item={BOTTOM} active={isActive(BOTTOM.href)} />
-      </div>
     </aside>
   );
 }
