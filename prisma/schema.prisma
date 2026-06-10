@@ -140,6 +140,9 @@ model Batch {
   // ORCH-05: distinguishes a batch in the "cancelling" transition from a settled
   // cancelled state. Batch status itself stays a derived String (A4), never stored.
   cancelRequestedAt DateTime?
+  // INTEL (Phase 9, G9): per-batch opt-in for the adaptive render loop. Default
+  // OFF — existing batches and the classic path are untouched. 09-02 consumes it.
+  optimizeWithAi Boolean @default(false)
   jobs        Job[]
 }
 
@@ -163,6 +166,14 @@ model Job {
   startedAt         DateTime?
   // ORCH-05: distinguishes "cancelling" from a settled "cancelled" state.
   cancelRequestedAt DateTime?
+  // INTEL-03 (Phase 9): adaptive-loop state machine position
+  // (PREVIEW_QUEUED -> ANALYZING -> ADJUSTED -> FINAL_QUEUED -> DONE). Nullable,
+  // additive: non-intelligence jobs leave it null and behave exactly as today.
+  intelState String?
+  // INTEL-03 (Phase 9): the loop's audit trace — verdicts[], iteration,
+  // appliedOverrides[], bestScore/bestOverrides, decision, guardrailHits[],
+  // cost, operatorAction (09-AI-SPEC 7.1). The Json column IS the trace.
+  intel Json?
   layers       Layer[]
 
   @@index([batchId, status])

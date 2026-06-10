@@ -30,6 +30,11 @@ export const createBatchSchema = z.object({
   // At least one pass; "metal" + the selected stone-group pass keys.
   passes: z.array(passEnum).min(1),
   qualityKey: z.string().min(1),
+  // INTEL (Phase 9, G9): per-batch opt-in for the adaptive render loop. OPTIONAL,
+  // defaults FALSE — the kill-switch stance: absent/off means the classic render
+  // path, byte-for-byte. createBatch does NOT consume it yet (09-02 wires it);
+  // this only lands the validated contract for the UI (09-03) + orchestration.
+  optimizeWithAi: z.boolean().optional().default(false),
 });
 
 export type CreateBatchInput = z.infer<typeof createBatchSchema>;
