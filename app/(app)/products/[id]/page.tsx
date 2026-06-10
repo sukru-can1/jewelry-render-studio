@@ -74,6 +74,7 @@ export default async function ProductDetailPage({
         status: inspectionRow.status,
         error: inspectionRow.error,
         inventory: parsedInventory,
+        createdAt: inspectionRow.createdAt.toISOString(),
       }
     : null;
 
