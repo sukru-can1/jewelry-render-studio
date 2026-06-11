@@ -422,6 +422,14 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       diamond_facets: {
         enabled: request.pass === "full",
         object_contains: centerTokens,
+        // PAINT stage (live E2E fix): when object-token matching misses, NEVER
+        // paint the synthetic facet wheel into the fallback rectangle — skip
+        // the stage. The worker also gates a matched region at max_bounds_frac
+        // (default 0.25 of frame area) so an unreliable too-large match (token
+        // hit a band/cluster object) can never get a wheel painted across it.
+        // Emitted for ALL passes so the recipe stays the quality source; the
+        // tuned ring99 look is untouched when bounds DO match confidently.
+        fallback: "skip",
         fallback_bounds_norm: [0.38, 0.33, 0.62, 0.65],
         facets: 24,
         dark_alpha: 0.13,

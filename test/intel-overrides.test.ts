@@ -1,21 +1,22 @@
 // INTEL-01 (09-01 Task 2) — buildEnterpriseRecipe profileOverrides extension.
 //
 // HARD requirement: with NO profileOverrides the output is BYTE-IDENTICAL to the
-// pre-change generator. The FULL golden below was captured from the UNMODIFIED
-// lib/enterprise-recipes.ts (commit 81cb108) over JSON.stringify — any drift in
-// field values OR key order fails this test.
+// no-override generator path — any drift in field values OR key order fails here.
 //
-// The STONE golden was DELIBERATELY regenerated TWICE:
-//  1. layered-pass visibility contract (OUT-01 fix): stone passes emit
+// The goldens were DELIBERATELY regenerated for these quality fixes:
+//  1. (STONE) layered-pass visibility contract (OUT-01 fix): stone passes emit
 //     model.pass_holdout_contains and no longer put pass tokens into
 //     include_contains/exclude_contains, so the normalization basis stays the
 //     FULL product and layers align for compositing.
-//  2. pass-scoped postprocess (render-quality regression fix): stone passes
-//     disable product/center_stone/center_stone_symmetry/diamond_facets so no
-//     fallback_bounds overlay can paint synthetic content (the giant fake
+//  2. (STONE) pass-scoped postprocess (render-quality regression fix): stone
+//     passes disable product/center_stone/center_stone_symmetry/diamond_facets
+//     so no fallback_bounds overlay can paint synthetic content (the giant fake
 //     faceted disk) over the transparent layer's alpha.
-// The full-pass golden is intentionally UNCHANGED across both — full passes are
-// byte-identical to the classic tuned beauty recipe.
+//  3. (FULL + STONE) live-E2E paint-stage fix: diamond_facets (a PAINT stage)
+//     now carries fallback:"skip" on every pass — when its object tokens miss,
+//     the worker skips the stage instead of painting the synthetic 24-spoke
+//     wheel into fallback_bounds_norm (seen live on a 5-small-stone ring).
+//     This is the FIRST and only full-pass change; all tuned values are intact.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -31,9 +32,9 @@ import {
 } from "@/lib/enterprise-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "bbc2acb4daf4a65a17f5e21bd2605142cfefadb80fd14ccc4143f53377354166";
+  "efeb510a3bc1071fb71605c457a8b6b74a0544701a71b46e3a2ca8a45a980fe4";
 const GOLDEN_STONE_SHA256 =
-  "368fd545bc3de6a0c4297489e28e425fdf4c8830aefcb4c49282374eca442611";
+  "8d2424f676eb65b9d79ef3885330535cf96897da82226d24802bdb854b778449";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -74,7 +75,7 @@ const TODAY_CARD_COLORS = [
 type AnyRecipe = Record<string, any>;
 
 describe("backward compatibility — NO profileOverrides is byte-identical to today", () => {
-  it("full/hero/white request matches the pre-change golden sha256", () => {
+  it("full/hero/white request matches the golden sha256 (regenerated ONCE for the paint-stage fallback:'skip' flag)", () => {
     expect(sha256(buildEnterpriseRecipe(reqFull))).toBe(GOLDEN_FULL_SHA256);
   });
 

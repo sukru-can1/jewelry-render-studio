@@ -35,6 +35,12 @@ def _fallback_bounds(config: dict, image_size: tuple[int, int]) -> tuple[int, in
     )
 
 
+def _bounds_area_fraction(bounds: tuple[int, int, int, int], image_size: tuple[int, int]) -> float:
+    width, height = image_size
+    left, top, right, bottom = bounds
+    return (max(0, right - left) * max(0, bottom - top)) / max(1, width * height)
+
+
 def _union_object_bounds(metadata: dict, image_size: tuple[int, int], padding: int) -> tuple[int, int, int, int] | None:
     bounds_items = []
     width, height = image_size
@@ -450,10 +456,28 @@ def add_diamond_facets(image_path: Path, metadata: dict, config: dict) -> bool:
     with Image.open(image_path) as source:
         original = source.convert("RGBA")
 
+    # PAINT-STAGE SAFETY (live E2E fix): this stage draws SYNTHETIC facet
+    # geometry. When object-token matching missed, painting into the fixed
+    # fallback rectangle produced a giant fake 24-spoke wheel across the frame
+    # (FULL pass of a 5-small-stone ring with no matchable "center stone").
+    # Default is fallback="skip": no confident object match -> skip the stage
+    # entirely. Hand-tuned recipes may opt back into the legacy rectangle with
+    # an explicit fallback="bounds". Adjust-only stages (center_stone,
+    # center_stone_symmetry) keep fallback behavior — they only retouch real
+    # pixels, never paint synthetic content.
     bounds = _object_bounds(metadata, [token.lower() for token in config.get("object_contains", ["Round_5"])])
     if not bounds:
+        if str(config.get("fallback", "skip")).lower() != "bounds":
+            return False
         bounds = _fallback_bounds(config, original.size)
     if not bounds:
+        return False
+
+    # Sanity gate: a real center stone occupies a small fraction of the frame.
+    # A matched region larger than max_bounds_frac of the image means the token
+    # hit a band/cluster/whole-product object — unreliable, never paint on it.
+    max_bounds_frac = float(config.get("max_bounds_frac", 0.25))
+    if max_bounds_frac > 0 and _bounds_area_fraction(bounds, original.size) > max_bounds_frac:
         return False
 
     crop_box = _padded_bounds(bounds, original.size, int(config.get("padding_px", 0)))

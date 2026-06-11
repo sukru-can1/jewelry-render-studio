@@ -197,3 +197,31 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
     }
   });
 });
+
+// Live-E2E paint-stage fix: diamond_facets PAINTS synthetic content. When its
+// object tokens miss, the worker must SKIP the stage — never paint the fake
+// 24-spoke wheel into fallback_bounds_norm (seen live on a 5-small-stone ring's
+// FULL pass). The recipe drives this with fallback:"skip" on EVERY pass; the
+// worker additionally gates matched bounds at max_bounds_frac (default 25% of
+// frame area) so an unreliable too-large match is also skipped. Adjust-only
+// stages (center_stone / center_stone_symmetry) only retouch real pixels and
+// deliberately KEEP fallback-rectangle behavior (no flag emitted).
+describe("buildEnterpriseRecipe — paint-stage fallback contract", () => {
+  const PASSES = [
+    { pass: "full", stoneGroup: undefined },
+    { pass: "metal", stoneGroup: undefined },
+    { pass: "stone", stoneGroup: "diamond" },
+  ] as const;
+
+  for (const combo of PASSES) {
+    it(`${combo.pass} pass: diamond_facets carries fallback:"skip"; adjust-only stages carry NO flag`, () => {
+      const recipe = buildEnterpriseRecipe(
+        request({ pass: combo.pass, stoneGroup: combo.stoneGroup }),
+      );
+
+      expect(postprocessStage(recipe, "diamond_facets")?.fallback).toBe("skip");
+      expect(postprocessStage(recipe, "center_stone")?.fallback).toBeUndefined();
+      expect(postprocessStage(recipe, "center_stone_symmetry")?.fallback).toBeUndefined();
+    });
+  }
+});
