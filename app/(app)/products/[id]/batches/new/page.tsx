@@ -4,6 +4,7 @@ import { Layers } from "lucide-react";
 
 import { requireSession } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
+import { env } from "@/lib/env";
 import { loadAssignments } from "@/lib/products/assignments";
 import {
   isBuildable,
@@ -77,6 +78,12 @@ export default async function NewBatchPage({
     stoneTypes.map((s) => ({ key: s.key, label: s.label })),
   );
 
+  // INTEL-05 / G9: the "Optimize with AI" toggle is enabled only when the
+  // feature is configured server-side (key present + global kill-switch not
+  // "false"). Display-only — createBatch re-gates regardless of the client flag.
+  const aiConfigured =
+    Boolean(env.OPENAI_API_KEY) && env.ADAPTIVE_INTELLIGENCE_ENABLED !== "false";
+
   return (
     <div className="flex flex-col gap-8 pb-28 lg:pb-8">
       <header className="flex flex-col gap-2">
@@ -111,6 +118,7 @@ export default async function NewBatchPage({
           height: q.height,
         }))}
         presentStoneGroups={present}
+        aiConfigured={aiConfigured}
       />
     </div>
   );

@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Aperture, Check, Gem, Layers, TriangleAlert } from "lucide-react";
+import { Aperture, Check, Gem, Layers, Sparkles, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -45,6 +45,7 @@ import {
   DialogTitle,
 } from "@/app/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/app/components/ui/alert";
+import { Switch } from "@/app/components/ui/switch";
 import { TooltipProvider } from "@/app/components/ui/tooltip";
 
 import { EstimatePanel } from "./estimate-panel";
@@ -79,6 +80,7 @@ export function BatchBuilder({
   stoneTypes,
   qualityPresets,
   presentStoneGroups,
+  aiConfigured,
 }: {
   productId: string;
   cameraViews: CameraView[];
@@ -86,6 +88,12 @@ export function BatchBuilder({
   stoneTypes: StoneTypeOption[];
   qualityPresets: QualityPreset[];
   presentStoneGroups: StoneGroupKey[];
+  /**
+   * Server-resolved: OPENAI_API_KEY present AND the global kill-switch is not
+   * "false". When false the toggle renders DISABLED with a note — the server
+   * (createBatch G9 gate) decides regardless; this is display-only (INTEL-05).
+   */
+  aiConfigured: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -119,6 +127,8 @@ export function BatchBuilder({
     qualityPresets[0]?.key ??
     "";
   const [qualityKey, setQualityKey] = useState<string>(defaultQuality);
+  // INTEL-05 opt-in: DEFAULT OFF — the adaptive loop never runs unrequested.
+  const [optimizeWithAi, setOptimizeWithAi] = useState(false);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [errorBanner, setErrorBanner] = useState(false);
@@ -166,6 +176,8 @@ export function BatchBuilder({
         stoneTypeByGroup,
         passes,
         qualityKey,
+        // Only meaningful when the feature is configured; the server re-gates (G9).
+        optimizeWithAi: aiConfigured && optimizeWithAi,
       });
       if (result.ok) {
         toast(`Batch created — ${result.jobCount} jobs queued.`, {
@@ -381,6 +393,46 @@ export function BatchBuilder({
           <p className="text-sm text-muted-foreground">
             Preview is fast and cheap. Switch up only when you need final-quality renders.
           </p>
+        </section>
+
+        {/* Optimize with AI — INTEL-05 opt-in (default OFF; server re-gates G9) */}
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-muted-foreground" strokeWidth={1.75} />
+            <span className="text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground">
+              Optimize with AI
+            </span>
+          </div>
+          <div className="flex min-h-11 items-center justify-between gap-4">
+            <label
+              htmlFor="optimize-with-ai"
+              className={cn(
+                "flex flex-col gap-1",
+                aiConfigured && !disabled ? "cursor-pointer" : "cursor-not-allowed",
+                !aiConfigured && "opacity-60",
+              )}
+            >
+              <span className="text-sm text-foreground">AI-reviewed render loop</span>
+              <span className="text-xs text-muted-foreground">
+                Adds <span className="font-mono tabular-nums">1</span> preview render +
+                AI analysis per variant; the AI adjusts studio knobs within safe bounds.
+                You review every result on the batch monitor — nothing ships silently.
+              </span>
+            </label>
+            <Switch
+              id="optimize-with-ai"
+              checked={optimizeWithAi}
+              onCheckedChange={setOptimizeWithAi}
+              disabled={disabled || !aiConfigured}
+              aria-label="Optimize with AI"
+            />
+          </div>
+          {!aiConfigured ? (
+            <p className="text-xs text-muted-foreground">
+              AI optimization is not configured for this deployment — batches render
+              the classic path. Ask an admin to set the AI key to enable it.
+            </p>
+          ) : null}
         </section>
 
         {/* Matrix summary read-back */}
