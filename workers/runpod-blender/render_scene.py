@@ -521,6 +521,48 @@ def transform_model(objects, model_settings, background_settings):
             obj.location.z += lift
 
 
+def apply_pass_visibility(objects, model_settings):
+    """Layered-pass visibility, applied AFTER transform_model.
+
+    The normalization basis stays the FULL product — every pass shares the same
+    auto_center/auto_scale/ground_to_plane transform, so metal/stone layers
+    align for compositing. Only then are non-target objects hidden or held out:
+
+    - pass_hide_contains: matching objects get hide_render = True. Used by the
+      METAL pass to fully hide stones, so metal renders complete behind where
+      the stones sit.
+    - pass_holdout_contains: matching objects stay renderable as holdouts —
+      they punch alpha (correct occlusion silhouettes for compositing) without
+      contributing color. Secondary ray visibility is disabled so the holdout
+      metal does not refract dark into the stones.
+
+    When neither field is present this is a no-op (old recipes unaffected).
+    """
+    hide_tokens = [token.lower() for token in model_settings.get("pass_hide_contains", [])]
+    holdout_tokens = [token.lower() for token in model_settings.get("pass_holdout_contains", [])]
+    if not hide_tokens and not holdout_tokens:
+        return
+
+    holdout_ray_visibility = [
+        "visible_shadow",
+        "visible_diffuse",
+        "visible_glossy",
+        "visible_transmission",
+        "visible_volume_scatter",
+    ]
+    for obj in objects:
+        signature = object_signature(obj)
+        if hide_tokens and any(token in signature for token in hide_tokens):
+            obj.hide_render = True
+            continue
+        if holdout_tokens and any(token in signature for token in holdout_tokens):
+            obj.hide_render = False
+            obj.is_holdout = True
+            for attribute in holdout_ray_visibility:
+                if hasattr(obj, attribute):
+                    setattr(obj, attribute, False)
+
+
 def make_material(name, preset):
     material = bpy.data.materials.new(name)
     material.use_nodes = True
@@ -980,6 +1022,10 @@ def object_image_bounds(objects):
     height = scene.render.resolution_y
     bounds = []
     for obj in objects:
+        # Only actually-visible objects report bounds: pass-hidden objects do
+        # not render at all, and holdout objects only punch alpha.
+        if obj.hide_render or getattr(obj, "is_holdout", False):
+            continue
         projected = []
         mesh = obj.data
         vertices = getattr(mesh, "vertices", [])
@@ -1062,6 +1108,7 @@ def main():
     object_transformed_bounds = bounds_summary(objects)
     transform_model(objects, recipe["model"], recipe["background"])
     transformed_bounds = bounds_summary(objects)
+    apply_pass_visibility(objects, recipe["model"])
     assign_materials(objects, recipe)
     setup_background(recipe)
     add_contact_shadows(recipe)
