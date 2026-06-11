@@ -5,12 +5,17 @@
 // lib/enterprise-recipes.ts (commit 81cb108) over JSON.stringify — any drift in
 // field values OR key order fails this test.
 //
-// The STONE golden was DELIBERATELY regenerated for the layered-pass visibility
-// contract (OUT-01 fix): stone passes now emit model.pass_holdout_contains and
-// no longer put pass tokens into include_contains/exclude_contains, so the
-// normalization basis stays the FULL product and layers align for compositing.
-// The full-pass golden is intentionally UNCHANGED — full passes emit neither
-// new field.
+// The STONE golden was DELIBERATELY regenerated TWICE:
+//  1. layered-pass visibility contract (OUT-01 fix): stone passes emit
+//     model.pass_holdout_contains and no longer put pass tokens into
+//     include_contains/exclude_contains, so the normalization basis stays the
+//     FULL product and layers align for compositing.
+//  2. pass-scoped postprocess (render-quality regression fix): stone passes
+//     disable product/center_stone/center_stone_symmetry/diamond_facets so no
+//     fallback_bounds overlay can paint synthetic content (the giant fake
+//     faceted disk) over the transparent layer's alpha.
+// The full-pass golden is intentionally UNCHANGED across both — full passes are
+// byte-identical to the classic tuned beauty recipe.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -28,7 +33,7 @@ import {
 const GOLDEN_FULL_SHA256 =
   "bbc2acb4daf4a65a17f5e21bd2605142cfefadb80fd14ccc4143f53377354166";
 const GOLDEN_STONE_SHA256 =
-  "37e7a5215ce1c3e2804c632d4a3a5927afed5850b42a7df702230be780ca40d5";
+  "368fd545bc3de6a0c4297489e28e425fdf4c8830aefcb4c49282374eca442611";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",

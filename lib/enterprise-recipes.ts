@@ -356,6 +356,19 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
         blur: 2.0
       }
     ],
+    // PASS-SCOPED POSTPROCESS (render-quality regression fix): the enhancement
+    // stages below carry fallback_bounds_norm rectangles — when their
+    // object_contains tokens miss (or the target is held out), they fall back to
+    // PAINTING SYNTHETIC CONTENT into that fixed rectangle. On a transparent
+    // stone-holdout layer this drew a giant fake 24-facet disk over the alpha
+    // (diamond_facets/center_stone on the stone pass). Contract:
+    //   - full  -> ALL enhancement stages ON (the catalog beauty render).
+    //   - metal -> product enhancement only; every stone-specific stage OFF
+    //              (center_stone / center_stone_symmetry / diamond_facets).
+    //   - stone -> EVERY stage that can paint over alpha OFF (product included);
+    //              the transparent holdout layer ships raw for compositing.
+    // The full-pass values are byte-identical to the classic recipe (golden
+    // sha256 in test/intel-overrides.test.ts unchanged).
     postprocess: {
       studio_background: {
         // OUT-01 / D-1: disable the opaque studio floor/background for stone passes so
@@ -371,7 +384,7 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
         shadow_blur: 30
       },
       product: {
-        enabled: true,
+        enabled: request.pass !== "stone",
         padding_px: 12,
         contrast: 1.045,
         brightness: 0.985,
@@ -382,7 +395,7 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
         mask_feather: 38
       },
       center_stone: {
-        enabled: true,
+        enabled: request.pass === "full",
         object_contains: centerTokens,
         fallback_bounds_norm: [0.37, 0.32, 0.63, 0.66],
         padding_px: 12,
@@ -398,7 +411,7 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
         mask_feather: 12
       },
       center_stone_symmetry: {
-        enabled: true,
+        enabled: request.pass === "full",
         object_contains: centerTokens,
         fallback_bounds_norm: [0.37, 0.32, 0.63, 0.66],
         padding_px: 22,
@@ -407,7 +420,7 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
         blend: 0.34
       },
       diamond_facets: {
-        enabled: request.pass !== "metal",
+        enabled: request.pass === "full",
         object_contains: centerTokens,
         fallback_bounds_norm: [0.38, 0.33, 0.62, 0.65],
         facets: 24,

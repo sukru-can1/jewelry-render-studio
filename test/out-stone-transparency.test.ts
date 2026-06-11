@@ -48,11 +48,30 @@ function model(recipe: Record<string, unknown>) {
   return recipe.model as Record<string, unknown>;
 }
 
-function studioBackgroundEnabled(recipe: Record<string, unknown>): boolean {
+function postprocessStage(
+  recipe: Record<string, unknown>,
+  stage: string,
+): Record<string, unknown> | undefined {
   const pp = recipe.postprocess as Record<string, unknown> | undefined;
-  const sb = pp?.studio_background as Record<string, unknown> | undefined;
-  return sb?.enabled === true;
+  return pp?.[stage] as Record<string, unknown> | undefined;
 }
+
+function stageEnabled(recipe: Record<string, unknown>, stage: string): boolean {
+  return postprocessStage(recipe, stage)?.enabled === true;
+}
+
+function studioBackgroundEnabled(recipe: Record<string, unknown>): boolean {
+  return stageEnabled(recipe, "studio_background");
+}
+
+// The postprocess stages that can paint SYNTHETIC content into a fixed
+// fallback_bounds_norm rectangle when their object tokens miss — on a transparent
+// stone layer this drew a giant fake 24-facet disk. They are FULL-pass-only now.
+const STONE_OVERLAY_STAGES = [
+  "center_stone",
+  "center_stone_symmetry",
+  "diamond_facets",
+] as const;
 
 // NOTE: this unit test inspects only recipe FLAGS — it cannot see rendered pixels.
 // The live render after worker deploy is the BINDING check for layer alignment and
@@ -98,6 +117,13 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
       }
 
       expect(studioBackgroundEnabled(recipe)).toBe(false);
+
+      // NO postprocess stage may paint over the transparent layer's alpha:
+      // product enhancement AND every fallback_bounds overlay stage are OFF.
+      expect(stageEnabled(recipe, "product")).toBe(false);
+      for (const stage of STONE_OVERLAY_STAGES) {
+        expect(stageEnabled(recipe, stage)).toBe(false);
+      }
     });
   }
 
@@ -133,6 +159,14 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
     for (const token of groupTokens.alloycolour) {
       expect(hide).not.toContain(token);
     }
+
+    // Stone-specific overlay stages must NOT leak onto the metal layer (the
+    // stones are hidden — a facet/center-stone overlay would be pure synthesis).
+    // Product enhancement (general contrast/sharpness) stays on for the opaque pass.
+    expect(stageEnabled(recipe, "product")).toBe(true);
+    for (const stage of STONE_OVERLAY_STAGES) {
+      expect(stageEnabled(recipe, stage)).toBe(false);
+    }
   });
 
   it("FULL pass is unchanged: opaque, studio_background on, and emits NEITHER pass visibility field", () => {
@@ -150,5 +184,16 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
     expect(m.pass_holdout_contains).toBeUndefined();
     expect("pass_hide_contains" in m).toBe(false);
     expect("pass_holdout_contains" in m).toBe(false);
+  });
+
+  it("FULL pass keeps the WHOLE tuned beauty pipeline ON (product + center_stone + symmetry + diamond_facets)", () => {
+    const recipe = buildEnterpriseRecipe(
+      request({ pass: "full", stoneGroup: undefined }),
+    );
+
+    expect(stageEnabled(recipe, "product")).toBe(true);
+    for (const stage of STONE_OVERLAY_STAGES) {
+      expect(stageEnabled(recipe, stage)).toBe(true);
+    }
   });
 });
