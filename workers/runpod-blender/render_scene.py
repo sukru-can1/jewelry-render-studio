@@ -9,7 +9,7 @@ from pathlib import Path
 
 import bpy
 from bpy_extras.object_utils import world_to_camera_view
-from mathutils import Euler, Vector
+from mathutils import Euler, Matrix, Vector
 
 
 DEFAULT_RECIPE = {
@@ -32,6 +32,7 @@ DEFAULT_RECIPE = {
     "world": {"color": [1.0, 1.0, 1.0], "strength": 0.18},
     "background": {"color": [0.98, 0.98, 0.965, 1.0], "plane_size": 8.0, "plane_z": -0.04},
     "model": {
+        "auto_orient": False,
         "auto_center": True,
         "auto_scale": True,
         "target_size": 2.0,
@@ -344,6 +345,73 @@ def filter_product_objects(objects, settings):
     return selected
 
 
+def auto_orient_model(objects, settings):
+    """Legacy 'stand upright + orient head' normalization (model.auto_orient).
+
+    Ported from the legacy master-scene placement: uploaded models often import
+    lying flat. Step 1 stands the product upright — the thinnest bbox axis (the
+    band depth) is rotated to align with Y, matching our camera convention
+    (camera looks from -Y toward origin). Step 2 rotates about Y around the
+    product bbox center so the head (stones/setting) points +Z. Rotations
+    preserve lengths, so the max dimension — and therefore auto_scale — is
+    unaffected. Must run BEFORE the auto_center/auto_scale bounds are computed
+    (and before ground_to_plane) so centering, scaling and grounding all operate
+    on the upright pose. Default False: absent flag = behavior unchanged.
+    """
+    if not settings.get("auto_orient", False):
+        return
+
+    mins, maxs = object_bounds(objects)
+    center = (mins + maxs) * 0.5
+    dims = maxs - mins
+    thin = min(range(3), key=lambda axis: dims[axis])
+    if thin == 0:
+        rotation = Matrix.Rotation(math.radians(90), 4, "Z")  # X thinnest -> bring to Y
+    elif thin == 2:
+        rotation = Matrix.Rotation(math.radians(90), 4, "X")  # Z thinnest -> bring to Y
+    else:
+        rotation = Matrix.Identity(4)  # already upright
+    upright = Matrix.Translation(center) @ rotation @ Matrix.Translation(-center)
+    for obj in objects:
+        obj.matrix_world = upright @ obj.matrix_world
+    bpy.context.view_layer.update()
+
+    # Head matching uses object_signature (name + materials) — a superset of the
+    # legacy name-only match, so material names like "Diamond.001" also hit.
+    head_tokens = (
+        "diamond", "gem", "stone", "ruby", "sapphire", "emerald", "amethyst", "topaz",
+        "garnet", "opal", "pearl", "zirconia", "brillant", "prong", "head", "setting",
+        "basket", "bezel", "halo",
+    )
+    head_objects = [obj for obj in objects if any(token in object_signature(obj) for token in head_tokens)]
+    if not head_objects:
+        head_objects = list(objects)
+
+    head_center = Vector((0.0, 0.0, 0.0))
+    corner_count = 0
+    for obj in head_objects:
+        for corner in obj.bound_box:
+            head_center += obj.matrix_world @ Vector(corner)
+            corner_count += 1
+
+    head_degrees = 0.0
+    if corner_count:
+        head_center /= corner_count
+        mins, maxs = object_bounds(objects)
+        center = (mins + maxs) * 0.5
+        dx = head_center.x - center.x
+        dz = head_center.z - center.z
+        if (dx * dx + dz * dz) > 1e-8:
+            phi = math.atan2(dx, dz)  # head direction angle from +Z toward +X
+            head_matrix = Matrix.Translation(center) @ Matrix.Rotation(-phi, 4, "Y") @ Matrix.Translation(-center)
+            for obj in objects:
+                obj.matrix_world = head_matrix @ obj.matrix_world
+            bpy.context.view_layer.update()
+            head_degrees = math.degrees(-phi)
+
+    print(f"AUTO_ORIENT: thin axis {'XYZ'[thin]} -> Y, head rotated {head_degrees:.1f} deg about Y")
+
+
 def normalize(objects, settings):
     if settings.get("shade_smooth", True):
         smooth_exclude = [token.lower() for token in settings.get("shade_smooth_exclude_contains", [])]
@@ -355,6 +423,8 @@ def normalize(objects, settings):
             else:
                 bpy.ops.object.shade_smooth()
             obj.select_set(False)
+
+    auto_orient_model(objects, settings)
 
     bpy.context.view_layer.update()
     mins = Vector((float("inf"), float("inf"), float("inf")))
