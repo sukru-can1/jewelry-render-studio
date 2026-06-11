@@ -109,12 +109,29 @@ export async function analyzePreview(
   if (!apiKey) {
     throw new Error("AI is not configured (OPENAI_API_KEY missing)");
   }
+  const dataUrl = await previewDataUrl(pathname);
+  return analyzeImageDataUrl(dataUrl, context);
+}
+
+/**
+ * Score an ALREADY-PREPARED (downscaled) image data URL. Same model, prompt,
+ * fallback ladder and schema validation as analyzePreview — split out (09-04,
+ * INTEL-06) so the calibration harness (scripts/calibrate-intel.ts) can grade
+ * LOCAL fixture files in addition to private blob pathnames. Production loop
+ * code keeps calling analyzePreview.
+ */
+export async function analyzeImageDataUrl(
+  dataUrl: string,
+  context: AnalyzeContext,
+): Promise<VisionVerdict> {
+  const apiKey = env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("AI is not configured (OPENAI_API_KEY missing)");
+  }
   const modelId = env.AI_MODEL ?? DEFAULT_MODEL;
 
   const openai = createOpenAI({ apiKey });
   const model = openai(modelId);
-
-  const dataUrl = await previewDataUrl(pathname);
 
   const imagePart = {
     type: "image" as const,

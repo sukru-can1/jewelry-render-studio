@@ -14,6 +14,9 @@
 //  - decideLoop gates auto re-dispatch behind `trusted`: omitted/false ->
 //    recommendOnly:true on an autoCorrect verdict (recommend-only DEFAULT);
 //    trusted:true -> recommendOnly:false; accept/escalate are unaffected.
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -21,14 +24,20 @@ import {
   agreementScore,
   autoCorrectTrusted,
   computeCalibration,
+  DIMENSION_KEYS,
+  DELTA_FIELD_BY_SIGN_KEY,
   evaluateCase,
   signAgrees,
   signOf,
   withinOne,
   type CalibrationCase,
+  type DeltaSignKey,
+  type ExpectedSign,
+  type GateKey,
 } from "@/lib/intelligence/calibration";
 import { decideLoop } from "@/lib/intelligence/loop";
 import { visionVerdictSchema, type VisionVerdict } from "@/lib/intelligence/verdict";
+import { CALIBRATION_PROMPT_VERSION } from "../../scripts/calibrate-intel";
 
 type DeepPatch = {
   scores?: Partial<VisionVerdict["scores"]>;
@@ -287,6 +296,183 @@ describe("computeCalibration — the aggregated report (per-dim / gates / signs 
     expect(report.scoredCases).toBe(0);
     expect(report.agreement).toBe(0);
     expect(report.trusted).toBe(false);
+  });
+});
+
+// ── The shipped reference dataset (calibration/dataset.json) — Task 3 ────────
+// Validates the SHAPE and coverage of the committed labelled set, and exercises
+// the cached-verdict pure path with synthetic verdicts (zero AI calls). The
+// real verdicts are recorded by the operator via
+// `npx tsx scripts/calibrate-intel.ts --record`.
+
+type DatasetCase = {
+  id: string;
+  todo?: boolean;
+  provisional?: boolean;
+  source?: { type: "local"; path: string } | { type: "blob"; pathname: string };
+  pass?: string;
+  expectVerdict?: CalibrationCase["expectVerdict"];
+  humanScores?: Record<string, number>;
+  expectGates?: Partial<Record<GateKey, boolean>>;
+  expectDeltaSign?: Partial<Record<DeltaSignKey, ExpectedSign>>;
+};
+
+type Dataset = {
+  promptVersion: string;
+  provisional: boolean;
+  cases: DatasetCase[];
+};
+
+const dataset = JSON.parse(
+  readFileSync(resolve(process.cwd(), "calibration/dataset.json"), "utf8"),
+) as Dataset;
+
+const labelledCases = dataset.cases.filter((c) => c.todo !== true);
+
+/** A verdict that PERFECTLY matches a labelled case (the cached-verdict shape). */
+function perfectVerdictFor(c: DatasetCase): VisionVerdict {
+  const flags = {
+    milky: false,
+    wrongMetal: false,
+    brokenHoldout: false,
+    blownHighlights: false,
+    emptyOrBroken: false,
+    ...(c.expectGates ?? {}),
+  };
+  const adjust = {
+    worldStrengthDelta: 0,
+    exposureDelta: 0,
+    cardDarknessDelta: 0,
+    contactShadowDelta: 0,
+  };
+  for (const [knob, expectedSign] of Object.entries(c.expectDeltaSign ?? {}) as [
+    DeltaSignKey,
+    ExpectedSign,
+  ][]) {
+    adjust[DELTA_FIELD_BY_SIGN_KEY[knob]] = expectedSign * 0.01;
+  }
+  return visionVerdictSchema.parse({
+    scores: c.humanScores,
+    flags,
+    adjust,
+    cameraPresetSuggestion: null,
+    overallScore: c.expectVerdict === "accept" ? 5 : 2,
+    rationale: "synthetic perfect-match verdict (test fixture, no AI)",
+  });
+}
+
+describe("calibration/dataset.json — the shipped reference set", () => {
+  it("promptVersion matches the harness constant (bump BOTH on prompt/schema change)", () => {
+    expect(dataset.promptVersion).toBe(CALIBRATION_PROMPT_VERSION);
+  });
+
+  it("is marked provisional until the QA lead + senior operator review the labels", () => {
+    expect(dataset.provisional).toBe(true);
+  });
+
+  it("carries 12-20 case entries (labelled anchors + clearly-marked todo slots)", () => {
+    expect(dataset.cases.length).toBeGreaterThanOrEqual(12);
+    expect(dataset.cases.length).toBeLessThanOrEqual(20);
+    expect(labelledCases.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it("case ids are unique", () => {
+    const ids = dataset.cases.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("every labelled case has all 8 dimension scores (1-5 ints), a verdict and a source", () => {
+    for (const c of labelledCases) {
+      expect(c.source, c.id).toBeDefined();
+      expect(["accept", "autoCorrect", "escalate"]).toContain(c.expectVerdict);
+      expect(["full", "metal", "stone"]).toContain(c.pass);
+      for (const dim of DIMENSION_KEYS) {
+        const v = c.humanScores?.[dim];
+        expect(Number.isInteger(v), `${c.id}.${dim}`).toBe(true);
+        expect(v).toBeGreaterThanOrEqual(1);
+        expect(v).toBeLessThanOrEqual(5);
+      }
+      if (c.expectVerdict !== "accept") {
+        expect(c.expectDeltaSign, `${c.id} non-accept needs expectDeltaSign`).toBeDefined();
+      }
+    }
+  });
+
+  it("supports BOTH local file paths and private blob pathnames as sources", () => {
+    const types = new Set(labelledCases.map((c) => c.source?.type));
+    expect(types.has("local")).toBe(true);
+    expect(types.has("blob")).toBe(true);
+  });
+
+  it("the bad set expects hard gates: brokenHoldout (zanessa) AND emptyOrBroken (adversarial)", () => {
+    const expectedTrueGates = new Set<string>();
+    for (const c of labelledCases) {
+      for (const [gate, expected] of Object.entries(c.expectGates ?? {})) {
+        if (expected === true) expectedTrueGates.add(gate);
+      }
+    }
+    expect(expectedTrueGates.has("brokenHoldout")).toBe(true);
+    expect(expectedTrueGates.has("emptyOrBroken")).toBe(true);
+  });
+
+  it("escalate-labelled cases expect NO knob movement (iron law: broken holdout -> no deltas)", () => {
+    for (const c of labelledCases.filter((x) => x.expectVerdict === "escalate")) {
+      for (const s of Object.values(c.expectDeltaSign ?? {})) {
+        expect(s, c.id).toBe(0);
+      }
+    }
+  });
+
+  it("the committed adversarial black-frame fixture exists", () => {
+    expect(existsSync(resolve(process.cwd(), "calibration/fixtures/adversarial-black.png"))).toBe(
+      true,
+    );
+  });
+});
+
+describe("the cached-verdict pure path over the shipped dataset (zero AI calls)", () => {
+  const pairs = labelledCases.map((c) => ({
+    labelled: c as CalibrationCase,
+    verdict: perfectVerdictFor(c),
+  }));
+
+  it("computeCalibration over the labelled set is deterministic (same agreement both runs)", () => {
+    const a = computeCalibration(pairs);
+    const b = computeCalibration(pairs);
+    expect(a.agreement).toBe(b.agreement);
+    expect(a.scoredCases).toBe(labelledCases.length);
+  });
+
+  it("a perfectly-agreeing judge scores agreement 1 with every expected hard gate firing", () => {
+    const report = computeCalibration(pairs);
+    expect(report.agreement).toBe(1);
+    expect(report.hardGates.expected).toBeGreaterThan(0);
+    expect(report.hardGates.fired).toBe(report.hardGates.expected);
+    expect(report.hardGates.failures).toEqual([]);
+  });
+
+  it("silencing the hard flags on the bad set is caught as a safety regression per case", () => {
+    const silenced = pairs.map(({ labelled, verdict }) => ({
+      labelled,
+      verdict: visionVerdictSchema.parse({
+        ...verdict,
+        flags: {
+          milky: false,
+          wrongMetal: false,
+          brokenHoldout: false,
+          blownHighlights: false,
+          emptyOrBroken: false,
+        },
+      }),
+    }));
+    const report = computeCalibration(silenced);
+    const badCaseIds = labelledCases
+      .filter((c) => Object.values(c.expectGates ?? {}).some((v) => v === true))
+      .map((c) => c.id)
+      .sort();
+    const failureIds = [...new Set(report.hardGates.failures.map((f) => f.caseId))].sort();
+    expect(failureIds).toEqual(badCaseIds);
+    expect(report.hardGates.fired).toBe(0);
   });
 });
 
