@@ -1,0 +1,300 @@
+{
+  "note": "INTEL-06 (Phase 9, 09-04) labelled calibration reference set — 09-AI-SPEC §5.7. Schema: see calibration/README.md and lib/intelligence/calibration.ts (CalibrationCase). Image sources support BOTH committed/local file paths ({type:'local', path}) and PRIVATE Vercel Blob pathnames ({type:'blob', pathname}). Cases with todo:true are unlabelled coverage slots the QA lead + senior render operator must fill; cases with provisional:true carry ENGINEER-provisional anchor labels pending QA-lead review — agreement computed over provisional labels is NON-trust-gating (the loop stays recommend-only).",
+  "version": 1,
+  "promptVersion": "v1-2026-06-11",
+  "provisional": true,
+  "target": "12-20 labelled cases minimum 12 (09-AI-SPEC §5.7); coverage: known-good ring99 + known-bad zanessa, >=1 each white/yellow/rose metal, >=1 each hero/front/top/profile angle, >=1 each failure mode (milky, white-gold-as-chrome, blown highlights, flat metal, holdout fringing, floating product), 1 empty/black adversarial",
+  "cases": [
+    {
+      "id": "good-ring99-goal77-front",
+      "provisional": true,
+      "source": { "type": "local", "path": "outputs/ring99/goal_77diamonds_1477_classic_round.png" },
+      "metal": "white",
+      "stoneGroup": "diamond",
+      "angle": "front",
+      "pass": "full",
+      "expectVerdict": "accept",
+      "humanScores": {
+        "diamondBrilliance": 5,
+        "metalHighlight": 4,
+        "metalBelievability": 5,
+        "exposureTonal": 4,
+        "stoneSymmetry": 4,
+        "contactShadow": 3,
+        "framing": 5,
+        "backgroundHoldout": 5
+      },
+      "expectGates": {
+        "milky": false,
+        "wrongMetal": false,
+        "brokenHoldout": false,
+        "blownHighlights": false,
+        "emptyOrBroken": false
+      },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "The proven catalog reference: 77-facet classic round on a white band, crisp facet mosaic, clean white sweep. Engineer-provisional labels — QA lead to confirm."
+    },
+    {
+      "id": "good-ring99-goalcut-balanced-hero",
+      "provisional": true,
+      "source": { "type": "local", "path": "outputs/ring99/postprod_v149d_goal77_goalcut/v141a_goalcut_balanced.png" },
+      "metal": "white",
+      "stoneGroup": "diamond",
+      "angle": "hero",
+      "pass": "full",
+      "expectVerdict": "accept",
+      "humanScores": {
+        "diamondBrilliance": 4,
+        "metalHighlight": 4,
+        "metalBelievability": 4,
+        "exposureTonal": 4,
+        "stoneSymmetry": 4,
+        "contactShadow": 3,
+        "framing": 4,
+        "backgroundHoldout": 5
+      },
+      "expectGates": {
+        "milky": false,
+        "wrongMetal": false,
+        "brokenHoldout": false,
+        "blownHighlights": false,
+        "emptyOrBroken": false
+      },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "postprod_v149d goalcut 'balanced' variant — known-good hero shot, white metal. Engineer-provisional."
+    },
+    {
+      "id": "good-ring99-goalcut-crisp-hero",
+      "provisional": true,
+      "source": { "type": "local", "path": "outputs/ring99/postprod_v149d_goal77_goalcut/v141b_goalcut_crisp.png" },
+      "metal": "white",
+      "stoneGroup": "diamond",
+      "angle": "hero",
+      "pass": "full",
+      "expectVerdict": "accept",
+      "humanScores": {
+        "diamondBrilliance": 4,
+        "metalHighlight": 4,
+        "metalBelievability": 4,
+        "exposureTonal": 4,
+        "stoneSymmetry": 4,
+        "contactShadow": 3,
+        "framing": 4,
+        "backgroundHoldout": 5
+      },
+      "expectGates": {
+        "milky": false,
+        "wrongMetal": false,
+        "brokenHoldout": false,
+        "blownHighlights": false,
+        "emptyOrBroken": false
+      },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "goalcut 'crisp' variant — known-good. Engineer-provisional."
+    },
+    {
+      "id": "good-ring99-goalcut-fire-hero",
+      "provisional": true,
+      "source": { "type": "local", "path": "outputs/ring99/postprod_v149d_goal77_goalcut/v141d_goalcut_fire.png" },
+      "metal": "white",
+      "stoneGroup": "diamond",
+      "angle": "hero",
+      "pass": "full",
+      "expectVerdict": "accept",
+      "humanScores": {
+        "diamondBrilliance": 4,
+        "metalHighlight": 4,
+        "metalBelievability": 4,
+        "exposureTonal": 4,
+        "stoneSymmetry": 4,
+        "contactShadow": 3,
+        "framing": 4,
+        "backgroundHoldout": 5
+      },
+      "expectGates": {
+        "milky": false,
+        "wrongMetal": false,
+        "brokenHoldout": false,
+        "blownHighlights": false,
+        "emptyOrBroken": false
+      },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "goalcut 'fire' variant — known-good. Engineer-provisional."
+    },
+    {
+      "id": "bad-zanessa-metal-hero-yellow",
+      "provisional": true,
+      "source": { "type": "blob", "pathname": "renders/cmq7ya73o0008kz040mv9ft3u/cmq7ya73o0008kz040mv9ft3u.png" },
+      "metal": "yellow",
+      "stoneGroup": "none",
+      "angle": "hero",
+      "pass": "metal",
+      "expectVerdict": "escalate",
+      "humanScores": {
+        "diamondBrilliance": 2,
+        "metalHighlight": 2,
+        "metalBelievability": 2,
+        "exposureTonal": 2,
+        "stoneSymmetry": 1,
+        "contactShadow": 1,
+        "framing": 1,
+        "backgroundHoldout": 1
+      },
+      "expectGates": { "brokenHoldout": true },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "Known-bad zanessa metal pass (job cmq7ya73o0008kz040mv9ft3u): mis-framed, scattered fragments — a grouping/token failure, NOT fixable by light knobs (iron law: broken holdout => propose NO deltas). Engineer-provisional — senior operator to confirm gates."
+    },
+    {
+      "id": "bad-zanessa-stone-hero-yellow",
+      "provisional": true,
+      "source": { "type": "blob", "pathname": "renders/cmq7ya73o0009kz04gxfjrt2e/cmq7ya73o0009kz04gxfjrt2e.png" },
+      "metal": "yellow",
+      "stoneGroup": "diamond",
+      "angle": "hero",
+      "pass": "stone",
+      "expectVerdict": "escalate",
+      "humanScores": {
+        "diamondBrilliance": 1,
+        "metalHighlight": 2,
+        "metalBelievability": 2,
+        "exposureTonal": 2,
+        "stoneSymmetry": 1,
+        "contactShadow": 3,
+        "framing": 1,
+        "backgroundHoldout": 1
+      },
+      "expectGates": { "brokenHoldout": true },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "Known-bad zanessa stone pass (job cmq7ya73o0009kz04gxfjrt2e): scattered fragments on what should be a clean transparent stone layer. contactShadow labelled 3 = N/A on a transparent stone pass. Engineer-provisional."
+    },
+    {
+      "id": "bad-zanessa-metal-front-yellow",
+      "provisional": true,
+      "source": { "type": "blob", "pathname": "renders/cmq7ya73q000akz0400qdkmnw/cmq7ya73q000akz0400qdkmnw.png" },
+      "metal": "yellow",
+      "stoneGroup": "none",
+      "angle": "front",
+      "pass": "metal",
+      "expectVerdict": "escalate",
+      "humanScores": {
+        "diamondBrilliance": 2,
+        "metalHighlight": 2,
+        "metalBelievability": 2,
+        "exposureTonal": 2,
+        "stoneSymmetry": 1,
+        "contactShadow": 1,
+        "framing": 1,
+        "backgroundHoldout": 1
+      },
+      "expectGates": { "brokenHoldout": true },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "Known-bad zanessa metal pass, front angle (job cmq7ya73q000akz0400qdkmnw): mis-framed scattered fragments. Engineer-provisional."
+    },
+    {
+      "id": "bad-zanessa-stone-front-yellow",
+      "provisional": true,
+      "source": { "type": "blob", "pathname": "renders/cmq7ya73q000bkz04flargbxk/cmq7ya73q000bkz04flargbxk.png" },
+      "metal": "yellow",
+      "stoneGroup": "diamond",
+      "angle": "front",
+      "pass": "stone",
+      "expectVerdict": "escalate",
+      "humanScores": {
+        "diamondBrilliance": 1,
+        "metalHighlight": 2,
+        "metalBelievability": 2,
+        "exposureTonal": 2,
+        "stoneSymmetry": 1,
+        "contactShadow": 3,
+        "framing": 1,
+        "backgroundHoldout": 1
+      },
+      "expectGates": { "brokenHoldout": true, "emptyOrBroken": true },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "Known-bad zanessa stone pass, front angle (job cmq7ya73q000bkz04flargbxk): near-empty scattered fragments — labelled with BOTH brokenHoldout and emptyOrBroken. Engineer-provisional — senior operator to confirm whether emptyOrBroken applies here or only brokenHoldout."
+    },
+    {
+      "id": "adversarial-empty-black",
+      "provisional": true,
+      "source": { "type": "local", "path": "calibration/fixtures/adversarial-black.png" },
+      "metal": "white",
+      "stoneGroup": "diamond",
+      "angle": "hero",
+      "pass": "full",
+      "expectVerdict": "escalate",
+      "humanScores": {
+        "diamondBrilliance": 1,
+        "metalHighlight": 1,
+        "metalBelievability": 1,
+        "exposureTonal": 1,
+        "stoneSymmetry": 1,
+        "contactShadow": 1,
+        "framing": 1,
+        "backgroundHoldout": 1
+      },
+      "expectGates": { "emptyOrBroken": true },
+      "expectDeltaSign": { "worldStrength": 0, "exposure": 0, "cardDarkness": 0, "contactShadow": 0 },
+      "notes": "Structurally-empty adversarial frame (committed fixture, pure black 768x768): expects emptyOrBroken=true, escalate, NO deltas (09-AI-SPEC §5.7 adversarial slot)."
+    },
+    {
+      "id": "todo-good-yellow-hero",
+      "todo": true,
+      "coverage": "known-good YELLOW gold render (hero or front) — D3 warm-hue risk profile",
+      "notes": "QA lead: pick a shipped yellow-gold catalog render, label all 8 dimensions 1-5, the verdict, gates (all false expected) and delta signs (0s expected)."
+    },
+    {
+      "id": "todo-good-rose-any",
+      "todo": true,
+      "coverage": "known-good ROSE gold render (any angle) — the pink-vs-yellow D3 hue check",
+      "notes": "QA lead: pick a shipped rose-gold render and label it."
+    },
+    {
+      "id": "todo-top-angle",
+      "todo": true,
+      "coverage": "TOP angle case (good or bad) — D5 symmetry + D7 centering emphasis",
+      "notes": "QA lead: any top-view preview; label fully."
+    },
+    {
+      "id": "todo-profile-angle",
+      "todo": true,
+      "coverage": "PROFILE angle case (good or bad) — D2/D3 emphasis, stone asymmetry NOT penalized",
+      "notes": "QA lead: any profile-view preview; label fully."
+    },
+    {
+      "id": "todo-failure-milky",
+      "todo": true,
+      "coverage": "MILKY diamond failure — uniform pale wash, no facet structure (the #1 failure)",
+      "notes": "Senior operator: pick a milky preview (e.g. an over-lit world-strength sweep frame). Expected: flags.milky=true, D1=1, expectDeltaSign worldStrength=-1 and/or cardDarkness=-1, exposure NEVER +1 (the anti-pattern this set exists to catch)."
+    },
+    {
+      "id": "todo-failure-white-gold-chrome",
+      "todo": true,
+      "coverage": "WHITE-GOLD-AS-CHROME failure — pure-white/chrome metal, wrongMetal gate",
+      "notes": "Senior operator: expected flags.wrongMetal=true, D3=1."
+    },
+    {
+      "id": "todo-failure-blown-highlights",
+      "todo": true,
+      "coverage": "BLOWN HIGHLIGHTS failure — large clipped white blobs, silhouette dissolving",
+      "notes": "Senior operator: expected flags.blownHighlights=true, D2=1, expectDeltaSign exposure=-1."
+    },
+    {
+      "id": "todo-failure-flat-metal",
+      "todo": true,
+      "coverage": "FLAT/plastic metal failure — D3<=2 without milky; fixed with darker cards, never +worldStrength",
+      "notes": "Senior operator: expected D3=2, expectDeltaSign cardDarkness=-1, worldStrength=0 or -1 (NEVER +1)."
+    },
+    {
+      "id": "todo-failure-floating-product",
+      "todo": true,
+      "coverage": "FLOATING product failure — missing/absent contact shadow, D6 low",
+      "notes": "Senior operator: expected D6<=2, expectDeltaSign contactShadow=+1."
+    },
+    {
+      "id": "todo-failure-holdout-fringing",
+      "todo": true,
+      "coverage": "HOLDOUT FRINGING failure — dark fringe/halo on a stone-pass alpha edge (escalate, distinct from the zanessa scattered-fragment cases)",
+      "notes": "Senior operator: expected flags.brokenHoldout=true, D8=1, expectVerdict escalate, all delta signs 0."
+    }
+  ]
+}
