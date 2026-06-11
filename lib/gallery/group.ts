@@ -66,6 +66,46 @@ function bucketKey(combo: LayerCombo, groupBy: GroupBy): string {
   }
 }
 
+// ── Full-pass-first display priority ─────────────────────────────────────────
+// The `full` beauty pass is the PRIMARY catalog output; metal/stone passes are
+// SECONDARY compositing layers. Every gallery/monitor surface that has to pick
+// or order layers derives from these two helpers so the preference is defined
+// in exactly one place.
+
+const PASS_PRIORITY: Record<string, number> = { full: 0, metal: 1, stone: 2 };
+
+/** Display rank for a pass: full (0) before metal (1) before stone (2); any
+ *  unknown/missing pass value sorts last (3). */
+export function passPriority(pass: string | undefined | null): number {
+  return PASS_PRIORITY[pass ?? ""] ?? 3;
+}
+
+/**
+ * Stable-sort layer rows so `full` passes lead, then metal, then stone.
+ * Rows with the same pass keep their relative input order (Array.prototype.sort
+ * is stable), so deterministic input stays deterministic.
+ */
+export function sortPrimaryFirst<T extends { pass: string }>(
+  rows: readonly T[],
+): T[] {
+  return [...rows].sort((a, b) => passPriority(a.pass) - passPriority(b.pass));
+}
+
+/**
+ * Pick the layer a single-thumbnail preview (jobs monitor, deep links) should
+ * show: a flattened composite first (it IS the assembled deliverable), then the
+ * `full` beauty pass, then whatever comes first. Null for an empty list.
+ */
+export function preferredPreviewLayer<
+  T extends { pass: string; isFlattened?: boolean },
+>(layers: readonly T[]): T | null {
+  if (layers.length === 0) return null;
+  const flattened = layers.find((l) => l.isFlattened === true);
+  if (flattened) return flattened;
+  const full = layers.find((l) => l.pass === "full");
+  return full ?? layers[0];
+}
+
 /**
  * Group gallery layer rows into ordered buckets by the canonical combo keys.
  * Insertion order is preserved (deterministic for a deterministically-ordered

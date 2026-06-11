@@ -11,6 +11,8 @@ import {
 import { isTerminal } from "@/lib/orchestration/status-map";
 // INTEL-05: DB-only projection of Job.intel/intelState for the operator panel.
 import { loadBatchIntel } from "@/lib/intelligence/read";
+// Full-pass-first preview preference (pure helper, shared with the gallery).
+import { preferredPreviewLayer } from "@/lib/gallery/group";
 
 import { BatchStatusPill } from "../status-pill";
 import { CancelBatchControl } from "./cancel-controls";
@@ -43,11 +45,11 @@ function comboLabel(combo: unknown): string {
 
 // Pull a single light thumbnail URL from the job's Layer rows (Phase 5 builds the
 // full gallery; here we only read a Layer url for the completed-row preview).
-type JobLayer = { url: string; isFlattened: boolean };
+// Preference order is the shared full-pass-first contract (lib/gallery/group):
+// flattened composite > full beauty pass > first layer.
+type JobLayer = { url: string; pass: string; isFlattened: boolean };
 function thumbnailOf(layers: JobLayer[]): string | null {
-  if (layers.length === 0) return null;
-  const flat = layers.find((l) => l.isFlattened);
-  return (flat ?? layers[0]).url;
+  return preferredPreviewLayer(layers)?.url ?? null;
 }
 
 export default async function BatchDetailPage({
@@ -142,7 +144,7 @@ async function loadBatch(id: string): Promise<LoadedBatch | null> {
         jobs: {
           orderBy: { id: "asc" },
           include: {
-            layers: { select: { url: true, isFlattened: true } },
+            layers: { select: { url: true, pass: true, isFlattened: true } },
           },
         },
       },

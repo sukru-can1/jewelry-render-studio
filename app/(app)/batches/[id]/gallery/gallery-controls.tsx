@@ -8,7 +8,7 @@ import {
 } from "@/app/components/ui/toggle-group";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/lib/utils";
-import { groupLayers, type GroupBy } from "@/lib/gallery/group";
+import { groupLayers, sortPrimaryFirst, type GroupBy } from "@/lib/gallery/group";
 
 import { LayerCard, type GalleryCardLayer } from "./layer-card";
 import { PreviewLightbox } from "./preview-lightbox";
@@ -75,8 +75,11 @@ export function GalleryBody({
     [layers, filter],
   );
 
+  // Full-pass-first: the full beauty render is the PRIMARY output, so it leads
+  // inside every group section (and, under the "pass" grouping, the full
+  // sections come first). Metal/stone rows keep their relative order behind it.
   const groups = React.useMemo(
-    () => groupLayers(filtered, groupBy),
+    () => groupLayers(sortPrimaryFirst(filtered), groupBy),
     [filtered, groupBy],
   );
 

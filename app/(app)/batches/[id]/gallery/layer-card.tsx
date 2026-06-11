@@ -116,6 +116,13 @@ export function LayerCard({
         <span className="truncate font-mono text-xs text-muted-foreground">
           {comboLabel(layer.combo)}
         </span>
+        {/* The full beauty pass IS the product render; metal/stone are
+            secondary compositing layers and are labeled as such. */}
+        {layer.pass !== "full" ? (
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[0.625rem] font-semibold text-muted-foreground">
+            layer pass
+          </span>
+        ) : null}
         {stoneGroup ? (
           <span
             className={cn(
