@@ -36,6 +36,14 @@ export const env = createEnv({
     // the adaptive render loop globally — batches render the classic path. The
     // loop is also OFF when OPENAI_API_KEY is absent or the batch did not opt in.
     ADAPTIVE_INTELLIGENCE_ENABLED: z.string().optional(),
+    // Optional (Phase 9, INTEL-06 trust gate / T-09-14): auto-applying AI knob
+    // deltas to a re-render requires this to be EXACTLY "true". Default absent
+    // = RECOMMEND-ONLY: the loop still scores + decides + persists the verdict
+    // and proposed deltas, but ships a classic FINAL and surfaces the deltas to
+    // the operator. Flipping it on is the HUMAN act after the calibration
+    // harness (scripts/calibrate-intel.ts) proves >=0.7 judge<->human agreement
+    // on QA-lead-reviewed labels.
+    INTEL_AUTOCORRECT_ENABLED: z.string().optional(),
   },
   client: {},
   // Next.js only inlines NEXT_PUBLIC_* at build; server vars are read at runtime.

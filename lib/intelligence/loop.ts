@@ -31,6 +31,17 @@ export type DecideLoopInput = {
   prevBestScore: number;
   /** The job's pass type (Combo.pass). "stone" passes are transparent (G7). */
   pass: "metal" | "stone" | "full";
+  /**
+   * INTEL-06 calibration trust gate (09-04): decideLoop returns an autoCorrect
+   * that may AUTO re-dispatch only when autoCorrectTrusted — i.e. the vision
+   * judge has proven >=0.7 agreement with human labels on the reference set
+   * (lib/intelligence/calibration.ts) AND a human flipped the flag. DEFAULT
+   * false/omitted = RECOMMEND-ONLY: the decision and sanitized deltas are still
+   * returned (and persisted as the recommendation) but recommendOnly:true tells
+   * the sweep NOT to auto re-preview — the operator applies/declines (09-03).
+   * Accept / escalate / freeze-best are unaffected by trust.
+   */
+  trusted?: boolean;
 };
 
 export type DecideLoopResult = {
@@ -38,6 +49,12 @@ export type DecideLoopResult = {
   reason: string;
   /** Present ONLY on autoCorrect: the G5/G7-sanitized deltas to feed applyDeltas. */
   appliedDeltas?: VisionVerdict["adjust"];
+  /**
+   * Present ONLY on autoCorrect: true when the trust gate is CLOSED (not yet
+   * autoCorrectTrusted) — appliedDeltas are a RECOMMENDATION the sweep persists
+   * and surfaces, never auto-applies to a re-render (T-09-14).
+   */
+  recommendOnly?: boolean;
   /** G3-G7 hits for the Job.intel audit trace (forbidden_move, pass_gate, ...). */
   guardrailHits: string[];
 };
@@ -102,7 +119,7 @@ export function sanitizeDeltas(
  *             set seen so far (never a regressed one).
  */
 export function decideLoop(input: DecideLoopInput): DecideLoopResult {
-  const { verdict, iteration, prevBestScore, pass } = input;
+  const { verdict, iteration, prevBestScore, pass, trusted } = input;
   const s = verdict.scores;
   const guardrailHits: string[] = [];
 
@@ -158,10 +175,16 @@ export function decideLoop(input: DecideLoopInput): DecideLoopResult {
         guardrailHits,
       };
     }
+    // INTEL-06: only an autoCorrectTrusted judge may auto re-dispatch; until
+    // calibration proves >=0.7 agreement the deltas are a recommendation only.
+    const recommendOnly = trusted !== true;
     return {
       decision: "autoCorrect",
-      reason: `Below the bar (overall ${verdict.overallScore}) with corrective deltas at iteration ${iteration}; re-previewing.`,
+      reason: recommendOnly
+        ? `Below the bar (overall ${verdict.overallScore}) with corrective deltas at iteration ${iteration}; trust gate closed — recommending, not re-previewing.`
+        : `Below the bar (overall ${verdict.overallScore}) with corrective deltas at iteration ${iteration}; re-previewing.`,
       appliedDeltas: deltas,
+      recommendOnly,
       guardrailHits,
     };
   }

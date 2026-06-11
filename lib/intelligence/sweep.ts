@@ -102,6 +102,14 @@ export type JobIntel = {
   previewJobId?: string;
   finalJobId?: string;
   operatorAction?: IntelOperatorAction;
+  /**
+   * INTEL-06 (09-04): true when an autoCorrect decision was reached while the
+   * trust gate was CLOSED (INTEL_AUTOCORRECT_ENABLED !== "true") — the deltas
+   * below were RECOMMENDED, NOT APPLIED; a classic FINAL shipped instead.
+   */
+  recommendOnly?: boolean;
+  /** The G5/G7-sanitized deltas the judge recommended (never applied). */
+  recommendedDeltas?: VisionVerdict["adjust"];
 };
 
 /** The fresh trace createBatch seeds on every intelligence-preview job. */
@@ -309,6 +317,11 @@ async function processClaimedJob(job: ClaimedJob): Promise<void> {
     iteration: intel.iteration,
     prevBestScore: intel.bestScore ?? -1,
     pass: combo.pass,
+    // INTEL-06 trust gate (T-09-14): auto-applying deltas requires the explicit
+    // human act of setting INTEL_AUTOCORRECT_ENABLED="true" AFTER the
+    // calibration harness proves >=0.7 judge<->human agreement. Default:
+    // recommend-only.
+    trusted: env.INTEL_AUTOCORRECT_ENABLED === "true",
   });
 
   // Trace + best-set tracking. currentOverrides = the set that PRODUCED this
@@ -330,6 +343,17 @@ async function processClaimedJob(job: ClaimedJob): Promise<void> {
   }
 
   if (decided.decision === "autoCorrect" && decided.appliedDeltas) {
+    // INTEL-06 recommend-only (the DEFAULT until calibration >=0.7): persist
+    // the verdict + the proposed deltas as a RECOMMENDATION, never re-render
+    // with them — ship a classic FINAL (frozen best, {} on the seed preview)
+    // and let the operator apply/decline via the intel panel (09-03).
+    if (decided.recommendOnly) {
+      intel.recommendOnly = true;
+      intel.recommendedDeltas = decided.appliedDeltas;
+      intel.reason = `${decided.reason} Deltas recommended, not applied (INTEL_AUTOCORRECT_ENABLED is not "true").`;
+      await queueFinal(job, combo, intel);
+      return;
+    }
     // G8 — the preview-render budget: a correction past it freezes best instead.
     if (intel.cost.previewRenders >= MAX_PREVIEW_RENDERS) {
       intel.guardrailHits = [...intel.guardrailHits, "cost_cap"];

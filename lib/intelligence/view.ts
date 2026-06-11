@@ -76,6 +76,9 @@ export function normalizeIntel(raw: unknown): JobIntel {
     previewJobId: base.previewJobId,
     finalJobId: base.finalJobId,
     operatorAction: base.operatorAction,
+    // INTEL-06 (09-04): the recommend-only marker + the never-applied deltas.
+    recommendOnly: base.recommendOnly === true ? true : undefined,
+    recommendedDeltas: base.recommendedDeltas,
   };
 }
 
