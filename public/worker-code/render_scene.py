@@ -836,9 +836,21 @@ def setup_background(recipe):
     plane.name = "catalog_shadow_plane"
     mat = make_material("catalog_warm_white", {"base_color": bg.get("color", [0.98, 0.98, 0.965, 1]), "roughness": 0.62})
     plane.data.materials.append(mat)
+    # background.visible_camera=false (stone passes): the floor must keep
+    # LIGHTING the product — diffuse/glossy/transmission bounce preserved — but
+    # camera rays pass through it, so the transparent holdout layer ships as
+    # pure stones-on-alpha for compositing. Legacy lesson: never delete the
+    # floor for stone shots, hide it from camera only.
+    if not bg.get("visible_camera", True) and hasattr(plane, "visible_camera"):
+        plane.visible_camera = False
 
 
 def add_contact_shadows(recipe):
+    # Stone passes hide the floor from camera (background.visible_camera=false);
+    # the fake contact-shadow discs sit on that floor and must vanish with it,
+    # or they render as opaque pixels on the stones-on-alpha layer. They keep
+    # diffuse visibility only — negligible, and consistent with the floor fix.
+    camera_visible = bool(recipe.get("background", {}).get("visible_camera", True))
     for config in recipe.get("contact_shadows", []):
         layers = max(1, int(config.get("layers", 3)))
         base_alpha = float(config.get("alpha", 0.18))
@@ -873,6 +885,8 @@ def add_contact_shadows(recipe):
             shadow.visible_shadow = False
             shadow.visible_glossy = False
             shadow.visible_transmission = False
+            if not camera_visible and hasattr(shadow, "visible_camera"):
+                shadow.visible_camera = False
 
 
 def add_reflection_cards_from_configs(configs):

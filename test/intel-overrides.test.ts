@@ -17,6 +17,11 @@
 //     the worker skips the stage instead of painting the synthetic 24-spoke
 //     wheel into fallback_bounds_norm (seen live on a 5-small-stone ring).
 //     This is the FIRST and only full-pass change; all tuned values are intact.
+//  4. (STONE) live-E2E floor fix: stone passes emit background.visible_camera:
+//     false — the floor keeps LIGHTING the stones (bounce preserved) but camera
+//     rays pass through, so the layer ships as pure stones-on-alpha (the floor
+//     rendered as opaque pixels before). Worker also camera-hides the
+//     contact-shadow discs under the same flag.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -34,7 +39,7 @@ import {
 const GOLDEN_FULL_SHA256 =
   "efeb510a3bc1071fb71605c457a8b6b74a0544701a71b46e3a2ca8a45a980fe4";
 const GOLDEN_STONE_SHA256 =
-  "8d2424f676eb65b9d79ef3885330535cf96897da82226d24802bdb854b778449";
+  "3ec9396e0bc4d3d83965218328593cfd3f92904983819267cdba94c643e97dce";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",

@@ -118,6 +118,12 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
 
       expect(studioBackgroundEnabled(recipe)).toBe(false);
 
+      // Live E2E fix: the studio FLOOR plane lit the stones but also rendered
+      // as opaque pixels on the holdout layer. Stone passes hide it (and the
+      // contact-shadow discs) from CAMERA ONLY — light bounce is preserved.
+      const background = recipe.background as Record<string, unknown>;
+      expect(background.visible_camera).toBe(false);
+
       // NO postprocess stage may paint over the transparent layer's alpha:
       // product enhancement AND every fallback_bounds overlay stage are OFF.
       expect(stageEnabled(recipe, "product")).toBe(false);
@@ -133,6 +139,8 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
     const render = recipe.render as Record<string, unknown>;
     expect(render.transparent).toBe(false);
     expect(studioBackgroundEnabled(recipe)).toBe(true);
+    // The floor stays camera-visible on opaque passes — the key is NOT emitted.
+    expect("visible_camera" in (recipe.background as Record<string, unknown>)).toBe(false);
 
     const m = model(recipe);
     const include = m.include_contains as string[];
@@ -177,6 +185,8 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
     const render = recipe.render as Record<string, unknown>;
     expect(render.transparent).toBe(false);
     expect(studioBackgroundEnabled(recipe)).toBe(true);
+    // The floor stays camera-visible on opaque passes — the key is NOT emitted.
+    expect("visible_camera" in (recipe.background as Record<string, unknown>)).toBe(false);
 
     const m = model(recipe);
     expect(m.include_contains).toEqual([]);

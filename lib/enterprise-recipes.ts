@@ -239,7 +239,18 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
     },
     camera: angle.camera,
     world: { color: [1.0, 1.0, 1.0], strength: KNOB_DEFAULTS.worldStrength }, // 0.105
-    background: { color: [0.965, 0.965, 0.955, 1.0], plane_size: 8.5, plane_z: -0.055 },
+    background: {
+      color: [0.965, 0.965, 0.955, 1.0],
+      plane_size: 8.5,
+      plane_z: -0.055,
+      // Stone passes only (live E2E fix): the floor plane LIGHTS the stones
+      // (diffuse/glossy/transmission bounce preserved by the worker) but is
+      // invisible to camera, so the layer is pure stones-on-alpha for
+      // compositing — it rendered as opaque floor pixels before. The worker
+      // also camera-hides the contact-shadow discs when this flag is false.
+      // Metal/full passes omit the key entirely (floor stays visible).
+      ...(request.pass === "stone" ? { visible_camera: false } : {})
+    },
     model: {
       auto_center: true,
       auto_scale: true,
