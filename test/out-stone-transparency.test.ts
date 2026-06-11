@@ -280,6 +280,31 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
   });
 });
 
+// Legacy auto-orient port: the worker stands the product upright (thinnest bbox
+// axis -> Y) and spins the head (stones/setting) to +Z BEFORE the
+// auto_center/auto_scale/ground_to_plane bounds are computed. The flag MUST be
+// identical across passes — pass visibility applies after transforms, so the
+// orientation basis is the shared full product and layers stay aligned for
+// compositing. A pass-divergent flag would silently break layer registration.
+describe("buildEnterpriseRecipe — auto-orient contract (legacy stand-upright port)", () => {
+  const PASSES = [
+    { pass: "full", stoneGroup: undefined },
+    { pass: "metal", stoneGroup: undefined },
+    { pass: "stone", stoneGroup: "diamond" },
+    { pass: "stone", stoneGroup: "stone2" },
+    { pass: "stone", stoneGroup: "stone3" },
+  ] as const;
+
+  for (const combo of PASSES) {
+    it(`${combo.pass}${combo.stoneGroup ? `/${combo.stoneGroup}` : ""} pass emits model.auto_orient: true`, () => {
+      const recipe = buildEnterpriseRecipe(
+        request({ pass: combo.pass, stoneGroup: combo.stoneGroup }),
+      );
+      expect(model(recipe).auto_orient).toBe(true);
+    });
+  }
+});
+
 // Live-E2E paint-stage fix: diamond_facets PAINTS synthetic content. When its
 // object tokens miss, the worker must SKIP the stage — never paint the fake
 // 24-spoke wheel into fallback_bounds_norm (seen live on a 5-small-stone ring's

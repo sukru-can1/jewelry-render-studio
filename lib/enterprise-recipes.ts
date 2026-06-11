@@ -283,6 +283,15 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       ...(request.pass === "stone" ? { visible_camera: false } : {})
     },
     model: {
+      // Legacy "stand upright + orient head" normalization (worker
+      // auto_orient_model): uploaded models often import lying flat — the worker
+      // rotates the thinnest bbox axis (band depth) to Y, then spins the head
+      // (stones/setting) to +Z, BEFORE auto_center/auto_scale/ground_to_plane.
+      // Emitted on ALL passes (full/metal/stone): pass visibility is applied
+      // after transforms, so every layer shares the same full-product
+      // orientation basis and stays aligned for compositing. Already-upright
+      // models (ring99-style, Y thinnest) hit the identity branch — safe.
+      auto_orient: true,
       auto_center: true,
       auto_scale: true,
       target_size: angle.targetSize,

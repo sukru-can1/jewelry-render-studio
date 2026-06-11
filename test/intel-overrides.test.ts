@@ -26,6 +26,11 @@
 //     FALLBACK metal tokens (minus any token substring-overlapping the target
 //     group's tokens) — a band named "Object" with material "WhiteMetal"
 //     rendered into the live stone layer because the SAVED tokens missed it.
+//  6. (FULL + STONE) legacy auto-orient port: model.auto_orient: true is now
+//     emitted on EVERY pass (the worker stands lying-flat uploads upright and
+//     spins the head to +Z before centering/scaling/grounding). The flag must
+//     be pass-identical so all layers share one orientation basis — both
+//     goldens regenerated for this one added model key.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -41,9 +46,9 @@ import {
 } from "@/lib/enterprise-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "efeb510a3bc1071fb71605c457a8b6b74a0544701a71b46e3a2ca8a45a980fe4";
+  "2bf69460b6c00588ff7aef26b4e00183fffe1c502549eef3626e7c175d426f61";
 const GOLDEN_STONE_SHA256 =
-  "dfb210252e68dad6c13cda852352076da310746dda26d0f96079659681fa445d";
+  "62f80f6bc53f82e8318e272781322d393e8f9e3ab75f7d158ae1c10ccd95e521";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -84,7 +89,7 @@ const TODAY_CARD_COLORS = [
 type AnyRecipe = Record<string, any>;
 
 describe("backward compatibility — NO profileOverrides is byte-identical to today", () => {
-  it("full/hero/white request matches the golden sha256 (regenerated ONCE for the paint-stage fallback:'skip' flag)", () => {
+  it("full/hero/white request matches the golden sha256 (deliberate regenerations listed in the header)", () => {
     expect(sha256(buildEnterpriseRecipe(reqFull))).toBe(GOLDEN_FULL_SHA256);
   });
 
