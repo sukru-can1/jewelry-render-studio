@@ -1,9 +1,16 @@
 // INTEL-01 (09-01 Task 2) — buildEnterpriseRecipe profileOverrides extension.
 //
 // HARD requirement: with NO profileOverrides the output is BYTE-IDENTICAL to the
-// pre-change generator. The two sha256 golden hashes below were captured from the
-// UNMODIFIED lib/enterprise-recipes.ts (commit 81cb108) over JSON.stringify of two
-// representative requests — any drift in field values OR key order fails this test.
+// pre-change generator. The FULL golden below was captured from the UNMODIFIED
+// lib/enterprise-recipes.ts (commit 81cb108) over JSON.stringify — any drift in
+// field values OR key order fails this test.
+//
+// The STONE golden was DELIBERATELY regenerated for the layered-pass visibility
+// contract (OUT-01 fix): stone passes now emit model.pass_holdout_contains and
+// no longer put pass tokens into include_contains/exclude_contains, so the
+// normalization basis stays the FULL product and layers align for compositing.
+// The full-pass golden is intentionally UNCHANGED — full passes emit neither
+// new field.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -21,7 +28,7 @@ import {
 const GOLDEN_FULL_SHA256 =
   "bbc2acb4daf4a65a17f5e21bd2605142cfefadb80fd14ccc4143f53377354166";
 const GOLDEN_STONE_SHA256 =
-  "46bfd27aeba7bca37b52f9bd2d68c39167968c2703f7a0896c25fb06def7b5c0";
+  "37e7a5215ce1c3e2804c632d4a3a5927afed5850b42a7df702230be780ca40d5";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -66,7 +73,7 @@ describe("backward compatibility — NO profileOverrides is byte-identical to to
     expect(sha256(buildEnterpriseRecipe(reqFull))).toBe(GOLDEN_FULL_SHA256);
   });
 
-  it("stone/front/rose request matches the pre-change golden sha256", () => {
+  it("stone/front/rose request matches the golden sha256 (regenerated for the pass-visibility contract)", () => {
     expect(sha256(buildEnterpriseRecipe(reqStone))).toBe(GOLDEN_STONE_SHA256);
   });
 

@@ -148,37 +148,41 @@ function uniqueTokens(tokens: string[]) {
   return Array.from(new Set(tokens.map((token) => token.trim()).filter(Boolean))).slice(0, 120);
 }
 
-function buildVisibility(request: EnterpriseRecipeRequest) {
-  const metalTokens = tokensFor(request.groupTokens, "alloycolour");
-  const stoneTokens = [
-    ...tokensFor(request.groupTokens, "diamond"),
-    ...tokensFor(request.groupTokens, "stone2"),
-    ...tokensFor(request.groupTokens, "stone3")
-  ];
+const STONE_GROUP_KEYS = ["diamond", "stone2", "stone3"] as const;
 
+function buildVisibility(request: EnterpriseRecipeRequest) {
+  // LAYERED-PASS FIX (legacy app's proven pattern): passes NO LONGER filter via
+  // include_contains/exclude_contains. The worker runs filter_product_objects
+  // BEFORE transform_model, so pass-level include/exclude made auto_center/
+  // auto_scale/ground_to_plane normalize on the pass subset ALONE — stone passes
+  // scaled tiny stones up to target_size (giant diamonds) and every pass got a
+  // DIFFERENT transform, so metal/stone layers could never align for compositing.
+  //
+  // Instead the worker keeps the FULL product as the normalization basis and
+  // applies pass visibility AFTER transforms (render_scene.py
+  // apply_pass_visibility), driven by two new optional model fields:
+  // - metal pass -> pass_hide_contains = ALL stone-group tokens (stones fully
+  //   hidden; metal renders complete behind where the stones sit).
+  // - stone pass -> pass_holdout_contains = metal tokens + the OTHER stone
+  //   groups' tokens (every non-target object occludes the target — correct
+  //   silhouettes for compositing — without rendering).
+  // - full pass -> neither field (recipe byte-identical to the classic output).
+  // include_contains/exclude_contains keep ONLY the junk filtering (lights,
+  // cameras, helpers) so the worker still drops non-product objects up front.
   if (request.pass === "metal") {
-    return { include: uniqueTokens(metalTokens), exclude: uniqueTokens(stoneTokens) };
+    const stoneTokens = STONE_GROUP_KEYS.flatMap((group) => tokensFor(request.groupTokens, group));
+    return { hide: uniqueTokens(stoneTokens), holdout: [] as string[] };
   }
 
   if (request.pass === "stone" && request.stoneGroup) {
-    // OUT-01 / locked decision D-1: a precise SINGLE-GROUP transparent holdout.
-    // include = ONLY the target stone group's tokens (the `...metalTokens` spread was
-    // REMOVED — including metal tokens here would defeat the holdout). exclude = the
-    // alloycolour metal tokens (metal is explicitly held out, not merely hidden behind
-    // a background).
-    // HAZARD: the worker's filter_product_objects treats include_contains as a HARD
-    // allow-list — it HIDES every object that does NOT match. If the target stone
-    // group's tokens are sparse and under-match the model's object signatures, the
-    // include list will hide EVERYTHING and produce an empty render. The stone-group
-    // tokens MUST resolve to real object signatures; the BINDING proof is the live
-    // manual render (05-VALIDATION row), not this unit test (which only sees flags).
-    return {
-      include: uniqueTokens(tokensFor(request.groupTokens, request.stoneGroup)),
-      exclude: uniqueTokens(metalTokens)
-    };
+    const metalTokens = tokensFor(request.groupTokens, "alloycolour");
+    const otherStoneTokens = STONE_GROUP_KEYS.filter((group) => group !== request.stoneGroup).flatMap((group) =>
+      tokensFor(request.groupTokens, group)
+    );
+    return { hide: [] as string[], holdout: uniqueTokens([...metalTokens, ...otherStoneTokens]) };
   }
 
-  return { include: [], exclude: [] };
+  return { hide: [] as string[], holdout: [] as string[] };
 }
 
 export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<string, unknown> {
@@ -246,8 +250,12 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       ground_clearance: 0.022,
       shade_smooth: true,
       shade_smooth_exclude_contains: ["diamond", "stone", "gem", "round", "brilliant", "zirconia"],
-      include_contains: visibility.include,
-      exclude_contains: uniqueTokens(["light", "camera", "cube", "helper", "swatch", "plane", ...visibility.exclude])
+      include_contains: [] as string[],
+      exclude_contains: uniqueTokens(["light", "camera", "cube", "helper", "swatch", "plane"]),
+      // Emitted only on metal/stone passes — the full pass carries neither field,
+      // so its JSON (and the golden sha256) is unchanged.
+      ...(visibility.hide.length ? { pass_hide_contains: visibility.hide } : {}),
+      ...(visibility.holdout.length ? { pass_holdout_contains: visibility.holdout } : {})
     },
     material_strategy: "override",
     material_map: materialMap,
