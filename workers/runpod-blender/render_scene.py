@@ -442,10 +442,18 @@ def normalize(objects, settings):
     center = (mins + maxs) * 0.5
     size = max((maxs - mins).x, (maxs - mins).y, (maxs - mins).z)
     scale = settings.get("target_size", 2.0) / size if settings.get("auto_scale", True) and size > 0 else 1.0
+    # Legacy master-scene approach: ONE composed world-space matrix applied to
+    # matrix_world. Translating the product center to the origin and then
+    # scaling about the world origin == scaling about the product center.
+    # The previous per-object `obj.location -= center` / `obj.scale *= scale`
+    # only composed correctly under accidental invariants (coincident object
+    # origins straight from import) and broke once auto_orient_model rewrote
+    # matrix_world with rotations — the product was flung out of frame.
+    translation = Matrix.Translation(-center) if settings.get("auto_center", True) else Matrix.Identity(4)
+    matrix = Matrix.Scale(scale, 4) @ translation
     for obj in objects:
-        if settings.get("auto_center", True):
-            obj.location -= center
-        obj.scale *= scale
+        obj.matrix_world = matrix @ obj.matrix_world
+    bpy.context.view_layer.update()
 
 
 def transform_vector(value, default=1.0):
