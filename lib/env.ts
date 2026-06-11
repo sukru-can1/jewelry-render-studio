@@ -32,6 +32,10 @@ export const env = createEnv({
     // "AI is not configured" error and the app otherwise builds/runs unchanged.
     OPENAI_API_KEY: z.string().optional(),
     AI_MODEL: z.string().optional(),
+    // Optional (Phase 9, G9 kill-switch): set to the string "false" to disable
+    // the adaptive render loop globally — batches render the classic path. The
+    // loop is also OFF when OPENAI_API_KEY is absent or the batch did not opt in.
+    ADAPTIVE_INTELLIGENCE_ENABLED: z.string().optional(),
   },
   client: {},
   // Next.js only inlines NEXT_PUBLIC_* at build; server vars are read at runtime.

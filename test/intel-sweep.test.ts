@@ -44,7 +44,7 @@ vi.mock("@/lib/intelligence/analyze-preview", () => ({
 // The ONLY legitimate recipe source (G10). The sweep must persist EXACTLY this
 // object on any Job it creates.
 const recipeFixture = vi.hoisted(() => ({ marker: "built-by-buildEnterpriseRecipe" }));
-const buildRecipeMock = vi.hoisted(() => vi.fn(() => recipeFixture));
+const buildRecipeMock = vi.hoisted(() => vi.fn((..._a: unknown[]) => recipeFixture));
 vi.mock("@/lib/enterprise-recipes", () => ({
   buildEnterpriseRecipe: (...a: unknown[]) => buildRecipeMock(...a),
 }));
