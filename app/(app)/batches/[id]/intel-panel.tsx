@@ -126,6 +126,13 @@ function IntelJobCard({ batchId, item }: { batchId: string; item: JobIntelView }
             {item.decision}
           </Badge>
         ) : null}
+        {item.recommendOnly ? (
+          // INTEL-06: the trust gate is closed — the proposed deltas below were
+          // recorded as a recommendation; a classic final shipped unchanged.
+          <Badge variant="outline" className="border-info/50 text-info">
+            recommend-only — deltas not applied
+          </Badge>
+        ) : null}
         <span className="ml-auto font-mono text-[11px] tabular-nums text-muted-foreground">
           iter {item.iteration} · {item.cost.visionCalls} vision ·{" "}
           {item.cost.previewRenders} preview · {item.cost.finalRenders} final
@@ -236,11 +243,18 @@ function IntelJobCard({ batchId, item }: { batchId: string; item: JobIntelView }
 
             <dl className="flex flex-col gap-1 text-xs">
               <div className="flex gap-2">
-                <dt className="w-20 shrink-0 text-muted-foreground">Proposed</dt>
+                <dt className="w-20 shrink-0 text-muted-foreground">
+                  {item.recommendOnly ? "Recommended" : "Proposed"}
+                </dt>
                 <dd className="font-mono tabular-nums text-foreground">
                   {proposed.length > 0
                     ? proposed.map((d) => `${d.label} ${d.value}`).join(" · ")
                     : "none"}
+                  {item.recommendOnly && proposed.length > 0 ? (
+                    <span className="ml-1 font-sans text-muted-foreground">
+                      (not applied)
+                    </span>
+                  ) : null}
                 </dd>
               </div>
               <div className="flex gap-2">

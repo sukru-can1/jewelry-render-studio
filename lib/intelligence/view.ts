@@ -45,6 +45,11 @@ export type JobIntelView = {
   guardrailHits: string[];
   cost: IntelCost;
   operatorAction: IntelOperatorAction | null;
+  /**
+   * INTEL-06 (09-04): true when the autoCorrect deltas were RECOMMENDED but not
+   * applied (trust gate closed) — the panel labels them "not applied".
+   */
+  recommendOnly: boolean;
   /** Auth-gated file-proxy URL of the analyzed preview (T-09-13), if rendered. */
   previewThumbUrl: string | null;
   previewJobId: string | null;

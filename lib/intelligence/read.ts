@@ -64,6 +64,7 @@ export async function loadBatchIntel(batchId: string): Promise<JobIntelView[]> {
       guardrailHits: intel.guardrailHits,
       cost: intel.cost,
       operatorAction: intel.operatorAction ?? null,
+      recommendOnly: intel.recommendOnly === true,
       previewThumbUrl: pathname ? privateUrl(pathname) : null,
       previewJobId: intel.previewJobId ?? null,
       finalJobId: intel.finalJobId ?? null,
