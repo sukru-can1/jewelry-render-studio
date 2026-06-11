@@ -25,6 +25,10 @@ const envMock = vi.hoisted(() => ({
   env: {
     OPENAI_API_KEY: "sk-test" as string | undefined,
     ADAPTIVE_INTELLIGENCE_ENABLED: undefined as string | undefined,
+    // INTEL-06 (09-04) trust gate: auto-applying deltas requires the explicit
+    // post-calibration human act of setting this to "true". Default absent =
+    // recommend-only.
+    INTEL_AUTOCORRECT_ENABLED: undefined as string | undefined,
   },
 }));
 vi.mock("@/lib/env", () => envMock);
@@ -152,6 +156,7 @@ beforeEach(() => {
   buildRecipeMock.mockClear();
   envMock.env.OPENAI_API_KEY = "sk-test";
   envMock.env.ADAPTIVE_INTELLIGENCE_ENABLED = undefined;
+  envMock.env.INTEL_AUTOCORRECT_ENABLED = undefined;
 
   jobMock.findMany.mockResolvedValue([analyzingJob()]);
   jobMock.updateMany.mockResolvedValue({ count: 1 });
@@ -247,8 +252,10 @@ describe("sweepAnalyzingJobs — accept -> FINAL (INTEL-04)", () => {
   });
 });
 
-describe("sweepAnalyzingJobs — autoCorrect -> adjusted re-preview (INTEL-04)", () => {
+describe("sweepAnalyzingJobs — autoCorrect -> adjusted re-preview (INTEL-04, trusted mode)", () => {
   it("creates a PREVIEW_QUEUED job with applyDeltas overrides at iteration 1", async () => {
+    // INTEL-06: auto-applying requires the post-calibration trust flag.
+    envMock.env.INTEL_AUTOCORRECT_ENABLED = "true";
     analyzePreviewMock.mockResolvedValue(
       verdictFixture({
         scores: { diamondBrilliance: 3 },
@@ -308,6 +315,83 @@ describe("sweepAnalyzingJobs — escalate (G6, T-09-06)", () => {
     expect(t?.data.intelState).toBe("ESCALATED");
     expect(t?.data.intel?.decision).toBe("escalate");
     expect(t?.data.intel?.reason).toMatch(/holdout/i);
+  });
+});
+
+describe("sweepAnalyzingJobs — recommend-only DEFAULT (INTEL-06 trust gate)", () => {
+  it("autoCorrect verdict without INTEL_AUTOCORRECT_ENABLED -> NO re-preview; classic FINAL with the recommendation persisted", async () => {
+    // envMock.env.INTEL_AUTOCORRECT_ENABLED stays undefined (the default).
+    analyzePreviewMock.mockResolvedValue(
+      verdictFixture({
+        scores: { diamondBrilliance: 3 },
+        adjust: { worldStrengthDelta: -0.03 },
+        overallScore: 3,
+      }),
+    );
+    const res = await sweepAnalyzingJobs();
+    expect(res).toEqual({ analyzed: 1 });
+
+    // Exactly ONE job created: the FINAL — never an adjusted re-preview.
+    expect(jobMock.create).toHaveBeenCalledTimes(1);
+    const created = jobMock.create.mock.calls[0][0].data as {
+      status: string;
+      intelState?: string;
+      recipe: unknown;
+    };
+    expect(created.status).toBe("queued");
+    expect(created.intelState).toBeUndefined(); // a CLASSIC final, not PREVIEW_QUEUED
+    expect(created.recipe).toBe(recipeFixture); // G10 still holds
+
+    // The FINAL renders full samples with NO overrides applied (identity recipe).
+    const req = buildRecipeMock.mock.calls[0][0] as {
+      samples: number;
+      profileOverrides?: unknown;
+    };
+    expect(req.samples).toBe(512);
+    expect(req.profileOverrides).toBeUndefined();
+
+    // The verdict + proposed deltas are persisted as a RECOMMENDATION on the trace.
+    const t = transitionCall();
+    expect(t?.data.intelState).toBe("FINAL_QUEUED");
+    expect(t?.data.intel?.decision).toBe("autoCorrect");
+    const intel = t?.data.intel as unknown as {
+      recommendOnly?: boolean;
+      recommendedDeltas?: { worldStrengthDelta?: number };
+      reason?: string;
+      verdicts?: unknown[];
+    };
+    expect(intel.recommendOnly).toBe(true);
+    expect(intel.recommendedDeltas?.worldStrengthDelta).toBe(-0.03);
+    expect(intel.reason).toMatch(/recommended, not applied/i);
+    expect(intel.verdicts).toHaveLength(1); // scored + decided + persisted
+  });
+
+  it('INTEL_AUTOCORRECT_ENABLED="false" behaves identically to absent (recommend-only)', async () => {
+    envMock.env.INTEL_AUTOCORRECT_ENABLED = "false";
+    analyzePreviewMock.mockResolvedValue(
+      verdictFixture({
+        scores: { diamondBrilliance: 3 },
+        adjust: { worldStrengthDelta: -0.03 },
+        overallScore: 3,
+      }),
+    );
+    await sweepAnalyzingJobs();
+
+    const t = transitionCall();
+    expect(t?.data.intelState).toBe("FINAL_QUEUED");
+    expect((t?.data.intel as unknown as { recommendOnly?: boolean }).recommendOnly).toBe(true);
+  });
+
+  it("accept is untouched by the trust gate: still FINAL_QUEUED with no recommendOnly marker", async () => {
+    analyzePreviewMock.mockResolvedValue(verdictFixture()); // catalog-ready
+    await sweepAnalyzingJobs();
+
+    const t = transitionCall();
+    expect(t?.data.intelState).toBe("FINAL_QUEUED");
+    expect(t?.data.intel?.decision).toBe("accept");
+    expect(
+      (t?.data.intel as unknown as { recommendOnly?: boolean }).recommendOnly,
+    ).toBeUndefined();
   });
 });
 
