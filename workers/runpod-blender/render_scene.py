@@ -130,6 +130,24 @@ def clear_scene():
     bpy.ops.object.delete()
 
 
+def flatten_hierarchy(objects):
+    """Unparent every imported object while preserving its world transform.
+
+    FBX scenes often parent meshes under EMPTY nodes with non-trivial
+    matrix_parent_inverse; repeated matrix_world writes on such children can
+    diverge between the set value and the evaluated render transform. A
+    keep-transform unparent is a pose no-op that makes every later
+    matrix_world write exact.
+    """
+    bpy.context.view_layer.update()
+    for obj in sorted(objects, key=lambda item: item.name):
+        if obj.parent is not None:
+            world = obj.matrix_world.copy()
+            obj.parent = None
+            obj.matrix_world = world
+    bpy.context.view_layer.update()
+
+
 def import_model(path: Path):
     before = set(bpy.data.objects)
     suffix = path.suffix.lower()
@@ -150,7 +168,9 @@ def import_model(path: Path):
                 bpy.context.collection.objects.link(obj)
     else:
         raise ValueError(f"Unsupported model type: {suffix}")
-    return [obj for obj in bpy.data.objects if obj not in before and obj.type == "MESH"]
+    imported = [obj for obj in bpy.data.objects if obj not in before]
+    flatten_hierarchy(imported)
+    return [obj for obj in imported if obj.type == "MESH"]
 
 
 def source_scene_mesh_objects(recipe):
