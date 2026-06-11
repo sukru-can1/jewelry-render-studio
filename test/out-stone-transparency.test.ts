@@ -8,8 +8,9 @@
 // basis and hides/holds out AFTER transforms via two new optional model fields:
 //   - metal pass: pass_hide_contains = ALL stone-group tokens (stones fully hidden).
 //   - stone pass: pass_holdout_contains = metal tokens + OTHER stone groups' tokens
-//     (non-target objects occlude without rendering); render.transparent stays true,
-//     studio_background stays off.
+//     + DEFENSIVE fallback metal tokens (non-target objects occlude without
+//     rendering); render.transparent stays true, studio_background stays off,
+//     background.visible_camera is false (floor lights stones, invisible to camera).
 //   - full pass: NEITHER field (byte-identical to the classic recipe).
 import { describe, expect, it } from "vitest";
 
@@ -27,6 +28,24 @@ const groupTokens: EnterpriseGroupTokens = {
 };
 
 const STONE_GROUPS = ["diamond", "stone2", "stone3"] as const;
+
+// FALLBACK_TOKENS.alloycolour, verbatim — the defensive metal-token union for
+// stone-pass holdouts (live E2E fix: object "Object" / material "WhiteMetal"
+// rendered into the stone layer because the SAVED tokens didn't cover it;
+// "object whitemetal" contains "metal"). NOTE: deliberately no cut/shape words
+// ("round", "center", ...) that could match the target stones themselves.
+const FALLBACK_METAL_TOKENS = [
+  "metal",
+  "band",
+  "ring",
+  "shank",
+  "prong",
+  "basket",
+  "gold",
+  "silver",
+  "platinum",
+  "alloy",
+] as const;
 
 function request(
   overrides: Partial<EnterpriseRecipeRequest>,
@@ -111,9 +130,22 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
           expect(holdout).toContain(token);
         }
       }
+      // ...plus the DEFENSIVE fallback metal tokens (saved tokens alone missed
+      // a band named "Object" with material "WhiteMetal" in the live batch)...
+      for (const token of FALLBACK_METAL_TOKENS) {
+        expect(holdout).toContain(token);
+      }
       // ...and NONE of the target group's tokens (target must stay visible).
       for (const token of groupTokens[stoneGroup]) {
         expect(holdout).not.toContain(token);
+      }
+      // No broad cut/shape token may sneak in via the fallback union — these
+      // could match the target stones' own signatures and hole the layer.
+      // ("round" IS allowed when it is an operator-saved OTHER-group token —
+      // diamond group here — but must never arrive via the metal fallbacks.)
+      if (stoneGroup === "diamond") {
+        expect(holdout).not.toContain("round");
+        expect(holdout).not.toContain("center");
       }
 
       expect(studioBackgroundEnabled(recipe)).toBe(false);
@@ -174,6 +206,46 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
     expect(stageEnabled(recipe, "product")).toBe(true);
     for (const stage of STONE_OVERLAY_STAGES) {
       expect(stageEnabled(recipe, stage)).toBe(false);
+    }
+  });
+
+  it("METAL pass deliberately does NOT union fallback STONE tokens into pass_hide_contains", () => {
+    // Asymmetry with the stone pass's defensive holdout: a false-positive HIDE
+    // punches an unrecoverable hole in the metal layer, and stone fallback
+    // tokens routinely collide with metal part names ("center_prong",
+    // "pave_band", "diamond_prongs", "stone_setting"). Saved/fallback group
+    // tokens only.
+    const recipe = buildEnterpriseRecipe(request({ pass: "metal", stoneGroup: undefined }));
+    const hide = model(recipe).pass_hide_contains as string[];
+
+    const savedStoneTokens = STONE_GROUPS.flatMap((group) => groupTokens[group]);
+    expect([...hide].sort()).toEqual([...new Set(savedStoneTokens)].sort());
+    for (const fallbackOnly of ["brilliant", "pave", "zirconia", "gem", "stone", "colored", "side_stone"]) {
+      expect(hide).not.toContain(fallbackOnly);
+    }
+  });
+
+  it("STONE pass guard: a fallback metal token that substring-overlaps the TARGET group's tokens is dropped", () => {
+    // Operator saved a target token containing "ring" — the "ring" fallback
+    // could then match the target stones' own signatures and hold THEM out.
+    const riskyTokens: EnterpriseGroupTokens = {
+      alloycolour: ["whitemetal"],
+      diamond: ["ring_diamond"],
+      stone2: ["sapphire"],
+      stone3: ["accent"],
+    };
+    const recipe = buildEnterpriseRecipe(
+      request({ pass: "stone", stoneGroup: "diamond", groupTokens: riskyTokens }),
+    );
+    const holdout = model(recipe).pass_holdout_contains as string[];
+
+    expect(holdout).toContain("whitemetal"); // saved metal token kept
+    expect(holdout).not.toContain("ring"); // overlapping fallback dropped
+    expect(holdout).not.toContain("ring_diamond"); // target never held out
+    // The non-overlapping fallbacks all survive.
+    for (const token of FALLBACK_METAL_TOKENS) {
+      if (token === "ring") continue;
+      expect(holdout).toContain(token);
     }
   });
 

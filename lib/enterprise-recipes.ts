@@ -164,12 +164,20 @@ function buildVisibility(request: EnterpriseRecipeRequest) {
   // - metal pass -> pass_hide_contains = ALL stone-group tokens (stones fully
   //   hidden; metal renders complete behind where the stones sit).
   // - stone pass -> pass_holdout_contains = metal tokens + the OTHER stone
-  //   groups' tokens (every non-target object occludes the target — correct
-  //   silhouettes for compositing — without rendering).
+  //   groups' tokens + FALLBACK metal tokens (every non-target object occludes
+  //   the target — correct silhouettes for compositing — without rendering).
   // - full pass -> neither field (recipe byte-identical to the classic output).
   // include_contains/exclude_contains keep ONLY the junk filtering (lights,
   // cameras, helpers) so the worker still drops non-product objects up front.
   if (request.pass === "metal") {
+    // DELIBERATELY NOT mirrored from the stone pass: the hide list stays the
+    // saved/fallback group tokens only — no extra fallback STONE token union.
+    // Asymmetry: in the stone pass a false-positive HOLDOUT on a metal-ish
+    // object is harmless (it was non-target anyway); here a false-positive
+    // HIDE punches an unrecoverable hole in the metal layer. Stone fallback
+    // tokens routinely collide with metal part names ("center_prong",
+    // "pave_band", "round_band", "diamond_prongs", "stone_setting", cut names
+    // like "emerald"/"brilliant" on baskets), so the risk outweighs the cover.
     const stoneTokens = STONE_GROUP_KEYS.flatMap((group) => tokensFor(request.groupTokens, group));
     return { hide: uniqueTokens(stoneTokens), holdout: [] as string[] };
   }
@@ -179,7 +187,30 @@ function buildVisibility(request: EnterpriseRecipeRequest) {
     const otherStoneTokens = STONE_GROUP_KEYS.filter((group) => group !== request.stoneGroup).flatMap((group) =>
       tokensFor(request.groupTokens, group)
     );
-    return { hide: [] as string[], holdout: uniqueTokens([...metalTokens, ...otherStoneTokens]) };
+    // DEFENSIVE HOLDOUT (live E2E fix): the holdout must not depend solely on
+    // operator-SAVED metal tokens — a band literally named "Object" with
+    // material "WhiteMetal" rendered into the stone layer because the saved
+    // alloycolour tokens didn't cover it ("object whitemetal" DOES contain
+    // "metal"). ALWAYS union the fallback metal tokens so metal-ish names AND
+    // material names hold out even when the saved tokens miss.
+    // CRITICAL guard: a fallback token must never be able to match the TARGET
+    // stone group's own objects — drop any fallback token that substring-
+    // overlaps a target token in either direction (the worker matches by
+    // `contains` against "<name> <materials>" signatures). The alloycolour
+    // fallback list carries no cut/shape words ("round", "center", ...), so
+    // normally all of it survives; this guards odd operator-saved targets
+    // like "ring_diamond" (drops "ring").
+    const targetTokens = tokensFor(request.groupTokens, request.stoneGroup).map((token) =>
+      token.trim().toLowerCase()
+    );
+    const fallbackMetalTokens = FALLBACK_TOKENS.alloycolour.filter((fallback) => {
+      const token = fallback.toLowerCase();
+      return !targetTokens.some((target) => target.includes(token) || token.includes(target));
+    });
+    return {
+      hide: [] as string[],
+      holdout: uniqueTokens([...metalTokens, ...otherStoneTokens, ...fallbackMetalTokens])
+    };
   }
 
   return { hide: [] as string[], holdout: [] as string[] };

@@ -22,6 +22,10 @@
 //     rays pass through, so the layer ships as pure stones-on-alpha (the floor
 //     rendered as opaque pixels before). Worker also camera-hides the
 //     contact-shadow discs under the same flag.
+//  5. (STONE) defensive holdout: pass_holdout_contains is unioned with the
+//     FALLBACK metal tokens (minus any token substring-overlapping the target
+//     group's tokens) — a band named "Object" with material "WhiteMetal"
+//     rendered into the live stone layer because the SAVED tokens missed it.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -39,7 +43,7 @@ import {
 const GOLDEN_FULL_SHA256 =
   "efeb510a3bc1071fb71605c457a8b6b74a0544701a71b46e3a2ca8a45a980fe4";
 const GOLDEN_STONE_SHA256 =
-  "3ec9396e0bc4d3d83965218328593cfd3f92904983819267cdba94c643e97dce";
+  "dfb210252e68dad6c13cda852352076da310746dda26d0f96079659681fa445d";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -84,7 +88,7 @@ describe("backward compatibility — NO profileOverrides is byte-identical to to
     expect(sha256(buildEnterpriseRecipe(reqFull))).toBe(GOLDEN_FULL_SHA256);
   });
 
-  it("stone/front/rose request matches the golden sha256 (regenerated for the pass-visibility contract)", () => {
+  it("stone/front/rose request matches the golden sha256 (deliberate regenerations listed in the header)", () => {
     expect(sha256(buildEnterpriseRecipe(reqStone))).toBe(GOLDEN_STONE_SHA256);
   });
 
