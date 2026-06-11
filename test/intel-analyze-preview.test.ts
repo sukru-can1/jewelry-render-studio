@@ -35,7 +35,7 @@ vi.mock("@ai-sdk/openai", () => ({
 
 // Keep blob + sharp out of this suite entirely: the data URL is canned.
 const previewDataUrlMock = vi.hoisted(() =>
-  vi.fn(async () => "data:image/png;base64,Q0FOTkVE"),
+  vi.fn(async (..._a: unknown[]) => "data:image/png;base64,Q0FOTkVE"),
 );
 vi.mock("@/lib/intelligence/preview-image", () => ({
   previewDataUrl: (...a: unknown[]) => previewDataUrlMock(...a),
