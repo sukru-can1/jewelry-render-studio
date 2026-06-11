@@ -16,6 +16,9 @@ export const { auth: middleware } = NextAuth(authConfig);
 // Vercel Cron would be redirected to /login and the orchestration would never run).
 export const config = {
   matcher: [
-    "/((?!api/auth|login|_next/static|_next/image|favicon.ico|api/webhooks/runpod|api/cron).*)",
+    // worker-code: the RunPod worker boots by fetching its Python from
+    // /worker-code/*.py (public static, replaces the legacy public-blob
+    // hosting) — machine-to-machine, must bypass the session gate.
+    "/((?!api/auth|login|_next/static|_next/image|favicon.ico|api/webhooks/runpod|api/cron|worker-code).*)",
   ],
 };

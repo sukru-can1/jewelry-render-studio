@@ -1,0 +1,150 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+import bpy
+from mathutils import Vector
+
+
+def args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--output", required=True)
+    import sys
+
+    argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+    return parser.parse_args(argv)
+
+
+def clear_scene():
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete()
+
+
+def import_model(path: Path):
+    before = set(bpy.data.objects)
+    suffix = path.suffix.lower()
+    if suffix in {".glb", ".gltf"}:
+        bpy.ops.import_scene.gltf(filepath=str(path))
+    elif suffix == ".fbx":
+        bpy.ops.import_scene.fbx(filepath=str(path))
+    elif suffix == ".obj":
+        bpy.ops.wm.obj_import(filepath=str(path))
+    elif suffix == ".stl":
+        bpy.ops.wm.stl_import(filepath=str(path))
+    elif suffix == ".blend":
+        with bpy.data.libraries.load(str(path), link=False) as (source, target):
+            target.objects = source.objects
+            target.materials = source.materials
+        for obj in target.objects:
+            if obj:
+                bpy.context.collection.objects.link(obj)
+    else:
+        raise ValueError(f"Unsupported model type: {suffix}")
+    return [obj for obj in bpy.data.objects if obj not in before]
+
+
+def socket_value(socket):
+    value = getattr(socket, "default_value", None)
+    if value is None:
+        return None
+    if hasattr(value, "__iter__") and not isinstance(value, str):
+        converted = []
+        for item in value:
+            if hasattr(item, "__iter__") and not isinstance(item, str):
+                converted.append([float(inner) if isinstance(inner, (int, float)) else str(inner) for inner in item])
+            elif isinstance(item, (int, float)):
+                converted.append(float(item))
+            else:
+                converted.append(str(item))
+        return converted
+    if isinstance(value, (int, float)):
+        return float(value)
+    return value
+
+
+def json_default(value):
+    if isinstance(value, (int, float)):
+        return float(value)
+    if hasattr(value, "__iter__") and not isinstance(value, str):
+        return [json_default(item) for item in value]
+    return str(value)
+
+
+def material_summary(material):
+    summary = {
+        "name": material.name,
+        "use_nodes": material.use_nodes,
+        "diffuse_color": list(material.diffuse_color),
+        "principled": {},
+        "nodes": [],
+    }
+    if not material.use_nodes or not material.node_tree:
+        return summary
+
+    for node in material.node_tree.nodes:
+        node_summary = {"name": node.name, "type": node.bl_idname, "inputs": {}, "outputs": {}}
+        for socket in node.inputs:
+            value = socket_value(socket)
+            if value is not None:
+                node_summary["inputs"][socket.name] = value
+        for socket in node.outputs:
+            value = socket_value(socket)
+            if value is not None:
+                node_summary["outputs"][socket.name] = value
+        summary["nodes"].append(node_summary)
+        if node.name == "Principled BSDF" or node.bl_idname == "ShaderNodeBsdfPrincipled":
+            for socket in node.inputs:
+                value = socket_value(socket)
+                if value is not None:
+                    summary["principled"][socket.name] = value
+    return summary
+
+
+def object_summary(obj):
+    summary = {
+        "name": obj.name,
+        "type": obj.type,
+        "material_slots": [slot.material.name if slot.material else None for slot in obj.material_slots],
+        "children": [child.name for child in obj.children],
+        "hide_render": obj.hide_render,
+        "hide_viewport": obj.hide_viewport,
+        "visible_get": obj.visible_get(),
+    }
+    if obj.type == "MESH":
+        mins = Vector((float("inf"), float("inf"), float("inf")))
+        maxs = Vector((float("-inf"), float("-inf"), float("-inf")))
+        for corner in obj.bound_box:
+            point = obj.matrix_world @ Vector(corner)
+            mins.x = min(mins.x, point.x)
+            mins.y = min(mins.y, point.y)
+            mins.z = min(mins.z, point.z)
+            maxs.x = max(maxs.x, point.x)
+            maxs.y = max(maxs.y, point.y)
+            maxs.z = max(maxs.z, point.z)
+        size = maxs - mins
+        summary["bounds"] = {
+            "min": list(mins),
+            "max": list(maxs),
+            "size": list(size),
+            "max_dimension": max(size.x, size.y, size.z),
+        }
+    return summary
+
+
+def main():
+    parsed = args()
+    clear_scene()
+    import_model(Path(parsed.model))
+    inventory = {
+        "source": str(parsed.model),
+        "objects": [object_summary(obj) for obj in bpy.data.objects],
+        "materials": [material_summary(material) for material in bpy.data.materials],
+    }
+    Path(parsed.output).write_text(json.dumps(inventory, indent=2, default=json_default), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()
