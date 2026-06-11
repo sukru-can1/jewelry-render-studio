@@ -25,6 +25,12 @@ const DB_ONLY_FILES = [
   // Phase 6 (COMP-01, 06-02): the compositing Server Component reads completed-job
   // Layer rows from the DB and discovers deliverables by blob prefix — never RunPod.
   "app/(app)/batches/[id]/compositing/page.tsx",
+  // Phase 9 (INTEL-05, 09-03): the operator intel surface is DB-only end to end —
+  // the read projects Job.intel/intelState, the panel renders it, and the
+  // Accept/Reject/Override action only CREATES queued rows for the dispatch cron.
+  "lib/intelligence/read.ts",
+  "lib/intelligence/operator-actions.ts",
+  "app/(app)/batches/[id]/intel-panel.tsx",
 ];
 
 const FORBIDDEN = [

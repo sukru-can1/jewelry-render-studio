@@ -9,9 +9,12 @@ import {
   type BatchProgress,
 } from "@/lib/orchestration/batch-status";
 import { isTerminal } from "@/lib/orchestration/status-map";
+// INTEL-05: DB-only projection of Job.intel/intelState for the operator panel.
+import { loadBatchIntel } from "@/lib/intelligence/read";
 
 import { BatchStatusPill } from "../status-pill";
 import { CancelBatchControl } from "./cancel-controls";
+import { IntelPanel } from "./intel-panel";
 import { JobsMonitor, type MonitorJob, type MonitorSnapshot } from "./jobs-monitor";
 
 // UI-SPEC §2 — Batch detail / jobs monitor (ORCH-04/05/03). Async Server Component,
@@ -76,6 +79,10 @@ export default async function BatchDetailPage({
   const terminalWithFailures =
     cancelable === 0 && batch.progress.failed > 0;
 
+  // INTEL-05: the per-job AI intel views (empty for a classic batch -> panel
+  // absent). DB-only — same contract as the rest of this page.
+  const intelViews = await loadBatchIntel(batch.id);
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
@@ -104,6 +111,10 @@ export default async function BatchDetailPage({
           </div>
         </div>
       </header>
+
+      {intelViews.length > 0 ? (
+        <IntelPanel batchId={batch.id} items={intelViews} />
+      ) : null}
 
       <JobsMonitor batchId={batch.id} initial={batch.snapshot} />
     </div>
