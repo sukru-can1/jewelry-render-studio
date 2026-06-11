@@ -76,7 +76,7 @@ beforeEach(() => {
 
 describe("createBatch (BATCH-07 happy path)", () => {
   it("creates a Batch and N queued Job rows for a small valid selection", async () => {
-    // 2 angles × 1 metal × 2 passes (metal + diamond) = 4 jobs.
+    // 2 angles × 1 metal × 3 passes (implicit full + metal + diamond) = 6 jobs.
     const result = await createBatch({
       productId: "p1",
       angleViewKeys: ["view1", "view2"],
@@ -93,7 +93,7 @@ describe("createBatch (BATCH-07 happy path)", () => {
     const rows = jobMock.createMany.mock.calls[0][0].data as Array<{
       status: string;
     }>;
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(6);
     for (const row of rows) {
       expect(row.status).toBe("queued");
     }

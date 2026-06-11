@@ -5,11 +5,12 @@ import { z } from "zod";
 // BEFORE any count/cap logic or Prisma write (T-03-01). zod v3.25 idioms per the
 // STACK lock, mirroring lib/validation/product.ts — do NOT use v4 idioms.
 
-// The layered holdout pass keys the operator may select. `full` is intentionally
-// ABSENT: Phase 3 produces layered holdout passes only (UI-SPEC binding table) — a
-// metal pass plus one pass per present stone group. "metal" is the alloy pass;
-// "diamond"/"stone2"/"stone3" are the three stone-group passes.
-export const passEnum = z.enum(["metal", "diamond", "stone2", "stone3"]);
+// The pass keys the operator may select. "full" is the primary beauty render —
+// buildPasses ALWAYS emits it for every angle × metal combination, so selecting
+// it explicitly is allowed but deduped (never two full jobs per combination).
+// "metal" is the alloy compositing layer; "diamond"/"stone2"/"stone3" are the
+// three stone-group compositing layers.
+export const passEnum = z.enum(["full", "metal", "diamond", "stone2", "stone3"]);
 
 // The stone-group keys whose passes carry a stone material (the alloy "metal" pass
 // has no stone). Matches the non-alloy generator group keys.
@@ -46,11 +47,15 @@ export type CreateBatchInput = z.infer<typeof createBatchSchema>;
 // server's authoritative recompute agree (T-03-03). Both sides MUST derive the
 // count the same way:
 //
-//   passCount = (passes includes "metal" ? 1 : 0)
+//   passCount = 1                                     (the IMPLICIT full beauty
+//                                                      pass — always emitted; an
+//                                                      explicit "full" is deduped)
+//             + (passes includes "metal" ? 1 : 0)
 //             + count(stone-group pass keys among passes that are PRESENT on the
 //                     product, i.e. the product actually has that group assigned)
 //
 // Pass-key -> generator request fields:
+//   (implicit / "full") -> { pass: "full" }                 (primary beauty render)
 //   "metal"            -> { pass: "metal" }                 (alloy holdout, no stone)
 //   "diamond" | "stone2" | "stone3"
 //                      -> { pass: "stone", stoneGroup: <key> }

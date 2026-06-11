@@ -67,6 +67,16 @@ describe("deriveLayerFromResult (OUT-01)", () => {
     expect(created.format).toBe("png");
   });
 
+  it("persists Layer.pass = 'full' for a primary full-pass combo (pass derives from combo)", async () => {
+    await deriveLayerFromResult("job-full", { pass: "full" }, workerResult);
+
+    expect(layerMock.upsert).toHaveBeenCalledTimes(1);
+    const arg = layerMock.upsert.mock.calls[0][0];
+    expect(arg.where).toEqual({ jobId: "job-full" });
+    expect(arg.create.pass).toBe("full");
+    expect(arg.update.pass).toBe("full");
+  });
+
   it("is idempotent: a duplicate call issues another upsert with the SAME where:{jobId}", async () => {
     await deriveLayerFromResult("job-abc", combo, workerResult);
     await deriveLayerFromResult("job-abc", combo, workerResult);

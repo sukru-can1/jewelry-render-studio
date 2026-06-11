@@ -229,7 +229,8 @@ describe("createBatch — optimizeWithAi seeds intelligence previews (G9-gated)"
     expect(batchMock.create.mock.calls[0][0].data.optimizeWithAi).toBe(true);
 
     const rows = jobMock.createMany.mock.calls[0][0].data as JobRow[];
-    expect(rows).toHaveLength(4);
+    // 2 angles × 1 metal × 3 passes (implicit full + metal + diamond) = 6.
+    expect(rows).toHaveLength(6);
     for (const row of rows) {
       expect(row.status).toBe("queued");
       expect(row.intelState).toBe("PREVIEW_QUEUED");

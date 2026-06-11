@@ -137,9 +137,11 @@ describe("createBatch — security boundary", () => {
 
 describe("createBatch — server cap (BATCH-06)", () => {
   // The cap is recomputed from the VALIDATED selection using the same formula as the
-  // client estimate: |angleViewKeys| × |metalKeys| × passCount. A product with two
-  // present stone groups lets passCount reach 3 (metal+diamond+stone2) so the 200
-  // boundary is exercisable within the zod array caps (angles<=50, valid metals<=3).
+  // client estimate: |angleViewKeys| × |metalKeys| × passCount, where passCount now
+  // INCLUDES the implicit full beauty pass (buildPasses always emits it first). A
+  // product with two present stone groups lets passCount reach 4
+  // (full+metal+diamond+stone2) so the 200 boundary is exercisable within the zod
+  // array caps (angles<=50, valid metals<=3).
   function twoStoneProduct() {
     return {
       id: "p1",
@@ -155,7 +157,7 @@ describe("createBatch — server cap (BATCH-06)", () => {
   const angles50 = Array.from({ length: 50 }, (_, i) => `view${i + 1}`);
 
   it("rejects > HARD_CAP recomputed server-side with NO write", async () => {
-    // 50 angles × 2 metals × 3 passes (metal+diamond+stone2) = 300 > HARD_CAP (200).
+    // 50 angles × 2 metals × 4 passes (full+metal+diamond+stone2) = 400 > HARD_CAP (200).
     productMock.findUnique.mockResolvedValue(twoStoneProduct());
     const result = await createBatch(
       validInput({
@@ -170,16 +172,33 @@ describe("createBatch — server cap (BATCH-06)", () => {
     expect(jobMock.createMany).not.toHaveBeenCalled();
   });
 
+  it("counts the IMPLICIT full pass toward the cap (truthful cost guard)", async () => {
+    // 34 angles × 2 metals × 3 passes (full+metal+diamond) = 204 > 200 — the raw
+    // selection only names 2 passes, so a guard that ignored the implicit full
+    // pass would WRONGLY accept this batch.
+    productMock.findUnique.mockResolvedValue(twoStoneProduct());
+    const result = await createBatch(
+      validInput({
+        angleViewKeys: Array.from({ length: 34 }, (_, i) => `view${i + 1}`),
+        metalKeys: ["white", "yellow"],
+        stoneTypeByGroup: { diamond: "diamond" },
+        passes: ["metal", "diamond"],
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(batchMock.create).not.toHaveBeenCalled();
+  });
+
   it("accepts exactly HARD_CAP jobs (200 boundary, inclusive)", async () => {
     expect(BATCH_LIMITS.HARD_CAP).toBe(200);
-    // 50 angles × 2 metals × 2 passes (metal+diamond) = 200 == HARD_CAP -> allowed.
+    // 50 angles × 2 metals × 2 passes (implicit full + metal) = 200 == HARD_CAP.
     productMock.findUnique.mockResolvedValue(twoStoneProduct());
     const result = await createBatch(
       validInput({
         angleViewKeys: angles50,
         metalKeys: ["white", "yellow"],
         stoneTypeByGroup: { diamond: "diamond" },
-        passes: ["metal", "diamond"],
+        passes: ["metal"],
       }),
     );
     expect(result.ok).toBe(true);
@@ -199,21 +218,23 @@ describe("createBatch — transactional fan-out (BATCH-07)", () => {
     expect(jobMock.createMany).toHaveBeenCalledTimes(1);
     const rows = jobMock.createMany.mock.calls[0][0].data as Array<{
       status: string;
-      combo: unknown;
+      combo: { pass?: string };
       recipe: unknown;
     }>;
-    // 2 angles × 1 metal × 2 passes (metal + diamond) = 4.
-    expect(rows).toHaveLength(4);
+    // 2 angles × 1 metal × 3 passes (implicit full + metal + diamond) = 6.
+    expect(rows).toHaveLength(6);
     for (const row of rows) {
       expect(row.status).toBe("queued");
       expect(row.combo).toBeTruthy();
       expect(row.recipe).toBeTruthy();
     }
+    // The primary full beauty pass is persisted on the combo for every angle×metal.
+    expect(rows.filter((r) => r.combo.pass === "full")).toHaveLength(2);
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.batchId).toBe("b1");
-      expect(result.jobCount).toBe(4);
+      expect(result.jobCount).toBe(6);
     }
   });
 

@@ -140,8 +140,12 @@ export function BatchBuilder({
   const width = activeQuality?.width ?? 1920;
   const height = activeQuality?.height ?? 1920;
 
-  // passCount = metal-only (if selected) + present+selected stone-group passes.
-  const passCount = passes.length;
+  // passCount = the IMPLICIT full beauty pass (always emitted by buildPasses for
+  // every angle × metal — deduped if "full" were ever selected explicitly) +
+  // metal-only (if selected) + present+selected stone-group passes. Keeping the
+  // client estimate aligned with the server's buildPasses keeps the cost guard
+  // truthful (T-03-03).
+  const passCount = passes.length + (passes.includes("full") ? 0 : 1);
   const liveSelection = {
     angleCount: angleKeys.length,
     metalCount: metalKeys.length,
@@ -332,6 +336,10 @@ export function BatchBuilder({
               Passes
             </span>
           </div>
+          <p className="text-sm text-muted-foreground">
+            A full beauty render is always included for every angle × metal.
+            The passes below add separated compositing layers on top.
+          </p>
           <ToggleGroup
             type="multiple"
             value={passes}
@@ -441,7 +449,8 @@ export function BatchBuilder({
             {invalid ? "—" : jobs}
           </span>{" "}
           jobs — {angleKeys.length} angles × {metalKeys.length} metals ×{" "}
-          {passes.length} passes at {activeQuality?.label ?? "preview"} (
+          {passCount} passes (incl. the full render) at{" "}
+          {activeQuality?.label ?? "preview"} (
           <span className="font-mono tabular-nums">
             {samples} samples, {width}×{height}
           </span>
@@ -526,7 +535,7 @@ export function BatchBuilder({
                 zone={currentZone}
                 angleCount={angleKeys.length}
                 metalCount={metalKeys.length}
-                passCount={passes.length}
+                passCount={passCount}
                 samples={samples}
                 width={width}
                 height={height}

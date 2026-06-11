@@ -192,7 +192,9 @@ function comboSummary(matrix: unknown, jobCount: number, total: number): string 
     const m = matrix as Record<string, unknown>;
     const metals = arrLen(m.metalKeys);
     const angles = arrLen(m.angleViewKeys ?? m.angleKeys);
-    const passes = arrLen(m.passes);
+    // resolvedPasses (new batches) includes the implicit full beauty pass, so the
+    // displayed product matches jobCount; old batches fall back to the raw selection.
+    const passes = arrLen(m.resolvedPasses) || arrLen(m.passes);
     if (metals && angles && passes) {
       return `${metals} metals × ${angles} angles × ${passes} passes = ${n} jobs`;
     }

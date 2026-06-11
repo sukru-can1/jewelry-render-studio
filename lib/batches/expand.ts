@@ -20,20 +20,25 @@ import {
 export type StoneGroupKey = "diamond" | "stone2" | "stone3";
 
 /**
- * One pass in the layered-holdout set. The metal-only (alloy) pass carries no stone
- * group; each stone pass names exactly one present+selected stone group. The `full`
- * pass is intentionally never produced (UI-SPEC binding table — Phase 3 emits layered
- * holdout passes only).
+ * One pass in the render set. The `full` beauty pass is the PRIMARY catalog
+ * output — every angle × metal combination gets one BY DEFAULT (buildPasses
+ * always emits it first). The metal-only (alloy) pass and the per-group stone
+ * passes are SECONDARY compositing layers: metal carries no stone group; each
+ * stone pass names exactly one present+selected stone group.
  */
 export type Pass =
+  | { pass: "full" }
   | { pass: "metal" }
   | { pass: "stone"; stoneGroup: StoneGroupKey };
+
+/** The pass keys an operator may select ("full" is implicit but dedupable). */
+export type SelectablePassKey = "full" | "metal" | StoneGroupKey;
 
 /** The (angle × metal × pass) coordinate persisted on each Job (`combo` Json). */
 export type Combo = {
   angleKey: EnterpriseAngleKey;
   metalKey: EnterpriseMetal;
-  pass: "metal" | "stone";
+  pass: "full" | "metal" | "stone";
   stoneGroup?: StoneGroupKey;
 };
 
@@ -50,19 +55,25 @@ const STONE_GROUP_ORDER: readonly StoneGroupKey[] = [
 ] as const;
 
 /**
- * Build the layered pass set (BATCH-04):
- *  - one `{ pass: "metal" }` whenever "metal" is selected (alloy JPEG holdout);
+ * Build the pass set (BATCH-04 + the full-pass-first contract):
+ *  - ALWAYS one `{ pass: "full" }` FIRST — the primary beauty render every
+ *    angle × metal combination ships by default. An explicitly selected "full"
+ *    is deduped into this single pass (never two full jobs per combination);
+ *  - one `{ pass: "metal" }` whenever "metal" is selected (alloy holdout layer);
  *  - one `{ pass: "stone", stoneGroup: g }` for each stone group g that is BOTH
  *    PRESENT on the product AND selected, in canonical diamond->stone2->stone3 order.
- * `full` is NEVER produced. `|passes|` equals the estimate's passCount.
+ * `|passes|` equals the estimate's passCount (the full pass counts).
  */
 export function buildPasses(
   presentStoneGroups: readonly StoneGroupKey[],
-  selectedPasses: readonly ("metal" | StoneGroupKey)[],
+  selectedPasses: readonly SelectablePassKey[],
 ): Pass[] {
   const present = new Set(presentStoneGroups);
   const selected = new Set(selectedPasses);
-  const passes: Pass[] = [];
+  // The full beauty pass is unconditional (and deduped vs. an explicit "full"
+  // selection by the Set above): the app's primary output is the full render;
+  // metal/stone layers are secondary compositing outputs.
+  const passes: Pass[] = [{ pass: "full" }];
 
   if (selected.has("metal")) {
     passes.push({ pass: "metal" });
@@ -110,14 +121,14 @@ export function expandCombos(input: ExpandInput): ExpandedJob[] {
     for (const metal of input.metals) {
       for (const p of input.passes) {
         const combo: Combo =
-          p.pass === "metal"
-            ? { angleKey: angle, metalKey: metal, pass: "metal" }
-            : {
+          p.pass === "stone"
+            ? {
                 angleKey: angle,
                 metalKey: metal,
                 pass: "stone",
                 stoneGroup: p.stoneGroup,
-              };
+              }
+            : { angleKey: angle, metalKey: metal, pass: p.pass };
 
         const recipe = buildEnterpriseRecipe({
           angle,

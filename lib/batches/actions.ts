@@ -42,6 +42,7 @@ import {
   expandCombos,
   buildPasses,
   type Pass,
+  type SelectablePassKey,
   type StoneGroupKey,
 } from "@/lib/batches/expand";
 import { prisma } from "@/lib/db/prisma";
@@ -146,8 +147,10 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
     resolvedMetals.push(metal);
   }
 
-  // (7) Build the layered pass set (metal-only + present+selected stone groups).
-  const selectedPasses = selection.passes as ("metal" | StoneGroupKey)[];
+  // (7) Build the pass set: the IMPLICIT primary full beauty pass (always first,
+  //     deduped vs. an explicit "full" selection) + metal-only + present+selected
+  //     stone-group compositing passes.
+  const selectedPasses = selection.passes as SelectablePassKey[];
   const passes: Pass[] = buildPasses(presentStoneGroups, selectedPasses);
 
   if (angles.length === 0 || resolvedMetals.length === 0 || passes.length === 0) {
@@ -158,8 +161,8 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
   //     from the VALIDATED selection using the SAME formula the client's advisory
   //     estimate uses (adapter contract: |angleViewKeys| × |metalKeys| × passCount).
   //     The client number is never trusted; reject > HARD_CAP BEFORE any read of the
-  //     quality preset or any write. `passCount` counts the metal pass + the
-  //     present+selected stone-group passes (== |passes|).
+  //     quality preset or any write. `passCount` counts the IMPLICIT full beauty
+  //     pass + the metal pass + the present+selected stone-group passes (== |passes|).
   const requestedCount = countJobs({
     angleCount: selection.angleViewKeys.length,
     metalCount: selection.metalKeys.length,
@@ -248,6 +251,8 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
     : null;
 
   // matrix = the selection snapshot persisted on the Batch for audit/reproduction.
+  // resolvedPasses carries the ACTUAL pass set (incl. the implicit full pass) so
+  // monitor summaries can show the truthful pass count, not the raw selection.
   const matrix = {
     angleViewKeys: selection.angleViewKeys,
     metalKeys: selection.metalKeys,
@@ -256,6 +261,7 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
     qualityKey: selection.qualityKey,
     resolvedAngles: angles,
     resolvedMetals,
+    resolvedPasses: passes,
   };
 
   // (10) ONE all-or-none transaction: create the Batch (queued) then all N Jobs.
