@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08-01-PLAN.md (cutover & deploy) — milestone v1.0 COMPLETE (8/8 phases, 41/41 requirements)
-last_updated: "2026-06-10T17:08:45.882Z"
-last_activity: 2026-06-10
+stopped_at: Completed 09-02-PLAN.md (vision scorer + ANALYZING orchestration sweep, INTEL-02/04)
+last_updated: "2026-06-11T08:20:00.000Z"
+last_activity: 2026-06-11
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 34
-  completed_plans: 31
-  percent: 89
+  completed_plans: 32
+  percent: 94
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 ## Current Position
 
 Phase: 09 (adaptive-render-intelligence) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4 (09-03 + 09-04 are Wave 2, both unblocked)
 Status: Ready to execute
-Last activity: 2026-06-10
+Last activity: 2026-06-11
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 94%
 
 ### Phase 8 execution notes
 
@@ -92,6 +92,7 @@ Progress: [█████████░] 91%
 | Phase 07 P07-01 | 7min | 2 tasks | 5 files |
 | Phase 08 P08-01 | 40min | 4 tasks | 16 files |
 | Phase 09 P01 | 47m | 4 tasks | 13 files |
+| Phase 09 P02 | 37m | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,11 @@ Recent decisions affecting current work:
 - [Phase ?]: 09-01: cardDarkness = direct multiplier on card RGB; identity 1.0 via knob ABSENCE; explicit overrides clamp to [0,0.5] (always darker). 09-02 vision prompt must use NEGATIVE cardDarknessDelta = darker (research convention, not AI-SPEC 5.3 sign table).
 - [Phase ?]: 09-01: G5 extended — milky zeroes BOTH positive exposureDelta AND positive worldStrengthDelta; when guardrails zero EVERY delta decideLoop freezes best instead of a no-op autoCorrect re-render.
 - [Phase ?]: 09-01: Batch.optimizeWithAi Boolean default(false) column landed in the add_job_intel migration (applied to Railway) alongside Job.intelState/intel; createBatchSchema carries the optional default-false field, unconsumed until 09-02.
+- [Phase 09]: 09-02: Job.intel.request persists the serializable buildEnterpriseRecipe context (groupTokens/stoneMaterials/productName + preview AND final quality tiers) at createBatch seed time — the sweep rebuilds recipes via the generator only, never re-deriving product state (G10).
+- [Phase 09]: 09-02: the loop's FINAL render is a CLASSIC job (intelState null, no intel) so its Layer feeds the existing gallery/compositing unchanged; the trace + finalJobId link live on the analyzed job (FINAL_QUEUED). 09-03 must handle per-combo layer duplication (seed preview Layer + final Layer) in the UI.
+- [Phase 09]: 09-02: ADAPTIVE_INTELLIGENCE_ENABLED lives in the typed env schema (optional; "false" disables) — not raw process.env; Batch.optimizeWithAi stores the kill-switch-RESOLVED opt-in. Sweep claim is gated on batch.optimizeWithAi=true + cancelRequestedAt null.
+- [Phase 09]: 09-02: G8 enforced orthogonally to decideLoop — visionCalls>=2 pre-analysis check AND previewRenders>=2 autoCorrect demotion, both freeze-best->FINAL with cost_cap; vision attempts counted BEFORE the call so failures consume budget; analyzePreview throw => ESCALATED (verdict_invalid), never retried unboundedly.
+- [Phase 09]: 09-02: reconcile cron route now also runs sweepAnalyzingJobs (3 jobs/tick) and has maxDuration 300 (in-route + path-specific vercel.json entry) — the slow vision call lives ONLY on this cron tick, never the webhook (which only flips PREVIEW_QUEUED->ANALYZING, guarded).
 
 ### Pending Todos
 
@@ -160,6 +166,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-10T17:08:45.867Z
-Stopped at: Completed 08-01-PLAN.md (cutover & deploy) — milestone v1.0 COMPLETE (8/8 phases, 41/41 requirements)
+Last session: 2026-06-11T08:20:00.000Z
+Stopped at: Completed 09-02-PLAN.md (vision scorer + ANALYZING orchestration sweep, INTEL-02/04)
 Resume file: None

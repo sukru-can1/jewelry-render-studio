@@ -174,7 +174,7 @@ Plans:
 **Plans**: 4 plans
 Plans:
 - [x] 09-01-PLAN.md — Pure foundation: profileOverrides + KNOB_RANGES in buildEnterpriseRecipe (backward-compatible) + visionVerdictSchema + decideLoop (escalate→accept→autoCorrect→freeze-best) + guardrails (G3/G4/G5/G7) + [BLOCKING] additive Job.intelState/intel migration + optimizeWithAi field (INTEL-01/03) (Wave 0)
-- [ ] 09-02-PLAN.md — Vision scorer (private blob → sharp downscale → generateObject/text fallback) + ANALYZING cron sweep state machine (idempotent preview→analyze→adjust→final, caps, escalate) + webhook ANALYZING flip + createBatch opt-in + reconcile-cron wire (INTEL-02/04) (Wave 1)
+- [x] 09-02-PLAN.md — Vision scorer (private blob → sharp downscale → generateObject/text fallback) + ANALYZING cron sweep state machine (idempotent preview→analyze→adjust→final, caps, escalate) + webhook ANALYZING flip + createBatch opt-in + reconcile-cron wire (INTEL-02/04) (Wave 1)
 - [ ] 09-03-PLAN.md — UI: Optimize-with-AI batch toggle (default OFF) + per-job intel panel (scores/flags/deltas/rationale/decision + accept/reject/override + escalation) + auth-first IDOR operator-action + DB-only intel read (INTEL-05) (Wave 2)
 - [ ] 09-04-PLAN.md — Calibration gate: domain-expert-labelled reference set + ±1/sign-agreement/hard-gate harness + judge↔human agreement ≥0.7 trust gate (recommend-only default) wired into decideLoop (INTEL-06) (Wave 2)
 **UI hint**: yes
@@ -194,4 +194,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Compositing & Deliverable | 3/3 | Complete   | 2026-06-09 |
 | 7. UI Design System & Workflow Polish | 1/1 | Complete   | 2026-06-10 |
 | 8. Cutover & Deploy | 1/1 | Complete   | 2026-06-10 |
-| 9. Adaptive Render Intelligence | 1/4 | In Progress|  |
+| 9. Adaptive Render Intelligence | 2/4 | In Progress|  |
