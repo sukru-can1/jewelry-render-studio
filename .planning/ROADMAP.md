@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Compositing & Deliverable** - An operator previews stacked layers in-browser and the server flattens each variant into a downloadable catalog-ready deliverable (completed 2026-06-09)
 - [x] **Phase 7: UI Design System & Workflow Polish** - The operator workflows share a coherent, non-purple Vercel/Notion/RunPod-influenced design system with clear loading/empty/error/in-progress states
 - [x] **Phase 8: Cutover & Deploy** - Legacy render surfaces retired entirely and ring99 hardcodes removed (SEC-05); legacy job history is disposable R&D with no migration (DATA-05 met-by-rationale); app deployed to the existing Vercel project with all env vars verified (DEPLOY-01) (completed 2026-06-10)
-- [ ] **Phase 9: Adaptive Render Intelligence** - An operator can opt a batch into AI optimization: the system renders a low-sample preview, scores it on the 8-dimension catalog rubric with a gpt-5.5-pro vision judge, auto-adjusts the recipe knobs within safe clamped bounds, re-renders, and surfaces the scores + reasoning + applied deltas for human accept/reject — never looping unboundedly, never silently, never hand-building recipes
+- [x] **Phase 9: Adaptive Render Intelligence** - An operator can opt a batch into AI optimization: the system renders a low-sample preview, scores it on the 8-dimension catalog rubric with a gpt-5.5-pro vision judge, auto-adjusts the recipe knobs within safe clamped bounds, re-renders, and surfaces the scores + reasoning + applied deltas for human accept/reject — never looping unboundedly, never silently, never hand-building recipes (completed 2026-06-11)
 
 ## Phase Details
 
@@ -176,7 +176,7 @@ Plans:
 - [x] 09-01-PLAN.md — Pure foundation: profileOverrides + KNOB_RANGES in buildEnterpriseRecipe (backward-compatible) + visionVerdictSchema + decideLoop (escalate→accept→autoCorrect→freeze-best) + guardrails (G3/G4/G5/G7) + [BLOCKING] additive Job.intelState/intel migration + optimizeWithAi field (INTEL-01/03) (Wave 0)
 - [x] 09-02-PLAN.md — Vision scorer (private blob → sharp downscale → generateObject/text fallback) + ANALYZING cron sweep state machine (idempotent preview→analyze→adjust→final, caps, escalate) + webhook ANALYZING flip + createBatch opt-in + reconcile-cron wire (INTEL-02/04) (Wave 1)
 - [x] 09-03-PLAN.md — UI: Optimize-with-AI batch toggle (default OFF) + per-job intel panel (scores/flags/deltas/rationale/decision + accept/reject/override + escalation) + auth-first IDOR operator-action + DB-only intel read (INTEL-05) (Wave 2)
-- [ ] 09-04-PLAN.md — Calibration gate: domain-expert-labelled reference set + ±1/sign-agreement/hard-gate harness + judge↔human agreement ≥0.7 trust gate (recommend-only default) wired into decideLoop (INTEL-06) (Wave 2)
+- [x] 09-04-PLAN.md — Calibration gate: domain-expert-labelled reference set + ±1/sign-agreement/hard-gate harness + judge↔human agreement ≥0.7 trust gate (recommend-only default) wired into decideLoop (INTEL-06) (Wave 2)
 **UI hint**: yes
 
 ## Progress
@@ -194,4 +194,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Compositing & Deliverable | 3/3 | Complete   | 2026-06-09 |
 | 7. UI Design System & Workflow Polish | 1/1 | Complete   | 2026-06-10 |
 | 8. Cutover & Deploy | 1/1 | Complete   | 2026-06-10 |
-| 9. Adaptive Render Intelligence | 3/4 | In Progress|  |
+| 9. Adaptive Render Intelligence | 4/4 | Complete   | 2026-06-11 |

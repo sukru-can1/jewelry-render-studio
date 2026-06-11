@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: verifying
 stopped_at: Completed 09-02-PLAN.md (vision scorer + ANALYZING orchestration sweep, INTEL-02/04)
-last_updated: "2026-06-11T06:05:56.869Z"
+last_updated: "2026-06-11T07:59:59.212Z"
 last_activity: 2026-06-11
 progress:
   total_phases: 9
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 34
-  completed_plans: 33
-  percent: 89
+  completed_plans: 34
+  percent: 100
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-06-05)
 
 Phase: 09 (adaptive-render-intelligence) — EXECUTING
 Plan: 4 of 4 (09-03 + 09-04 are Wave 2, both unblocked)
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-11
 
-Progress: [██████████] 97%
+Progress: [██████████] 100%
 
 ### Phase 8 execution notes
 
@@ -93,6 +93,7 @@ Progress: [██████████] 97%
 | Phase 08 P08-01 | 40min | 4 tasks | 16 files |
 | Phase 09 P01 | 47m | 4 tasks | 13 files |
 | Phase 09 P02 | 37m | 3 tasks | 15 files |
+| Phase 09 P04 | 85min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,9 @@ Recent decisions affecting current work:
 - [Phase 09]: 09-02: ADAPTIVE_INTELLIGENCE_ENABLED lives in the typed env schema (optional; "false" disables) — not raw process.env; Batch.optimizeWithAi stores the kill-switch-RESOLVED opt-in. Sweep claim is gated on batch.optimizeWithAi=true + cancelRequestedAt null.
 - [Phase 09]: 09-02: G8 enforced orthogonally to decideLoop — visionCalls>=2 pre-analysis check AND previewRenders>=2 autoCorrect demotion, both freeze-best->FINAL with cost_cap; vision attempts counted BEFORE the call so failures consume budget; analyzePreview throw => ESCALATED (verdict_invalid), never retried unboundedly.
 - [Phase 09]: 09-02: reconcile cron route now also runs sweepAnalyzingJobs (3 jobs/tick) and has maxDuration 300 (in-route + path-specific vercel.json entry) — the slow vision call lives ONLY on this cron tick, never the webhook (which only flips PREVIEW_QUEUED->ANALYZING, guarded).
+- [Phase 09-04]: INTEL-06 trust gate: auto-correct requires INTEL_AUTOCORRECT_ENABLED='true' (env, human act after calibration >=0.7); recommend-only default ships classic FINALs with deltas recorded as recommended-not-applied
+- [Phase 09-04]: Calibration live scoring is opt-in via --record; a present OPENAI_API_KEY never triggers vision-token spend (cached verdicts are the CI path)
+- [Phase 09-04]: Calibration dataset lives at calibration/dataset.json (directive override of fixtures/labels.json); run-eval.ts kept as the 5.8 CI wrapper delegating to scripts/calibrate-intel.ts
 
 ### Pending Todos
 
@@ -166,6 +170,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-11T06:05:56.850Z
+Last session: 2026-06-11T07:58:27.079Z
 Stopped at: Completed 09-02-PLAN.md (vision scorer + ANALYZING orchestration sweep, INTEL-02/04)
 Resume file: None

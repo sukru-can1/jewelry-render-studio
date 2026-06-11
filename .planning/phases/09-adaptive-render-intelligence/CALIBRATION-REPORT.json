@@ -1,0 +1,102 @@
+{
+  "generatedAt": "2026-06-11T07:28:24.889Z",
+  "promptVersion": "v1-2026-06-11",
+  "provisional": true,
+  "skipped": [
+    {
+      "id": "good-ring99-goal77-front",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    },
+    {
+      "id": "good-ring99-goalcut-balanced-hero",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    },
+    {
+      "id": "good-ring99-goalcut-crisp-hero",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    },
+    {
+      "id": "good-ring99-goalcut-fire-hero",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    },
+    {
+      "id": "bad-zanessa-metal-hero-yellow",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    },
+    {
+      "id": "bad-zanessa-stone-hero-yellow",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    },
+    {
+      "id": "bad-zanessa-metal-front-yellow",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    },
+    {
+      "id": "bad-zanessa-stone-front-yellow",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    },
+    {
+      "id": "adversarial-empty-black",
+      "reason": "no cached verdict — run `npx tsx scripts/calibrate-intel.ts --record` to score live"
+    }
+  ],
+  "report": {
+    "scoredCases": 0,
+    "perDimension": {
+      "diamondBrilliance": {
+        "checked": 0,
+        "within": 0,
+        "rate": null
+      },
+      "metalHighlight": {
+        "checked": 0,
+        "within": 0,
+        "rate": null
+      },
+      "metalBelievability": {
+        "checked": 0,
+        "within": 0,
+        "rate": null
+      },
+      "exposureTonal": {
+        "checked": 0,
+        "within": 0,
+        "rate": null
+      },
+      "stoneSymmetry": {
+        "checked": 0,
+        "within": 0,
+        "rate": null
+      },
+      "contactShadow": {
+        "checked": 0,
+        "within": 0,
+        "rate": null
+      },
+      "framing": {
+        "checked": 0,
+        "within": 0,
+        "rate": null
+      },
+      "backgroundHoldout": {
+        "checked": 0,
+        "within": 0,
+        "rate": null
+      }
+    },
+    "hardGates": {
+      "expected": 0,
+      "fired": 0,
+      "rate": null,
+      "failures": []
+    },
+    "deltaSigns": {
+      "checked": 0,
+      "agreed": 0,
+      "rate": null
+    },
+    "agreement": 0,
+    "trusted": false,
+    "cases": []
+  }
+}

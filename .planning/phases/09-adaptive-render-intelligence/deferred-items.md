@@ -16,3 +16,20 @@
   source-guarded module and belongs in its own planned task (candidate: fold into
   09-04 or a follow-up orchestration tweak — a guarded `updateMany` where
   `intelState: "FINAL_QUEUED"` and `intel.finalJobId == completed job id`).
+  *(09-04 note: still open — 09-04's scope was the calibration gate, not the
+  orchestration state machine.)*
+
+## Intermittent zip-route test flake under full-suite parallelism (pre-existing)
+
+- **Found during:** 09-04 execution — observed at BASELINE, before any 09-04
+  change (full-suite run 1: `Tests 2 failed | 401 passed`; runs 2-4: all green).
+- **What:** A `Content-Type: application/zip` assertion in the batch-zip
+  download test (`test/out-zip-route.test.ts` family) intermittently fails when
+  the FULL suite runs in parallel; it always passes in isolation and when the
+  related files run together (`comp-download-deliverables out-zip-route
+  out-file-download` → 10/10 green). Roughly 1-in-4 full-suite runs flake.
+- **Impact:** CI noise only; no product behavior involved.
+- **Why deferred:** Pre-existing, unrelated to 09-04's files (scope boundary —
+  not directly caused by this plan's changes). Likely shared-mock/worker
+  interference; candidate fix: isolate the suite's blob/prisma mocks or pin the
+  file to a dedicated vitest worker.
