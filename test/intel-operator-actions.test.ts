@@ -41,7 +41,9 @@ const revalidatePath = vi.hoisted(() => vi.fn());
 vi.mock("next/cache", () => ({ revalidatePath }));
 
 const recipeFixture = vi.hoisted(() => ({ render: { samples: 999 }, fixture: true }));
-const buildEnterpriseRecipe = vi.hoisted(() => vi.fn(() => recipeFixture));
+const buildEnterpriseRecipe = vi.hoisted(() =>
+  vi.fn((_req: Record<string, unknown>) => recipeFixture),
+);
 vi.mock("@/lib/enterprise-recipes", () => ({ buildEnterpriseRecipe }));
 
 import { applyIntelDecision } from "@/lib/intelligence/operator-actions";

@@ -30,6 +30,9 @@ import { analyzePreview } from "@/lib/intelligence/analyze-preview";
 import { applyDeltas, type ProfileOverrides } from "@/lib/intelligence/knobs";
 import { decideLoop } from "@/lib/intelligence/loop";
 import type { VisionVerdict } from "@/lib/intelligence/verdict";
+// PURE shared normalizer (no prisma/ai/sharp behind it) — single tolerant reader
+// of the schemaless Job.intel Json, shared with the 09-03 operator surface.
+import { normalizeIntel } from "@/lib/intelligence/view";
 import type { Combo } from "@/lib/batches/expand";
 
 import type { Prisma } from "@prisma/client";
@@ -68,6 +71,22 @@ export type IntelCost = {
   finalRenders: number;
 };
 
+/**
+ * The operator's review decision logged on the trace (09-AI-SPEC §7.2 / INTEL-05
+ * — T-09-12: every ship decision is attributed, never silent). Written ONLY by
+ * lib/intelligence/operator-actions.ts via a guarded merge.
+ */
+export type IntelOperatorAction = {
+  action: "accept" | "reject" | "override";
+  userId: string;
+  /** ISO-8601 timestamp of the review. */
+  at: string;
+  /** For "override": which iteration's override set the operator chose to ship. */
+  overrideIteration?: number;
+  /** The classic re-queued job created by the decision (audit link), if any. */
+  queuedJobId?: string;
+};
+
 /** The Job.intel audit trace (09-AI-SPEC §7.1) — the Json column IS the trace. */
 export type JobIntel = {
   iteration: number;
@@ -82,6 +101,7 @@ export type JobIntel = {
   request?: IntelRequest;
   previewJobId?: string;
   finalJobId?: string;
+  operatorAction?: IntelOperatorAction;
 };
 
 /** The fresh trace createBatch seeds on every intelligence-preview job. */
@@ -115,29 +135,6 @@ function previewPathname(result: unknown): string | undefined {
   if (!result || typeof result !== "object") return undefined;
   const out = result as { image_blob?: { pathname?: unknown }; image_key?: unknown };
   return str(out.image_blob?.pathname) ?? str(out.image_key);
-}
-
-/** Normalize the schemaless Job.intel Json into a complete trace (defaults). */
-function readIntel(raw: unknown): JobIntel {
-  const base = (raw && typeof raw === "object" ? raw : {}) as Partial<JobIntel>;
-  return {
-    iteration: typeof base.iteration === "number" ? base.iteration : 0,
-    verdicts: Array.isArray(base.verdicts) ? base.verdicts : [],
-    appliedOverrides: Array.isArray(base.appliedOverrides) ? base.appliedOverrides : [],
-    bestScore: typeof base.bestScore === "number" ? base.bestScore : undefined,
-    bestOverrides: base.bestOverrides,
-    decision: base.decision,
-    reason: base.reason,
-    guardrailHits: Array.isArray(base.guardrailHits) ? base.guardrailHits : [],
-    cost: {
-      visionCalls: base.cost?.visionCalls ?? 0,
-      previewRenders: base.cost?.previewRenders ?? 0,
-      finalRenders: base.cost?.finalRenders ?? 0,
-    },
-    request: base.request,
-    previewJobId: base.previewJobId,
-    finalJobId: base.finalJobId,
-  };
 }
 
 function readCombo(raw: unknown): Combo | null {
@@ -257,7 +254,7 @@ async function queueAdjustedPreview(
 
 /** One claimed job through analyze -> decide -> dispatch/finalize/escalate. */
 async function processClaimedJob(job: ClaimedJob): Promise<void> {
-  const intel = readIntel(job.intel);
+  const intel = normalizeIntel(job.intel);
   const combo = readCombo(job.combo);
 
   if (!combo || !intel.request) {
