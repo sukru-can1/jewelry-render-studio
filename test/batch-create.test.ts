@@ -36,11 +36,13 @@ const batchMock = vi.hoisted(() => ({ create: vi.fn() }));
 const jobMock = vi.hoisted(() => ({ createMany: vi.fn() }));
 const productMock = vi.hoisted(() => ({ findUnique: vi.fn() }));
 const qualityMock = vi.hoisted(() => ({ findFirst: vi.fn() }));
+const cameraViewMock = vi.hoisted(() => ({ findMany: vi.fn() }));
 const prismaMock = vi.hoisted(() => ({
   batch: batchMock,
   job: jobMock,
   product: productMock,
   qualityPreset: qualityMock,
+  cameraView: cameraViewMock,
   $transaction: vi.fn(async (arg: unknown) => {
     if (typeof arg === "function") {
       return (arg as (tx: unknown) => unknown)(prismaMock);
@@ -88,12 +90,16 @@ beforeEach(() => {
   jobMock.createMany.mockReset();
   productMock.findUnique.mockReset();
   qualityMock.findFirst.mockReset();
+  cameraViewMock.findMany.mockReset();
   prismaMock.$transaction.mockClear();
   requireSessionMock.mockReset();
   requireSessionMock.mockResolvedValue(fakeSession("Operator"));
 
   productMock.findUnique.mockResolvedValue(readyProduct());
   qualityMock.findFirst.mockResolvedValue(quality());
+  // Default: no configured views in the DB read -> the action falls back to the
+  // selection keys (legacy positional behavior the older cases were written for).
+  cameraViewMock.findMany.mockResolvedValue([]);
   batchMock.create.mockResolvedValue({ id: "b1", jobCount: 4 });
   jobMock.createMany.mockResolvedValue({ count: 4 });
 });
@@ -202,6 +208,65 @@ describe("createBatch — server cap (BATCH-06)", () => {
       }),
     );
     expect(result.ok).toBe(true);
+  });
+});
+
+describe("createBatch — angle mapping uses ALL configured camera views (camera-mapping fix)", () => {
+  const allFourViews = [
+    { key: "view1" },
+    { key: "view2" },
+    { key: "view3" },
+    { key: "view4" },
+  ];
+
+  it("a lone view4 selection maps to 'profile' (its position among ALL views), not 'hero'", async () => {
+    cameraViewMock.findMany.mockResolvedValue(allFourViews);
+
+    const result = await createBatch(
+      validInput({ angleViewKeys: ["view4"], passes: ["metal"] }),
+    );
+    expect(result.ok).toBe(true);
+
+    const rows = jobMock.createMany.mock.calls[0][0].data as Array<{
+      combo: { angleKey?: string };
+    }>;
+    // 1 angle × 1 metal × 2 passes (implicit full + metal) = 2 rows, ALL profile.
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.combo.angleKey).toBe("profile");
+    }
+  });
+
+  it("a partial selection keeps each view's canonical angle (view2 -> front, view3 -> top)", async () => {
+    cameraViewMock.findMany.mockResolvedValue(allFourViews);
+
+    const result = await createBatch(
+      validInput({ angleViewKeys: ["view2", "view3"], passes: ["metal"] }),
+    );
+    expect(result.ok).toBe(true);
+
+    const rows = jobMock.createMany.mock.calls[0][0].data as Array<{
+      combo: { angleKey?: string };
+    }>;
+    const angles = new Set(rows.map((r) => r.combo.angleKey));
+    expect(angles).toEqual(new Set(["front", "top"]));
+  });
+
+  it("falls back to the selection keys when the DB has no camera views (legacy behavior)", async () => {
+    cameraViewMock.findMany.mockResolvedValue([]);
+
+    const result = await createBatch(
+      validInput({ angleViewKeys: ["view4"], passes: ["metal"] }),
+    );
+    expect(result.ok).toBe(true);
+
+    const rows = jobMock.createMany.mock.calls[0][0].data as Array<{
+      combo: { angleKey?: string };
+    }>;
+    // With only the selection as the universe, view4 sorts first -> hero.
+    for (const row of rows) {
+      expect(row.combo.angleKey).toBe("hero");
+    }
   });
 });
 

@@ -134,8 +134,24 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
   }
 
   // (6) Resolve angles (curate >4 views -> null) and metals (reject unknown).
+  //     CAMERA-MAPPING FIX: viewKeyToAngle resolves a key by its SORTED POSITION
+  //     among the second-arg list, so it MUST be given ALL configured CameraView
+  //     keys — mapping against the selected subset made a lone "view4" selection
+  //     sort to index 0 and render as "hero" instead of "profile". The DB is the
+  //     authority for the full key list (optional-chained like qualityPreset for
+  //     harness compatibility); an empty/unavailable read falls back to the
+  //     selection so legacy behavior degrades, never crashes.
+  const allViews =
+    (await prisma.cameraView?.findMany?.({
+      select: { key: true },
+      orderBy: { key: "asc" },
+    })) ?? [];
+  const allViewKeys: readonly string[] =
+    allViews.length > 0
+      ? allViews.map((v: { key: string }) => v.key)
+      : selection.angleViewKeys;
   const angles = selection.angleViewKeys
-    .map((key) => viewKeyToAngle(key, selection.angleViewKeys))
+    .map((key) => viewKeyToAngle(key, allViewKeys))
     .filter((a): a is NonNullable<typeof a> => a !== null);
 
   const resolvedMetals: NonNullable<ReturnType<typeof resolveMetal>>[] = [];
