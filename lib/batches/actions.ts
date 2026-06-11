@@ -45,10 +45,14 @@ import {
   type StoneGroupKey,
 } from "@/lib/batches/expand";
 import { prisma } from "@/lib/db/prisma";
+import { env } from "@/lib/env";
 import type {
   EnterpriseGroupTokens,
   EnterpriseStoneMaterial,
 } from "@/lib/enterprise-recipes";
+// Type-only import: erased at runtime so the AI/blob/sharp stack behind the
+// sweep module never loads inside the Server Action.
+import type { IntelRequest, JobIntel } from "@/lib/intelligence/sweep";
 import {
   createBatchSchema,
   type CreateBatchInput,
@@ -176,6 +180,24 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
       where: { key: selection.qualityKey },
     })) ?? DEFAULT_QUALITY;
 
+  // (9b) INTEL-04 / G9 kill-switch: the adaptive loop is ON only when the batch
+  //      opted in AND OPENAI_API_KEY is present AND the global toggle is not
+  //      "false". When OFF, everything below is EXACTLY the classic path —
+  //      intelState/intel stay absent and the selected quality renders directly.
+  const intelligenceOn =
+    selection.optimizeWithAi === true &&
+    Boolean(env.OPENAI_API_KEY) &&
+    env.ADAPTIVE_INTELLIGENCE_ENABLED !== "false";
+
+  // Intelligence batches render their SEED pass at LOW preview samples (the
+  // "preview" QualityPreset, falling back to the same preview-first default);
+  // the operator-selected quality is reserved for the loop's FINAL render.
+  const previewQuality = intelligenceOn
+    ? ((await prisma.qualityPreset?.findFirst?.({ where: { key: "preview" } })) ??
+      DEFAULT_QUALITY)
+    : null;
+  const renderQuality = previewQuality ?? quality;
+
   // The authoritative count of jobs actually written = the RESOLVED matrix (angles
   // curated to <=4 by binding). This is what hits the GPU downstream and is stored
   // on the Batch; it is always <= requestedCount, so the cap above is conservative.
@@ -186,17 +208,44 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
   });
 
   // Expand to one combo + generated recipe per (angle × metal × pass). Recipes are
-  // produced by buildEnterpriseRecipe (reuse, never hand-built) — T-03-06.
+  // produced by buildEnterpriseRecipe (reuse, never hand-built) — T-03-06. For an
+  // intelligence batch, renderQuality is the LOW preview preset (the loop's seed
+  // pass); otherwise it is the operator-selected quality, exactly as before.
   const expanded = expandCombos({
     angles,
     metals: resolvedMetals,
     passes,
     groupTokens,
     productName: product.name ?? "product",
-    resolution: quality.width,
-    samples: quality.samples,
+    resolution: renderQuality.width,
+    samples: renderQuality.samples,
     stoneMaterials,
   });
+
+  // INTEL-04: the per-job seed trace. `request` persists the serializable
+  // buildEnterpriseRecipe context (group tokens, stone materials, BOTH quality
+  // tiers) so the cron sweep can re-dispatch adjusted previews and the final
+  // through the generator without re-deriving product state (G10 — and the
+  // Job.intel Json column IS the loop's audit trace, 09-AI-SPEC §7.1).
+  const intelSeed: JobIntel | null = intelligenceOn
+    ? {
+        iteration: 0,
+        verdicts: [],
+        appliedOverrides: [],
+        guardrailHits: [],
+        cost: { visionCalls: 0, previewRenders: 1, finalRenders: 0 },
+        request: {
+          groupTokens,
+          stoneMaterials,
+          productName: product.name ?? "product",
+          preview: {
+            samples: renderQuality.samples,
+            resolution: renderQuality.width,
+          },
+          final: { samples: quality.samples, resolution: quality.width },
+        } satisfies IntelRequest,
+      }
+    : null;
 
   // matrix = the selection snapshot persisted on the Batch for audit/reproduction.
   const matrix = {
@@ -219,6 +268,9 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
         status: "queued",
         matrix: matrix as Prisma.InputJsonValue,
         jobCount,
+        // The kill-switch-RESOLVED opt-in (not the raw selection flag): a batch
+        // created while the loop is globally off is a classic batch forever.
+        optimizeWithAi: intelligenceOn,
       },
     });
 
@@ -228,6 +280,14 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
         status: "queued" as const,
         combo: row.combo as Prisma.InputJsonValue,
         recipe: row.recipe as Prisma.InputJsonValue,
+        // INTEL-04: intelligence batches seed PREVIEW_QUEUED + the intel trace;
+        // classic batches leave both absent (byte-identical pre-Phase-9 rows).
+        ...(intelSeed
+          ? {
+              intelState: "PREVIEW_QUEUED",
+              intel: intelSeed as unknown as Prisma.InputJsonValue,
+            }
+          : {}),
       })),
     });
 

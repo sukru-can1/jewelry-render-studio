@@ -5,6 +5,9 @@
     "app/api/products/[id]/ai-analyze/route.ts": {
       "maxDuration": 300
     },
+    "app/api/cron/reconcile/route.ts": {
+      "maxDuration": 300
+    },
     "app/api/**/*.ts": {
       "maxDuration": 60
     }

@@ -44,6 +44,12 @@ vi.mock("@/lib/db/prisma", () => ({ prisma: prismaMock }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+// INTEL-04 (Phase 9): actions.ts now reads env for the G9 kill-switch. No key =>
+// the intelligence branch is OFF — this e2e exercises the classic path verbatim.
+vi.mock("@/lib/env", () => ({
+  env: { OPENAI_API_KEY: undefined, ADAPTIVE_INTELLIGENCE_ENABLED: undefined },
+}));
+
 // 03-02 implemented createBatch — this resolves and the e2e suite is now GREEN.
 import { createBatch } from "@/lib/batches/actions";
 

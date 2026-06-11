@@ -95,8 +95,8 @@ function contextText(context: AnalyzeContext): string {
  * - Reads the model from env.AI_MODEL (default "gpt-5.5-pro") and the key from
  *   env.OPENAI_API_KEY; throws a clear Error when the key is missing so the
  *   caller treats it as loop-OFF (G9) rather than failing opaquely.
- * - Fetches + downscales the PRIVATE preview via previewDataUrl (never /api/file,
- *   never a public URL — T-09-05) and sends it with imageDetail:"low" (A3).
+ * - Fetches + downscales the PRIVATE preview via previewDataUrl (never the
+ *   file-proxy route, never a public URL — T-09-05), sent with imageDetail:"low" (A3).
  * - Prefers generateObject (validated structured output). If that throws, falls
  *   back to generateText with a strict JSON instruction + safe parse.
  * - ALWAYS re-validates the result with visionVerdictSchema before returning.

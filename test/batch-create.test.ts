@@ -25,6 +25,13 @@ vi.mock("@/lib/auth/rbac", () => ({
   requireRole: vi.fn(async () => fakeSession("Admin")),
 }));
 
+// INTEL-04 (Phase 9): actions.ts now reads env for the G9 kill-switch. No key =>
+// the intelligence branch is OFF, so every assertion below exercises the classic
+// path exactly as before (and the suite needs no live env file).
+vi.mock("@/lib/env", () => ({
+  env: { OPENAI_API_KEY: undefined, ADAPTIVE_INTELLIGENCE_ENABLED: undefined },
+}));
+
 const batchMock = vi.hoisted(() => ({ create: vi.fn() }));
 const jobMock = vi.hoisted(() => ({ createMany: vi.fn() }));
 const productMock = vi.hoisted(() => ({ findUnique: vi.fn() }));

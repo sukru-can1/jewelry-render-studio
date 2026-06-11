@@ -65,10 +65,25 @@ export async function applyWebhookResult(body: {
     // (keyed by runpodJobId) does not carry, so look it up post-write.
     const job = await prisma.job.findFirst({
       where: { runpodJobId: id },
-      select: { id: true, combo: true },
+      select: { id: true, combo: true, intelState: true },
     });
     if (job) {
       await deriveLayerFromResult(job.id, job.combo as Combo | null, output);
+
+      // INTEL-04 (Phase 9, T-09-09): a completed INTELLIGENCE-PREVIEW job is
+      // flipped to ANALYZING so the cron sweep picks it up. ONLY the state flip
+      // happens here — the slow vision call NEVER runs on the webhook (RunPod
+      // retries slow callbacks). The guarded updateMany makes a duplicate/late
+      // completion (already flipped or already analyzed) match zero rows — no
+      // double-flip, no double analysis. A classic job (intelState null) takes
+      // the byte-identical pre-Phase-9 path. The dropped-webhook case is covered
+      // for free: reconcile.ts replays through this same writer.
+      if (job.intelState === "PREVIEW_QUEUED") {
+        await prisma.job.updateMany({
+          where: { id: job.id, intelState: "PREVIEW_QUEUED" },
+          data: { intelState: "ANALYZING" },
+        });
+      }
     }
     return;
   }
