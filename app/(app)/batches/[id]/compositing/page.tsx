@@ -56,9 +56,14 @@ export default async function BatchCompositingPage({
             Couldn&apos;t load this batch for compositing. Check your connection
             and try again.
           </p>
-          <Button variant="secondary" className="mt-4" asChild>
-            <Link href="/batches">Retry</Link>
-          </Button>
+          <div className="mt-4 flex gap-2">
+            <Button asChild>
+              <Link href={`/batches/${id}/compositing`}>Try again</Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href="/batches">Back to batches</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );

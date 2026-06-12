@@ -8,6 +8,7 @@ import {
 } from "@/lib/orchestration/batch-status";
 import { loadBatchGallery } from "@/lib/gallery/query";
 
+import { SegmentSwitcher } from "../segment-switcher";
 import { GalleryBody } from "./gallery-controls";
 import type { GalleryCardLayer } from "./layer-card";
 
@@ -34,13 +35,19 @@ export default async function BatchGalleryPage({
   if (!gallery) {
     return (
       <div className="flex flex-col gap-6">
+        <SegmentSwitcher batchId={id} active="gallery" />
         <div className="rounded-lg border border-border bg-card p-6">
           <p className="text-sm text-foreground">
             Couldn&apos;t load these outputs. Check your connection and try again.
           </p>
-          <Button variant="secondary" className="mt-4" asChild>
-            <Link href="/batches">Retry</Link>
-          </Button>
+          <div className="mt-4 flex gap-2">
+            <Button asChild>
+              <Link href={`/batches/${id}/gallery`}>Try again</Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href="/batches">Back to batches</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -69,6 +76,8 @@ export default async function BatchGalleryPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <SegmentSwitcher batchId={gallery.id} active="gallery" />
+
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold leading-tight text-foreground">
