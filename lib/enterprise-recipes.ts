@@ -452,11 +452,18 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
         // OUT-01 / D-1: disable the opaque studio floor/background for stone passes so
         // it is NOT composited over the transparent holdout's alpha; metal/full keep it.
         enabled: request.pass !== "stone",
-        top_color: [247, 247, 246],
-        floor_color: [237, 237, 235],
+        // WHITE-SWEEP CALIBRATION (worker build r4+): the Light Path floor/
+        // backdrop now renders clipped TRUE WHITE to camera. The painted sweep
+        // must sit just under that raw white — the previous darker greys made
+        // the protected product rectangles show as WHITE patches against a
+        // grey painted sweep (polarity-flipped seams). Near-white + subtle
+        // vignette keeps the paint invisible against the raw render.
+        // Recipe-level only: postprocess.py defaults stay for legacy recipes.
+        top_color: [253, 253, 252],
+        floor_color: [249, 249, 247],
         floor_start: 0.54,
         floor_strength: 0.82,
-        vignette: 5.5,
+        vignette: 4,
         bright_object_keep: 0.38,
         shadows: [{ cx: 0.5, cy: 0.78, rx: 0.36, ry: 0.045, alpha: 26, color: [56, 58, 60] }],
         shadow_blur: 30

@@ -45,6 +45,14 @@
 //     EMISSION sweep behind the product (zero light contribution; stone
 //     passes also camera-hide it). Both goldens regenerated for this one
 //     added background key.
+//  9. (FULL + STONE) white-sweep calibration (live-render fix): the worker's
+//     Light Path floor/backdrop (build r4+) renders clipped TRUE WHITE to
+//     camera, so studio_background's painted sweep was DARKER than the raw
+//     render — protected product rectangles showed as white patches against
+//     the grey paint (polarity-flipped seams). top_color [247,247,246] ->
+//     [253,253,252], floor_color [237,237,235] -> [249,249,247], vignette
+//     5.5 -> 4. Stone passes carry the same (disabled) block, so both goldens
+//     regenerated for these three value changes.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -60,9 +68,9 @@ import {
 } from "@/lib/enterprise-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "0ea945203d35eacac9c04744cc08699e802f2097f3a27827247422cc8bad5a52";
+  "ef44fba14b55513819ec259ebae7359e91afed7887f0434bc97cb0dfea9220f5";
 const GOLDEN_STONE_SHA256 =
-  "fc1b3209ecfaf78f8e5d7b7a505c72034fe33bc1623c5c399af1fa73cedca9e1";
+  "d791daa5c1a3371b047e48ad7f9e4fa5997dcaa370b41e8d4ac9f1effa94f7c9";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
