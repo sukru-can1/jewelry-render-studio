@@ -31,13 +31,16 @@ export type EnterpriseRecipeRequest = {
   profileOverrides?: ProfileOverrides;
 };
 
-const METAL_PRESETS: Record<EnterpriseMetal, { label: string; base: number[]; roughness: number }> = {
+// Exported (additively) for lib/master-scene-recipes.ts — the master-scene
+// builder reuses the SAME metal/stone presets, fallback tokens and pass
+// visibility so both pipelines speak one material/visibility dialect.
+export const METAL_PRESETS: Record<EnterpriseMetal, { label: string; base: number[]; roughness: number }> = {
   white: { label: "white gold", base: [0.42, 0.435, 0.455, 1.0], roughness: 0.29 },
   yellow: { label: "yellow gold", base: [0.86, 0.69, 0.42, 1.0], roughness: 0.31 },
   rose: { label: "rose gold", base: [0.78, 0.5, 0.42, 1.0], roughness: 0.32 }
 };
 
-const STONE_PRESETS: Record<EnterpriseStoneMaterial, Record<string, unknown>> = {
+export const STONE_PRESETS: Record<EnterpriseStoneMaterial, Record<string, unknown>> = {
   diamond: {
     type: "catalog_diamond",
     glass_color: [0.94, 0.965, 1.0, 1.0],
@@ -147,29 +150,29 @@ const ANGLES: Record<
   }
 };
 
-const FALLBACK_TOKENS: EnterpriseGroupTokens = {
+export const FALLBACK_TOKENS: EnterpriseGroupTokens = {
   alloycolour: ["metal", "band", "ring", "shank", "prong", "basket", "gold", "silver", "platinum", "alloy"],
   diamond: ["diamond", "brilliant", "round", "center", "pave", "zirconia", "gem", "stone"],
   stone2: ["stone2", "sapphire", "emerald", "ruby", "colored"],
   stone3: ["stone3", "accent", "side_stone"]
 };
 
-function slug(value: string) {
+export function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60) || "product";
 }
 
-function tokensFor(groupTokens: EnterpriseGroupTokens, group: EnterpriseGroupKey) {
+export function tokensFor(groupTokens: EnterpriseGroupTokens, group: EnterpriseGroupKey) {
   const tokens = groupTokens[group].filter(Boolean);
   return tokens.length ? tokens : FALLBACK_TOKENS[group];
 }
 
-function uniqueTokens(tokens: string[]) {
+export function uniqueTokens(tokens: string[]) {
   return Array.from(new Set(tokens.map((token) => token.trim()).filter(Boolean))).slice(0, 120);
 }
 
 const STONE_GROUP_KEYS = ["diamond", "stone2", "stone3"] as const;
 
-function buildVisibility(request: EnterpriseRecipeRequest) {
+export function buildVisibility(request: EnterpriseRecipeRequest) {
   // LAYERED-PASS FIX (legacy app's proven pattern): passes NO LONGER filter via
   // include_contains/exclude_contains. The worker runs filter_product_objects
   // BEFORE transform_model, so pass-level include/exclude made auto_center/
@@ -608,3 +611,16 @@ export const enterpriseAngles = ANGLES;
 export const enterpriseMetalLabels = Object.fromEntries(
   Object.entries(METAL_PRESETS).map(([key, value]) => [key, value.label])
 ) as Record<EnterpriseMetal, string>;
+
+// Master-scene pipeline (v203 product-swap port) — sibling module re-exported
+// here so consumers keep one import surface for recipe builders. The circular
+// import is benign: master-scene-recipes references this module's bindings
+// only inside function bodies (evaluated at call time, after both modules
+// finish initializing).
+export {
+  buildMasterSceneRecipe,
+  MASTER_EXTRA_POSES,
+  MASTER_POSES,
+  MASTER_REFERENCE_CONTAINS,
+  type MasterScenePose,
+} from "@/lib/master-scene-recipes";
