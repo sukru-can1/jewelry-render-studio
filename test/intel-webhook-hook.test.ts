@@ -222,7 +222,11 @@ describe("createBatch — optimizeWithAi seeds intelligence previews (G9-gated)"
   it("opted in + key present: PREVIEW_QUEUED jobs with intel trace + LOW-sample recipes", async () => {
     seedQualityMocks();
 
-    const result = await createBatch(validInput({ optimizeWithAi: true }));
+    // pipeline must be EXPLICITLY procedural: the schema default is now
+    // "master" (codex f6691ed) and master batches exclude the AI loop.
+    const result = await createBatch(
+      validInput({ optimizeWithAi: true, pipeline: "procedural" }),
+    );
     expect(result.ok).toBe(true);
 
     // The Batch row records the (kill-switch-resolved) opt-in.

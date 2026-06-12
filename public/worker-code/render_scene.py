@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-master-scene-r7"
+WORKER_BUILD = "20260612-master-scene-r8"
 
 
 DEFAULT_RECIPE = {
@@ -354,6 +354,38 @@ def apply_master_camera_hide(config, product_objects):
     return hidden
 
 
+def refocus_master_camera(config, product_objects):
+    """Refocus the authored master-scene camera after product swap.
+
+    The master .blend owns the camera transform, but its DOF focus target can
+    point at the deleted reference product or a distance that is no longer
+    correct after importing a different model. Keep the authored view direction
+    and lens, but focus on the swapped product bounds and use a tighter aperture
+    so catalog beauty renders stay crisp.
+    """
+    camera = bpy.context.scene.camera
+    if camera is None or not product_objects:
+        return None
+
+    mins, maxs = object_bounds(product_objects)
+    target = (mins + maxs) * 0.5
+    offset = config.get("focus_target_offset", [0.0, 0.0, 0.0])
+    target += Vector((float(offset[0]), float(offset[1]), float(offset[2])))
+
+    dof = config.get("depth_of_field", {})
+    focus_distance = (target - camera.location).length
+    camera.data.dof.focus_object = None
+    camera.data.dof.use_dof = dof.get("enabled", True)
+    camera.data.dof.focus_distance = float(dof.get("focus_distance", focus_distance))
+    camera.data.dof.aperture_fstop = float(dof.get("f_stop", 16.0))
+    return {
+        "target": list(target),
+        "focus_distance": camera.data.dof.focus_distance,
+        "f_stop": camera.data.dof.aperture_fstop,
+        "use_dof": camera.data.dof.use_dof,
+    }
+
+
 def setup_master_scene(master_path: Path, model_path: Path, recipe):
     """Master-scene product swap — the proven v203 pipeline, generalized.
 
@@ -410,6 +442,7 @@ def setup_master_scene(master_path: Path, model_path: Path, recipe):
     apply_scene_adjustments(config)
     add_reflection_cards_from_configs(config.get("reflection_cards", []))
     hidden = apply_master_camera_hide(config, objects)
+    focus = refocus_master_camera(config, objects)
 
     return objects, {
         "reference": {**reference, "deleted_objects": deleted},
@@ -419,6 +452,7 @@ def setup_master_scene(master_path: Path, model_path: Path, recipe):
             "scale_to_reference": scale,
         },
         "camera_hidden_objects": hidden,
+        "camera_focus": focus,
     }
 
 

@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-master-scene-r7"
+WORKER_BUILD = "20260612-master-scene-r8"
 
 
 DEFAULT_RECIPE = {
