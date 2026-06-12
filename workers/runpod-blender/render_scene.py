@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-master-scene-r8"
+WORKER_BUILD = "20260612-master-scene-r9"
 
 
 DEFAULT_RECIPE = {
@@ -354,15 +354,49 @@ def apply_master_camera_hide(config, product_objects):
     return hidden
 
 
-def refocus_master_camera(config, product_objects):
-    """Refocus the authored master-scene camera after product swap.
+def preserve_camera_focus(reference_objects):
+    """Pin the authored camera's DOF before the reference product is deleted.
 
-    The master .blend owns the camera transform, but its DOF focus target can
-    point at the deleted reference product or a distance that is no longer
-    correct after importing a different model. Keep the authored view direction
-    and lens, but focus on the swapped product bounds and use a tighter aperture
-    so catalog beauty renders stay crisp.
+    The master-scene invariant is that every swapped product is normalized onto
+    the reference envelope, so the artist's hand-focused camera stays correct
+    for ANY product — the authored DOF must be PRESERVED, not recomputed (the
+    bbox-center/f16 refocus rendered the whole product soft at macro scale:
+    live batch cmqaqwh38, GPT verdict overall=1 on both angles).
+
+    The one real hazard: the authored camera may use dof.focus_object pointing
+    AT a reference mesh — deletion would dangle it and Blender falls back to a
+    stale focus_distance scalar. Bake the object-focus into the scalar BEFORE
+    deletion and clear the object reference.
     """
+    camera = bpy.context.scene.camera
+    if camera is None or not getattr(camera.data, "dof", None):
+        return None
+    focus_object = camera.data.dof.focus_object
+    if focus_object is None or focus_object not in set(reference_objects):
+        return None
+    distance = (focus_object.matrix_world.translation - camera.matrix_world.translation).length
+    camera.data.dof.focus_object = None
+    camera.data.dof.focus_distance = distance
+    print(
+        f"MASTER_FOCUS: baked focus_object '{focus_object.name}' into focus_distance={distance:.5f} "
+        "before reference deletion"
+    )
+    return {"baked_from": focus_object.name, "focus_distance": distance}
+
+
+def refocus_master_camera(config, product_objects):
+    """OPT-IN camera focus override after the product swap.
+
+    Runs ONLY when the recipe explicitly carries master_scene.depth_of_field —
+    the authored camera's DOF is the default (see preserve_camera_focus).
+    Overrides apply ONLY the keys provided: enabled -> use_dof, f_stop ->
+    aperture_fstop, focus_distance -> scalar focus; absent keys keep the
+    authored values. The focus target defaults to the swapped product's bbox
+    center (+ focus_target_offset) when focus_distance is not given.
+    """
+    dof = config.get("depth_of_field")
+    if not dof:
+        return None
     camera = bpy.context.scene.camera
     if camera is None or not product_objects:
         return None
@@ -372,12 +406,15 @@ def refocus_master_camera(config, product_objects):
     offset = config.get("focus_target_offset", [0.0, 0.0, 0.0])
     target += Vector((float(offset[0]), float(offset[1]), float(offset[2])))
 
-    dof = config.get("depth_of_field", {})
-    focus_distance = (target - camera.location).length
     camera.data.dof.focus_object = None
-    camera.data.dof.use_dof = dof.get("enabled", True)
-    camera.data.dof.focus_distance = float(dof.get("focus_distance", focus_distance))
-    camera.data.dof.aperture_fstop = float(dof.get("f_stop", 16.0))
+    if "enabled" in dof:
+        camera.data.dof.use_dof = bool(dof["enabled"])
+    if "focus_distance" in dof:
+        camera.data.dof.focus_distance = float(dof["focus_distance"])
+    else:
+        camera.data.dof.focus_distance = (target - camera.location).length
+    if "f_stop" in dof:
+        camera.data.dof.aperture_fstop = float(dof["f_stop"])
     return {
         "target": list(target),
         "focus_distance": camera.data.dof.focus_distance,
@@ -411,6 +448,9 @@ def setup_master_scene(master_path: Path, model_path: Path, recipe):
     setup_render(recipe)
 
     reference_objects, reference = measure_reference_product(config)
+    # Bake any object-targeted authored DOF into a scalar BEFORE the focus
+    # target is deleted with the reference product (authored DOF is the look).
+    preserved_focus = preserve_camera_focus(reference_objects)
     deleted = delete_reference_product(reference_objects)
 
     before_import = set(bpy.data.objects)
@@ -453,6 +493,7 @@ def setup_master_scene(master_path: Path, model_path: Path, recipe):
         },
         "camera_hidden_objects": hidden,
         "camera_focus": focus,
+        "camera_focus_preserved": preserved_focus,
     }
 
 

@@ -28,6 +28,14 @@
 //   2. (FULL + STONE) explicit master-camera DOF policy: worker refocuses the
 //      authored camera after product swap and uses f/16 so cloud beauty renders
 //      do not inherit stale/deleted reference-product focus and render soft.
+//   3. (FULL + STONE) DOF policy REVERTED to authored-camera default: the
+//      forced bbox-center/f16 refocus rendered the whole product soft at
+//      macro scale — live batch cmqaqwh38 scored 1/5 on both angles (GPT
+//      vision verdict: milky, blown, no facet contrast). The normalization
+//      invariant makes the artist's hand-focused camera correct for ANY
+//      swapped product; the worker (r9) bakes an object-targeted focus into
+//      a scalar before reference deletion, and depth_of_field is now an
+//      explicit recipe override only (no longer emitted by the builder).
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
@@ -42,9 +50,9 @@ import {
 import { buildMasterSceneRecipe as buildFromSibling } from "@/lib/master-scene-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "ddf801e53e05cf87be2311f981de50c07856d9eb5f8107426c686d93a4c254e3";
+  "c0c68f23b0e5a52b225ad20ba738b76783be2206d6f79af26ef9e791bc6d7787";
 const GOLDEN_STONE_SHA256 =
-  "1d294be9408b3a6dfa9a7540b5ef94fe2171b8d845707a7a2fcd1f6c5541cbdf";
+  "e5be0ced4a9401e3c0b0de522bb53484782b541bcfea4f212a25eee34eff15ae";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -108,8 +116,9 @@ describe("master_scene block — the worker contract", () => {
     expect(master.apply_recipe_materials).toBe(true);
   });
 
-  it("carries an explicit post-swap camera focus policy for crisp catalog renders", () => {
-    expect(master.depth_of_field).toEqual({ enabled: true, f_stop: 16.0 });
+  it("does NOT override the authored camera DOF (regeneration note 3 — the authored focus IS the look)", () => {
+    expect(master.depth_of_field).toBeUndefined();
+    expect(master.focus_target_offset).toBeUndefined();
   });
 
   it("carries the v203 studio trim (light adjustments, helper-card adjustments, 3 adaptive cards)", () => {

@@ -412,10 +412,14 @@ export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record
       pose_rotation_degrees: pose.rotation,
       pose_scale: pose.scale,
       pose_translation: pose.translation,
-      // The authored camera transform stays in the master .blend, but the
-      // worker refocuses it after product swap. A tighter f-stop fixes the
-      // soft cloud-app beauty renders while preserving the v203 view.
-      depth_of_field: { enabled: true, f_stop: 16.0 },
+      // NO depth_of_field override: the authored camera's DOF IS the look.
+      // Products are normalized onto the reference envelope, so the artist's
+      // hand-focused camera is correct for any swap; the worker bakes an
+      // object-targeted focus into a scalar before the reference is deleted
+      // (preserve_camera_focus, r9). The forced bbox-center/f16 refocus
+      // rendered everything soft at macro scale (batch cmqaqwh38, GPT
+      // verdict 1/5 both angles) — depth_of_field remains available as an
+      // explicit recipe override only.
       apply_recipe_materials: true,
       light_adjustments: V203_LIGHT_ADJUSTMENTS,
       object_adjustments: V203_OBJECT_ADJUSTMENTS,
