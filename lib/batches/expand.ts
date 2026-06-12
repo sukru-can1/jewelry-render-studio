@@ -2,12 +2,16 @@
 //
 // Turns a validated, already-resolved selection (generator-space angle/metal keys +
 // the product's group token signatures) into the cartesian list of combos and ONE
-// generated recipe per combo. The recipe is produced VERBATIM by the shared, pure
-// `buildEnterpriseRecipe` (RESEARCH Pattern 3 / "Don't Hand-Roll") — this module
-// NEVER hand-builds recipe JSON.
+// generated recipe per combo. The recipe is produced VERBATIM by a shared, pure
+// generator (RESEARCH Pattern 3 / "Don't Hand-Roll") — this module NEVER
+// hand-builds recipe JSON. Two generators exist behind one request shape:
+//   - "procedural" -> buildEnterpriseRecipe  (empty scene built from the recipe)
+//   - "master"     -> buildMasterSceneRecipe (render INSIDE the v203 studio
+//                     .blend; product swap + per-angle pose — the quality road)
 //
-// PURE module: imports only the generator (type + function) and is side-effect free.
-// No Prisma, no React, no `@/lib/runpod`. Safe to unit-test with the real generator.
+// PURE module: imports only the generators (types + functions) and is side-effect
+// free. No Prisma, no React, no `@/lib/runpod`. Safe to unit-test with the real
+// generators.
 import {
   buildEnterpriseRecipe,
   type EnterpriseAngleKey,
@@ -15,6 +19,10 @@ import {
   type EnterpriseMetal,
   type EnterpriseStoneMaterial,
 } from "@/lib/enterprise-recipes";
+import { buildMasterSceneRecipe } from "@/lib/master-scene-recipes";
+
+/** Which recipe generator a batch renders through. */
+export type RenderPipeline = "procedural" | "master";
 
 /** The non-alloy stone groups whose holdout passes carry a stone material. */
 export type StoneGroupKey = "diamond" | "stone2" | "stone3";
@@ -106,16 +114,25 @@ export type ExpandInput = {
    * undefined material (RESEARCH Pitfall 4).
    */
   stoneMaterials: Record<StoneGroupKey, EnterpriseStoneMaterial>;
+  /**
+   * Recipe generator selection. OPTIONAL and defaults to "procedural" so every
+   * pre-existing caller stays byte-identical; "master" routes the SAME request
+   * through buildMasterSceneRecipe (the v203 studio pipeline).
+   */
+  pipeline?: RenderPipeline;
 };
 
 /**
  * Expand a selection into one row per (angle × metal × pass) in deterministic
  * nested-loop order (angle outer, metal middle, pass inner). Each row's recipe comes
- * from a single `buildEnterpriseRecipe` call with the mapped angle/metal/pass and the
- * full stoneMaterials map — recipes are REUSED, never re-derived (BATCH-07).
+ * from a single generator call (buildEnterpriseRecipe, or buildMasterSceneRecipe
+ * when pipeline === "master") with the mapped angle/metal/pass and the full
+ * stoneMaterials map — recipes are REUSED, never re-derived (BATCH-07).
  */
 export function expandCombos(input: ExpandInput): ExpandedJob[] {
   const rows: ExpandedJob[] = [];
+  const build =
+    input.pipeline === "master" ? buildMasterSceneRecipe : buildEnterpriseRecipe;
 
   for (const angle of input.angles) {
     for (const metal of input.metals) {
@@ -130,7 +147,7 @@ export function expandCombos(input: ExpandInput): ExpandedJob[] {
               }
             : { angleKey: angle, metalKey: metal, pass: p.pass };
 
-        const recipe = buildEnterpriseRecipe({
+        const recipe = build({
           angle,
           metal,
           pass: p.pass,

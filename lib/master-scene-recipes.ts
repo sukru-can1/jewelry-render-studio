@@ -23,12 +23,14 @@
 //                                    same buildVisibility dialect as the
 //                                    procedural enterprise pipeline
 //
-// TODO (out of scope for v1 — quality proof first):
-//   - dispatch wiring: lib/render/dispatch.ts must pass input.master_scene =
-//     { url: workerModelUrl("master-scenes/v203-studio.blend"), pathname }
-//     when the recipe carries master_scene.enabled.
-//   - batch-builder toggle (choose procedural vs master-scene pipeline).
-//   - gallery integration (master-scene jobs reuse the same pass layering).
+// App wiring (done):
+//   - dispatch: lib/orchestration/dispatch.ts detects master_scene.enabled on a
+//     job recipe and passes input.master_scene = { url: workerModelUrl(
+//     MASTER_SCENE_BLOB_PATH), pathname } — a fresh presigned GET per submit.
+//   - batch builder: pipeline toggle (procedural | master) flows through
+//     createBatch -> expandCombos, which calls this builder per combo.
+//   - gallery: master-scene jobs reuse the same combo/pass layering, so Layer
+//     derivation and the batch gallery work unchanged.
 import {
   buildVisibility,
   FALLBACK_TOKENS,
@@ -39,6 +41,25 @@ import {
   type EnterpriseAngleKey,
   type EnterpriseRecipeRequest,
 } from "@/lib/enterprise-recipes";
+
+/**
+ * Where scripts/upload_master_scene_blend.ts put son2.blend in the PRIVATE blob
+ * store. Dispatch mints a presigned worker GET for this pathname per submit —
+ * the path is the contract between the upload script and the dispatcher.
+ */
+export const MASTER_SCENE_BLOB_PATH = "master-scenes/v203-studio.blend";
+
+/**
+ * True when a generated recipe carries an enabled master_scene block — the
+ * dispatcher's switch for attaching input.master_scene (the studio .blend URL).
+ * Tolerant of unknown JSON: anything non-conforming is simply "not master".
+ */
+export function isMasterSceneRecipe(recipe: unknown): boolean {
+  if (typeof recipe !== "object" || recipe === null) return false;
+  const master = (recipe as Record<string, unknown>).master_scene;
+  if (typeof master !== "object" || master === null) return false;
+  return (master as Record<string, unknown>).enabled === true;
+}
 
 /**
  * The v203 `PRODUCT_TOKENS` (scripts/create_v203_close_pose_angle_set.py:11) —

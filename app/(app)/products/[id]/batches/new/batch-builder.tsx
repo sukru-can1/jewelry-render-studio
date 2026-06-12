@@ -11,7 +11,15 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Aperture, Check, Gem, Layers, Sparkles, TriangleAlert } from "lucide-react";
+import {
+  Aperture,
+  Camera,
+  Check,
+  Gem,
+  Layers,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -127,8 +135,15 @@ export function BatchBuilder({
     qualityPresets[0]?.key ??
     "";
   const [qualityKey, setQualityKey] = useState<string>(defaultQuality);
+  // Render pipeline — DEFAULT "master": render inside the hand-built v203 photo
+  // studio (.blend product swap), the proven catalog look. "procedural" builds
+  // the scene from generated settings and supports the AI loop.
+  const [pipeline, setPipeline] = useState<"master" | "procedural">("master");
   // INTEL-05 opt-in: DEFAULT OFF — the adaptive loop never runs unrequested.
   const [optimizeWithAi, setOptimizeWithAi] = useState(false);
+  // The AI loop's knobs move PROCEDURAL studio surfaces — under the master
+  // pipeline the server forces it off (G9), so the UI mirrors that as disabled.
+  const aiAvailable = aiConfigured && pipeline !== "master";
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [errorBanner, setErrorBanner] = useState(false);
@@ -180,8 +195,10 @@ export function BatchBuilder({
         stoneTypeByGroup,
         passes,
         qualityKey,
-        // Only meaningful when the feature is configured; the server re-gates (G9).
-        optimizeWithAi: aiConfigured && optimizeWithAi,
+        pipeline,
+        // Only meaningful when the feature is configured AND the pipeline is
+        // procedural; the server re-gates regardless (G9 + master exclusion).
+        optimizeWithAi: aiAvailable && optimizeWithAi,
       });
       if (result.ok) {
         toast(`Batch created — ${result.jobCount} jobs queued.`, {
@@ -213,6 +230,46 @@ export function BatchBuilder({
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
       {/* ── Selector column ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-6">
+        {/* Render pipeline — master (studio .blend) vs procedural */}
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center gap-2">
+            <Camera className="size-4 text-muted-foreground" strokeWidth={1.75} />
+            <span className="text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground">
+              Render pipeline
+            </span>
+          </div>
+          <ToggleGroup
+            type="single"
+            value={pipeline}
+            onValueChange={(v) => {
+              if (v === "master" || v === "procedural") setPipeline(v);
+            }}
+            className="flex-wrap"
+            disabled={disabled}
+          >
+            <ToggleGroupItem
+              value="master"
+              variant="outline"
+              className={cn("h-auto flex-col items-start gap-0.5 px-3 py-2", SELECTED_CHIP)}
+            >
+              <span className="text-sm">Studio (recommended)</span>
+              <span className="text-[10px] text-muted-foreground">
+                Renders inside the hand-built photo studio — the proven catalog look.
+              </span>
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              value="procedural"
+              variant="outline"
+              className={cn("h-auto flex-col items-start gap-0.5 px-3 py-2", SELECTED_CHIP)}
+            >
+              <span className="text-sm">Procedural</span>
+              <span className="text-[10px] text-muted-foreground">
+                Builds the scene from generated settings; supports the AI loop.
+              </span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </section>
+
         {/* Angles */}
         <section className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
           <div className="flex items-center gap-2">
@@ -416,8 +473,8 @@ export function BatchBuilder({
               htmlFor="optimize-with-ai"
               className={cn(
                 "flex flex-col gap-1",
-                aiConfigured && !disabled ? "cursor-pointer" : "cursor-not-allowed",
-                !aiConfigured && "opacity-60",
+                aiAvailable && !disabled ? "cursor-pointer" : "cursor-not-allowed",
+                !aiAvailable && "opacity-60",
               )}
             >
               <span className="text-sm text-foreground">AI-reviewed render loop</span>
@@ -429,9 +486,9 @@ export function BatchBuilder({
             </label>
             <Switch
               id="optimize-with-ai"
-              checked={optimizeWithAi}
+              checked={aiAvailable && optimizeWithAi}
               onCheckedChange={setOptimizeWithAi}
-              disabled={disabled || !aiConfigured}
+              disabled={disabled || !aiAvailable}
               aria-label="Optimize with AI"
             />
           </div>
@@ -439,6 +496,12 @@ export function BatchBuilder({
             <p className="text-xs text-muted-foreground">
               AI optimization is not configured for this deployment — batches render
               the classic path. Ask an admin to set the AI key to enable it.
+            </p>
+          ) : pipeline === "master" ? (
+            <p className="text-xs text-muted-foreground">
+              The AI loop tunes the procedural studio&apos;s knobs — the Studio
+              pipeline uses the hand-built scene as-is, so it renders the classic
+              path. Switch to Procedural to enable it.
             </p>
           ) : null}
         </section>

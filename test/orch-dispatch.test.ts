@@ -18,6 +18,11 @@ vi.mock("@/lib/env", () => ({
   env: { CRON_SECRET: "cron-secret", RUNPOD_WEBHOOK_SECRET: "wh-secret" },
 }));
 
+// Master-scene wiring: dispatch mints a presigned worker GET for the PRIVATE
+// studio .blend when the recipe carries master_scene.enabled.
+const workerModelUrl = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/blob", () => ({ workerModelUrl }));
+
 const jobMock = vi.hoisted(() => ({ findMany: vi.fn(), updateMany: vi.fn(), update: vi.fn() }));
 vi.mock("@/lib/db/prisma", () => ({ prisma: { job: jobMock } }));
 
@@ -31,6 +36,8 @@ beforeEach(() => {
   getRunPodStatus.mockReset();
   resolveAppBaseUrl.mockReset();
   resolveAppBaseUrl.mockReturnValue("https://app.example");
+  workerModelUrl.mockReset();
+  workerModelUrl.mockResolvedValue("https://blob.example/presigned");
   jobMock.findMany.mockReset();
   jobMock.updateMany.mockReset();
   jobMock.update.mockReset();
@@ -110,6 +117,35 @@ describe("dispatchQueuedJobs (ORCH-01, RED)", () => {
 
     const released = jobMock.update.mock.calls.find((c) => c[0]?.data?.status === "queued");
     expect(released).toBeTruthy();
+  });
+
+  it("master-scene recipe: submits input.master_scene with a freshly presigned studio .blend URL", async () => {
+    jobMock.findMany.mockResolvedValue([
+      queuedJob({ recipe: { master_scene: { enabled: true }, name: "master_x" } }),
+    ]);
+    jobMock.updateMany.mockResolvedValue({ count: 1 });
+    submitRunPod.mockResolvedValue({ id: "runpod-1" });
+
+    await dispatchQueuedJobs();
+
+    expect(workerModelUrl).toHaveBeenCalledWith("master-scenes/v203-studio.blend");
+    const input = submitRunPod.mock.calls[0][0] as Record<string, unknown>;
+    expect(input.master_scene).toEqual({
+      url: "https://blob.example/presigned",
+      pathname: "master-scenes/v203-studio.blend",
+    });
+  });
+
+  it("procedural recipe: input.master_scene is ABSENT and no studio URL is minted", async () => {
+    jobMock.findMany.mockResolvedValue([queuedJob()]); // recipe: { foo: "bar" }
+    jobMock.updateMany.mockResolvedValue({ count: 1 });
+    submitRunPod.mockResolvedValue({ id: "runpod-1" });
+
+    await dispatchQueuedJobs();
+
+    expect(workerModelUrl).not.toHaveBeenCalled();
+    const input = submitRunPod.mock.calls[0][0] as Record<string, unknown>;
+    expect(input.master_scene).toBeUndefined();
   });
 
   it("A5: when no base URL resolves, never submits and returns the claimed job to 'queued'", async () => {

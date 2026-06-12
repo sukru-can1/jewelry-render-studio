@@ -16,6 +16,12 @@ export const passEnum = z.enum(["full", "metal", "diamond", "stone2", "stone3"])
 // has no stone). Matches the non-alloy generator group keys.
 export const stoneGroupEnum = z.enum(["diamond", "stone2", "stone3"]);
 
+// Which recipe generator the batch renders through: "procedural" builds an
+// empty scene from the recipe (buildEnterpriseRecipe); "master" renders inside
+// the human-authored v203 studio .blend (buildMasterSceneRecipe) — the proven
+// catalog-quality road. Matches lib/batches/expand.ts RenderPipeline.
+export const pipelineEnum = z.enum(["procedural", "master"]);
+
 // Array caps bound the payload so an attacker cannot inflate it into a runaway
 // fan-out (anti-automation, V5). The server still recomputes the count against
 // BATCH_LIMITS — these caps are an early, cheap rejection, not the authority.
@@ -36,6 +42,10 @@ export const createBatchSchema = z.object({
   // path, byte-for-byte. createBatch does NOT consume it yet (09-02 wires it);
   // this only lands the validated contract for the UI (09-03) + orchestration.
   optimizeWithAi: z.boolean().optional().default(false),
+  // Recipe generator selection. OPTIONAL, defaults "procedural" so the server
+  // contract stays byte-identical for pre-toggle clients; the batch-builder UI
+  // sends "master" by default (the v203 studio pipeline — the quality road).
+  pipeline: pipelineEnum.optional().default("procedural"),
 });
 
 export type CreateBatchInput = z.infer<typeof createBatchSchema>;

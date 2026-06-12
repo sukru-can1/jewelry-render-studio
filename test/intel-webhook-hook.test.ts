@@ -245,6 +245,28 @@ describe("createBatch — optimizeWithAi seeds intelligence previews (G9-gated)"
     }
   });
 
+  it('pipeline:"master" + optimizeWithAi: the loop is EXCLUDED — classic master batch', async () => {
+    seedQualityMocks();
+
+    const result = await createBatch(
+      validInput({ optimizeWithAi: true, pipeline: "master" }),
+    );
+    expect(result.ok).toBe(true);
+
+    // The studio .blend owns the knobs the loop would tune — the resolved
+    // opt-in is FALSE and every job is a classic (no-intel) master render.
+    expect(batchMock.create.mock.calls[0][0].data.optimizeWithAi).toBe(false);
+    const rows = jobMock.createMany.mock.calls[0][0].data as Array<
+      JobRow & { recipe: { master_scene?: { enabled?: boolean } } }
+    >;
+    for (const row of rows) {
+      expect(row.intelState).toBeUndefined();
+      expect(row.intel).toBeUndefined();
+      expect(row.recipe.master_scene?.enabled).toBe(true);
+      expect(row.recipe.render?.samples).toBe(512); // the selected quality, not preview
+    }
+  });
+
   it("optimizeWithAi absent: behavior is EXACTLY today (no intelState, full samples)", async () => {
     seedQualityMocks();
 

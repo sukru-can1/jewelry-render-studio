@@ -20,6 +20,10 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db/prisma";
 import { env, resolveAppBaseUrl } from "@/lib/env";
 import { workerModelUrl } from "@/lib/blob";
+import {
+  isMasterSceneRecipe,
+  MASTER_SCENE_BLOB_PATH,
+} from "@/lib/master-scene-recipes";
 import { submitRunPod } from "@/lib/runpod";
 
 import type { Prisma } from "@prisma/client";
@@ -109,6 +113,17 @@ export async function dispatchQueuedJobs(): Promise<DispatchResult> {
         webhook: webhookUrl,
       };
       if (model) input.model = model;
+
+      // Master-scene pipeline: a recipe carrying master_scene.enabled renders
+      // INSIDE the human-authored studio .blend (v203 quality road). Mint a
+      // fresh presigned GET for the PRIVATE studio file per submit — same
+      // tokenless-worker-download contract as the model URL above.
+      if (isMasterSceneRecipe(job.recipe)) {
+        input.master_scene = {
+          url: await workerModelUrl(MASTER_SCENE_BLOB_PATH),
+          pathname: MASTER_SCENE_BLOB_PATH,
+        };
+      }
 
       const res = (await submitRunPod(input)) as { id: string };
 

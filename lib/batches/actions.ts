@@ -203,8 +203,13 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
   //      opted in AND OPENAI_API_KEY is present AND the global toggle is not
   //      "false". When OFF, everything below is EXACTLY the classic path —
   //      intelState/intel stay absent and the selected quality renders directly.
+  //      MASTER-SCENE EXCLUSION: the loop's knobs (worldStrength, cardDarkness,
+  //      contactShadow…) move PROCEDURAL recipe surfaces that the studio .blend
+  //      owns in the master pipeline — an adjusted re-dispatch would silently
+  //      no-op or fight the hand-tuned studio, so master batches render classic.
   const intelligenceOn =
     selection.optimizeWithAi === true &&
+    selection.pipeline !== "master" &&
     Boolean(env.OPENAI_API_KEY) &&
     env.ADAPTIVE_INTELLIGENCE_ENABLED !== "false";
 
@@ -227,7 +232,8 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
   });
 
   // Expand to one combo + generated recipe per (angle × metal × pass). Recipes are
-  // produced by buildEnterpriseRecipe (reuse, never hand-built) — T-03-06. For an
+  // produced by the validated pipeline's generator — buildEnterpriseRecipe, or
+  // buildMasterSceneRecipe for "master" (reuse, never hand-built) — T-03-06. For an
   // intelligence batch, renderQuality is the LOW preview preset (the loop's seed
   // pass); otherwise it is the operator-selected quality, exactly as before.
   const expanded = expandCombos({
@@ -239,6 +245,7 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
     resolution: renderQuality.width,
     samples: renderQuality.samples,
     stoneMaterials,
+    pipeline: selection.pipeline,
   });
 
   // INTEL-04: the per-job seed trace. `request` persists the serializable
@@ -275,6 +282,7 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
     stoneTypeByGroup: selection.stoneTypeByGroup,
     passes: selection.passes,
     qualityKey: selection.qualityKey,
+    pipeline: selection.pipeline,
     resolvedAngles: angles,
     resolvedMetals,
     resolvedPasses: passes,

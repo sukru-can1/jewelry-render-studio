@@ -181,6 +181,60 @@ describe("expandCombos (BATCH-07/03)", () => {
     expect(diamondEntry?.material).toBe("stone_ruby");
   });
 
+  it('pipeline:"master" routes every combo through buildMasterSceneRecipe (master_scene block, master_ name)', () => {
+    const passes = buildPasses(["diamond"], ["metal", "diamond"]);
+    const rows = expandCombos({
+      angles: ["hero", "front"],
+      metals: ["white"],
+      passes,
+      groupTokens,
+      productName: "Ring 99",
+      resolution: 1024,
+      samples: 128,
+      stoneMaterials: { diamond: "diamond", stone2: "diamond", stone3: "diamond" },
+      pipeline: "master",
+    });
+    // Same cartesian count + combo coordinates as the procedural pipeline —
+    // only the recipe generator changes.
+    expect(rows).toHaveLength(2 * 1 * 3);
+    for (const row of rows) {
+      const recipe = row.recipe as {
+        name: string;
+        master_scene: { enabled: boolean };
+        enterprise: Record<string, unknown>;
+      };
+      expect(recipe.master_scene.enabled).toBe(true);
+      expect(recipe.name.startsWith("master_")).toBe(true);
+      expect(recipe.enterprise.workflow).toBe("master_scene_catalog");
+      expect(recipe.enterprise.angle).toBe(row.combo.angleKey);
+      expect(recipe.enterprise.pass).toBe(row.combo.pass);
+    }
+  });
+
+  it('absent pipeline and pipeline:"procedural" are byte-identical (no master_scene block)', () => {
+    const passes = buildPasses(["diamond"], ["metal", "diamond"]);
+    const base = {
+      angles: ["hero"] as const,
+      metals: ["white"] as const,
+      passes,
+      groupTokens,
+      productName: "Ring 99",
+      resolution: 1024,
+      samples: 128,
+      stoneMaterials: {
+        diamond: "diamond",
+        stone2: "diamond",
+        stone3: "diamond",
+      } as const,
+    };
+    const absent = expandCombos(base);
+    const explicit = expandCombos({ ...base, pipeline: "procedural" });
+    expect(JSON.stringify(explicit)).toBe(JSON.stringify(absent));
+    for (const row of absent) {
+      expect((row.recipe as Record<string, unknown>).master_scene).toBeUndefined();
+    }
+  });
+
   it("deterministic nested order: angle outer, metal middle, pass inner (full leads)", () => {
     const passes = buildPasses(["diamond"], ["metal", "diamond"]);
     const rows = expandCombos({
