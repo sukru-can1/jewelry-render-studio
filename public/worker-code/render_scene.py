@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-master-scene-r10"
+WORKER_BUILD = "20260612-master-scene-r11"
 
 
 DEFAULT_RECIPE = {
@@ -464,20 +464,29 @@ def apply_master_camera_orbit(config, reference):
         camera.data.shift_x = 0.0
         camera.data.shift_y = 0.0
     camera.data.clip_start = min(camera.data.clip_start, distance * 0.05)
-    camera.data.dof.use_dof = True
+    # DOF: OFF unless the recipe explicitly asks (catalog packshots are sharp
+    # everywhere). The legacy f/2.8 preset belonged to its auto-camera path —
+    # at THIS macro scale (85mm at ~0.08m) f/2.8 focused on the ring center
+    # blurred band AND head (live batch cmqaststr hero/front).
     camera.data.dof.focus_object = None
-    camera.data.dof.focus_distance = distance
-    camera.data.dof.aperture_fstop = float(orbit.get("fstop", 2.8))
+    if "fstop" in orbit:
+        camera.data.dof.use_dof = True
+        camera.data.dof.focus_distance = distance
+        camera.data.dof.aperture_fstop = float(orbit["fstop"])
+    else:
+        camera.data.dof.use_dof = False
     print(
         f"MASTER_ORBIT: az={math.degrees(az):.1f} el={math.degrees(el):.1f} "
-        f"dist={distance:.5f} lens={camera.data.lens:.1f} fstop={camera.data.dof.aperture_fstop}"
+        f"dist={distance:.5f} lens={camera.data.lens:.1f} "
+        f"dof={'f/' + str(camera.data.dof.aperture_fstop) if camera.data.dof.use_dof else 'off'}"
     )
     return {
         "azimuth": math.degrees(az),
         "elevation": math.degrees(el),
         "distance": distance,
         "focal_length": camera.data.lens,
-        "fstop": camera.data.dof.aperture_fstop,
+        "use_dof": camera.data.dof.use_dof,
+        "fstop": camera.data.dof.aperture_fstop if camera.data.dof.use_dof else None,
     }
 
 

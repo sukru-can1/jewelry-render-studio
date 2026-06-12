@@ -44,6 +44,12 @@
 //      as master_scene.camera_orbit (worker r10). Product pose is zeroed
 //      (reference pose, upright); exposure is the uniform v203a -0.94.
 //      MASTER_POSES stays exported as the close-up provenance set.
+//   5. (FULL + STONE) orbit DOF off by default: the legacy f/2.8 preset at
+//      this macro scale (85mm, ~0.08m) blurred band AND head (live batch
+//      cmqaststr hero/front) — it belonged to the legacy auto-camera path,
+//      not the authored-camera path. camera_orbit no longer emits fstop;
+//      the worker (r11) renders orbit views DOF-OFF unless an explicit
+//      fstop override is present.
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
@@ -59,9 +65,9 @@ import {
 import { buildMasterSceneRecipe as buildFromSibling } from "@/lib/master-scene-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "0028a9f0722cd8b980b66cfdf2a2d030eca4e879276320f7459fd68ef603abd4";
+  "ea2a474357d95f6a56e83e504a720f53c760b2907bfe78b2a4ae5fe1111aa46e";
 const GOLDEN_STONE_SHA256 =
-  "28db2e603d215ec0f8b3a16cf8628faeb367d8f772332ecb3a5adde8b4258153";
+  "96dcd895cfee53604880764625f77fb2f811fb3e3d5bf98a992bfe39db973131";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -172,12 +178,13 @@ describe("angle -> catalog orbit (the legacy Flask app's four views; regeneratio
         ...reqFull,
         angle: angle as EnterpriseRecipeRequest["angle"],
       }) as AnyRecipe;
+      // No fstop key — the worker renders orbit views DOF-OFF (sharp
+      // packshot; regeneration note 5).
       expect(recipe.master_scene.camera_orbit).toEqual({
         azimuth: orbit.azimuth,
         elevation: orbit.elevation,
         distance_scale: orbit.distance_scale,
         focal_length: orbit.focal_length,
-        fstop: 2.8,
       });
       // Product stays in the REFERENCE pose — the camera moves, not the ring.
       expect(recipe.master_scene.pose_rotation_degrees).toEqual([0, 0, 0]);

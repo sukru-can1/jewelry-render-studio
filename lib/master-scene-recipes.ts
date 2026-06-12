@@ -511,12 +511,14 @@ export function buildMasterSceneRecipe(
       pose_rotation_degrees: [0, 0, 0],
       pose_scale: 1.0,
       pose_translation: [0, 0, 0],
+      // No fstop key -> the worker renders the orbit DOF-OFF (sharp packshot;
+      // the legacy f/2.8 preset blurred band AND head at this macro scale —
+      // live batch cmqaststr). fstop stays available as an explicit override.
       camera_orbit: {
         azimuth: orbit.azimuth,
         elevation: orbit.elevation,
         distance_scale: orbit.distanceScale,
         focal_length: orbit.focalLength,
-        fstop: 2.8,
       },
       // NO depth_of_field override: the authored camera's DOF IS the look.
       // Products are normalized onto the reference envelope, so the artist's
