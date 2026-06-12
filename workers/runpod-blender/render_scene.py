@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-white-sweep-r4"
+WORKER_BUILD = "20260612-bounds-guard-r5"
 
 
 DEFAULT_RECIPE = {
@@ -1414,6 +1414,26 @@ def object_image_bounds(objects):
         # not render at all, and holdout objects only punch alpha.
         if obj.hide_render or getattr(obj, "is_holdout", False):
             continue
+        # Frustum-validity gate (live-render fix): world_to_camera_view returns
+        # MEANINGLESS x/y for points BEHIND the camera plane — min/maxing those
+        # garbage values produced a clamped rectangle pinned at a frame edge
+        # (a ring-mounted diamond reported bounds_norm centered at ~(0.97,
+        # 0.44)), which made diamond_facets paint its synthetic star at the
+        # right edge ("detached diamond") and replace_studio_background protect
+        # the wrong region. Project all 8 bounding-box corners; EVERY corner
+        # must be in front of the camera (view depth z > 0) or the object is
+        # OMITTED. The bbox is the convex hull of the mesh, so 8 valid corners
+        # guarantee every sampled vertex projects meaningfully. Conservative by
+        # design: partial frustum visibility = no entry — we only emit RELIABLE
+        # rectangles. Both postprocess consumers handle a missing entry safely
+        # (diamond_facets fallback "skip" skips the stage; studio_background
+        # falls back to its luminance mask).
+        corner_depths = [
+            world_to_camera_view(scene, camera, obj.matrix_world @ Vector(corner)).z
+            for corner in obj.bound_box
+        ]
+        if len(corner_depths) < 8 or any(depth <= 0.0 for depth in corner_depths):
+            continue
         projected = []
         mesh = obj.data
         vertices = getattr(mesh, "vertices", [])
@@ -1438,6 +1458,11 @@ def object_image_bounds(objects):
         y0 = max(0.0, raw_y0)
         y1 = min(1.0, raw_y1)
         if x1 <= x0 or y1 <= y0:
+            continue
+        # Degenerate full-frame guard: a near-frame-filling rectangle carries
+        # no targeting information (and usually means the projection was not
+        # trustworthy) — omit it rather than hand consumers an unreliable box.
+        if (x1 - x0) > 0.98 or (y1 - y0) > 0.98:
             continue
         material_names = [slot.material.name for slot in obj.material_slots if slot.material]
         bounds.append(
