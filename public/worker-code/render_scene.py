@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-bounds-guard-r5"
+WORKER_BUILD = "20260612-debug-fx-r6"
 
 
 DEFAULT_RECIPE = {
@@ -1016,6 +1016,35 @@ def setup_world(recipe):
         bg.inputs["Strength"].default_value = recipe["world"].get("strength", 0.18)
 
 
+def dump_transform_debug(objects):
+    """Per-object transform forensics (recipe.debug_transforms): compares the
+    raw matrix_world against the depsgraph-EVALUATED world matrix — any
+    difference is exactly the set-vs-rendered divergence we are hunting —
+    and records delta transforms / parenting that could cause it."""
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    rows = []
+    for obj in objects:
+        evaluated = obj.evaluated_get(depsgraph)
+        raw = [list(row) for row in obj.matrix_world]
+        ev = [list(row) for row in evaluated.matrix_world]
+        diverged = any(
+            abs(raw[i][j] - ev[i][j]) > 1e-4 for i in range(4) for j in range(4)
+        )
+        rows.append({
+            "name": obj.name,
+            "parent": obj.parent.name if obj.parent else None,
+            "diverged": diverged,
+            "delta_location": list(obj.delta_location),
+            "delta_rotation_euler": list(obj.delta_rotation_euler),
+            "delta_scale": list(obj.delta_scale),
+            "constraints": [c.type for c in obj.constraints],
+            "modifiers": [m.type for m in obj.modifiers],
+            "raw_world_translation": raw[0][3:4] + raw[1][3:4] + raw[2][3:4],
+            "evaluated_world_translation": ev[0][3:4] + ev[1][3:4] + ev[2][3:4],
+        })
+    return rows
+
+
 def make_floor_sweep_material(name, color, roughness, specular, camera_strength):
     """Catalog white-sweep floor: Light Path mix — camera rays get a pure white
     emission (exact uniform pixels, immune to grazing-angle shading/shadow
@@ -1554,6 +1583,14 @@ def main():
                 "overlay_objects": [obj.name for obj in overlay_objects],
                 "object_image_bounds": image_bounds,
                 "materials": [material.name for material in bpy.data.materials],
+                # debug_transforms (recipe flag): per-object transform forensics —
+                # raw matrix_world vs the DEPSGRAPH-EVALUATED matrix, plus delta
+                # transforms and parenting. Diagnoses set-vs-rendered divergence.
+                **(
+                    {"debug_transforms": dump_transform_debug(objects)}
+                    if recipe.get("debug_transforms")
+                    else {}
+                ),
             },
             indent=2,
         ),
