@@ -115,6 +115,10 @@ const TODAY_CARD_COLORS = [
   [0.38, 0.38, 0.383, 1],
   [0.025, 0.025, 0.028, 1],
   [0.055, 0.055, 0.06, 1],
+  // upright-pose rim cards (golden note 11)
+  [0.03, 0.03, 0.035, 1],
+  [0.05, 0.05, 0.055, 1],
+  [0.05, 0.05, 0.055, 1],
 ];
 
 type AnyRecipe = Record<string, any>;
