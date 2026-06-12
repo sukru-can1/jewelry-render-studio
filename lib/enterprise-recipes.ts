@@ -480,9 +480,13 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
     // sha256 in test/intel-overrides.test.ts unchanged).
     postprocess: {
       studio_background: {
-        // OUT-01 / D-1: disable the opaque studio floor/background for stone passes so
-        // it is NOT composited over the transparent holdout's alpha; metal/full keep it.
-        enabled: request.pass !== "stone",
+        // DISABLED for ALL passes (live E2E root-cause): the painted sweep
+        // ERASES real product pixels — its protect mask is hard-gated by
+        // object_image_bounds, and the frustum guard rightly omits borderline
+        // objects, so the ring's upper half was painted over. The in-render
+        // background is now clipped TRUE WHITE (Light Path floor sweep +
+        // camera-only backdrop, worker r4+), making the 2D repaint redundant.
+        enabled: false,
         // WHITE-SWEEP CALIBRATION (worker build r4+): the Light Path floor/
         // backdrop now renders clipped TRUE WHITE to camera. The painted sweep
         // must sit just under that raw white — the previous darker greys made

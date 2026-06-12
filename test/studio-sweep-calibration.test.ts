@@ -79,9 +79,9 @@ describe("postprocess.studio_background — white-sweep color calibration", () =
     expect(sweep.vignette as number).toBeLessThanOrEqual(4);
   });
 
-  it("enabled-flag contract unchanged: on for full/metal, off for stone", () => {
-    expect(studioBackground(buildEnterpriseRecipe(request({ pass: "full" }))).enabled).toBe(true);
-    expect(studioBackground(buildEnterpriseRecipe(request({ pass: "metal" }))).enabled).toBe(true);
+  it("enabled-flag contract: DISABLED for all passes (the 2D repaint erased product pixels; raw bg is true white)", () => {
+    expect(studioBackground(buildEnterpriseRecipe(request({ pass: "full" }))).enabled).toBe(false);
+    expect(studioBackground(buildEnterpriseRecipe(request({ pass: "metal" }))).enabled).toBe(false);
     expect(
       studioBackground(buildEnterpriseRecipe(request({ pass: "stone", stoneGroup: "diamond" }))).enabled,
     ).toBe(false);

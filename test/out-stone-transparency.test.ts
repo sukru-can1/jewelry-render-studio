@@ -165,12 +165,12 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
     });
   }
 
-  it("METAL pass: opaque, studio_background on, pass_hide_contains = ALL stone tokens, no holdout, no pass-level include/exclude", () => {
+  it("METAL pass: opaque, studio_background OFF (2D repaint retired), pass_hide_contains = ALL stone tokens, no holdout, no pass-level include/exclude", () => {
     const recipe = buildEnterpriseRecipe(request({ pass: "metal", stoneGroup: undefined }));
 
     const render = recipe.render as Record<string, unknown>;
     expect(render.transparent).toBe(false);
-    expect(studioBackgroundEnabled(recipe)).toBe(true);
+    expect(studioBackgroundEnabled(recipe)).toBe(false);
     // The floor stays camera-visible on opaque passes — the key is NOT emitted.
     expect("visible_camera" in (recipe.background as Record<string, unknown>)).toBe(false);
 
@@ -249,14 +249,14 @@ describe("buildEnterpriseRecipe — layered-pass visibility contract (OUT-01)", 
     }
   });
 
-  it("FULL pass is unchanged: opaque, studio_background on, and emits NEITHER pass visibility field", () => {
+  it("FULL pass: opaque, studio_background OFF (2D repaint retired), and emits NEITHER pass visibility field", () => {
     const recipe = buildEnterpriseRecipe(
       request({ pass: "full", stoneGroup: undefined }),
     );
 
     const render = recipe.render as Record<string, unknown>;
     expect(render.transparent).toBe(false);
-    expect(studioBackgroundEnabled(recipe)).toBe(true);
+    expect(studioBackgroundEnabled(recipe)).toBe(false);
     // The floor stays camera-visible on opaque passes — the key is NOT emitted.
     expect("visible_camera" in (recipe.background as Record<string, unknown>)).toBe(false);
 

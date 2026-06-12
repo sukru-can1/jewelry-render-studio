@@ -77,7 +77,7 @@ import {
 //     products; without them an upright ring's crown rendered contrast-less
 //     white-on-white and visually vanished.
 const GOLDEN_FULL_SHA256 =
-  "cb10ebfaeec1974773a550d7460cee0dfe59a27ede84f96b706085154ce76248";
+  "c15183e7df39a600a2ce983249e664cd2d74e8281940c5b91a5bdcbd837ca599";
 const GOLDEN_STONE_SHA256 =
   "e17d6044c00929eee38f414604c1865cb31715d55b3df63f3bf6cb10749c491b";
 
