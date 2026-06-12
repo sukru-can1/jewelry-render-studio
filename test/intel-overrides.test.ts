@@ -72,10 +72,14 @@ import {
   type EnterpriseRecipeRequest,
 } from "@/lib/enterprise-recipes";
 
+// 11. (FULL + STONE) upright-pose rim cards added (crown/left/right) — the
+//     normalized envelope is deterministic, so static cards serve all
+//     products; without them an upright ring's crown rendered contrast-less
+//     white-on-white and visually vanished.
 const GOLDEN_FULL_SHA256 =
-  "d38d67ae954aaf4e5a6256b16379bcd4fdf0b954081e6b62daf05529c2d38705";
+  "cb10ebfaeec1974773a550d7460cee0dfe59a27ede84f96b706085154ce76248";
 const GOLDEN_STONE_SHA256 =
-  "2a4f04a66827ef5de553a5ce0df2b503ffdc7559ee4306445ae2f22d6184c492";
+  "e17d6044c00929eee38f414604c1865cb31715d55b3df63f3bf6cb10749c491b";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",

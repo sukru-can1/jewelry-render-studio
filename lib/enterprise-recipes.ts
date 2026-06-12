@@ -422,6 +422,37 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
         size: [3.7, 0.62],
         color: [0.055, 0.055, 0.06, 1],
         visible_to_camera: false
+      },
+      // Upright-pose rim cards (live E2E fix): after normalization every
+      // product occupies the same envelope (max-dim ~2.05, grounded at the
+      // origin), so static cards serve all products. The original card set was
+      // placed for low/flat poses — an upright ring's CROWN (z≈1.4–2.1) had no
+      // dark reflector nearby, so its polished white metal rendered
+      // contrast-less against the white backdrop and the upper half visually
+      // vanished (codex lesson: dark cards create readable metal edges).
+      {
+        name: "crown_dark_rim_card",
+        position: [0.0, 0.9, 3.1],
+        rotation_degrees: [-38, 0, 0],
+        size: [4.2, 1.6],
+        color: [0.03, 0.03, 0.035, 1],
+        visible_to_camera: false
+      },
+      {
+        name: "left_rim_contrast",
+        position: [-2.3, 0.2, 1.7],
+        rotation_degrees: [0, 62, 0],
+        size: [1.1, 2.6],
+        color: [0.05, 0.05, 0.055, 1],
+        visible_to_camera: false
+      },
+      {
+        name: "right_rim_contrast",
+        position: [2.3, 0.2, 1.7],
+        rotation_degrees: [0, -62, 0],
+        size: [1.1, 2.6],
+        color: [0.05, 0.05, 0.055, 1],
+        visible_to_camera: false
       }
     ],
     contact_shadows: [
