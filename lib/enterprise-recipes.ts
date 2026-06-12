@@ -73,11 +73,26 @@ const STONE_PRESETS: Record<EnterpriseStoneMaterial, Record<string, unknown>> = 
   }
 };
 
+// AUTO-FRAME (live fix): auto_orient stands uploaded models upright (z spans
+// ~[0, 2.05] after ground_to_plane), but these camera presets were hand-tuned
+// on a low/flat pose — on an upright ring they frame the band's bottom arc and
+// crop the head (stones) above the frame. Retuning four presets by hand is
+// fragile across product shapes, so every preset emits auto_frame: true: the
+// worker keeps the preset's LOOK DIRECTION (position/target stay as the
+// directional intent) but re-targets the full-product bbox center and
+// recomputes the distance to fit the bbox into the FOV (worker-default
+// frame_margin 1.18 — emit camera.frame_margin only to override it).
 const ANGLES: Record<
   EnterpriseAngleKey,
   {
     label: string;
-    camera: { position: number[]; target: number[]; focal_length: number; depth_of_field: Record<string, unknown> };
+    camera: {
+      position: number[];
+      target: number[];
+      focal_length: number;
+      auto_frame: boolean;
+      depth_of_field: Record<string, unknown>;
+    };
     rotation: number[];
     targetSize: number;
   }
@@ -88,6 +103,7 @@ const ANGLES: Record<
       position: [-2.9, -4.25, 1.85],
       target: [0.0, 0.0, 0.32],
       focal_length: 92,
+      auto_frame: true,
       depth_of_field: { enabled: true, f_stop: 8.5 }
     },
     rotation: [-6, 0, 18],
@@ -99,6 +115,7 @@ const ANGLES: Record<
       position: [0.0, -4.55, 1.18],
       target: [0.0, 0.0, 0.28],
       focal_length: 98,
+      auto_frame: true,
       depth_of_field: { enabled: true, f_stop: 9.5 }
     },
     rotation: [-8, 0, 0],
@@ -110,6 +127,7 @@ const ANGLES: Record<
       position: [0.0, -4.35, 2.75],
       target: [0.0, 0.0, 0.1],
       focal_length: 92,
+      auto_frame: true,
       depth_of_field: { enabled: true, f_stop: 10.5 }
     },
     rotation: [0, 0, 0],
@@ -121,6 +139,7 @@ const ANGLES: Record<
       position: [3.0, -4.1, 1.95],
       target: [0.0, 0.0, 0.31],
       focal_length: 92,
+      auto_frame: true,
       depth_of_field: { enabled: true, f_stop: 8.5 }
     },
     rotation: [-6, 0, -22],

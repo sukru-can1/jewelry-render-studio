@@ -31,6 +31,13 @@
 //     spins the head to +Z before centering/scaling/grounding). The flag must
 //     be pass-identical so all layers share one orientation basis — both
 //     goldens regenerated for this one added model key.
+//  7. (FULL + STONE) deterministic auto-framing: camera.auto_frame: true is
+//     now emitted on EVERY pass — auto-orient stands models upright, so the
+//     flat-pose-tuned presets cropped the head (stones) above the frame. The
+//     worker keeps each preset's look direction but re-targets the full-product
+//     bbox center and recomputes the distance to fit the FOV. Pass-identical
+//     bbox basis keeps layers aligned — both goldens regenerated for this one
+//     added camera key.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -46,9 +53,9 @@ import {
 } from "@/lib/enterprise-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "2bf69460b6c00588ff7aef26b4e00183fffe1c502549eef3626e7c175d426f61";
+  "c5300b448d026a25fbaf3f6cdc79706aa602df5374ce3cde21e708ef679421a6";
 const GOLDEN_STONE_SHA256 =
-  "62f80f6bc53f82e8318e272781322d393e8f9e3ab75f7d158ae1c10ccd95e521";
+  "ea454ea67d4a4b6a6efc827e7840b193317b626c3607ed8ffccdd904ace1f736";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
