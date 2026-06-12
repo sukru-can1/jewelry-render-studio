@@ -36,7 +36,6 @@ import {
   FALLBACK_TOKENS,
   METAL_PRESETS,
   slug,
-  STONE_PRESETS,
   tokensFor,
   type EnterpriseAngleKey,
   type EnterpriseRecipeRequest,
@@ -226,6 +225,108 @@ const V203_REFLECTION_CARDS = [
   },
 ];
 
+// ─── The v203 MATERIAL LAW (ported verbatim from v203a_close_front_hero) ────
+//
+// Every good image in this repo wore the MASTER'S OWN materials — the recipes
+// never overrode the product with procedural shaders. The reference product's
+// materials survive in bpy.data after the swap deletes its objects, and the
+// worker's assign_materials already honors material_map.source_material +
+// source_material_adjust (the hybrid mechanism v203 used). Live E2E batch
+// cmqanibvd proved the procedural override reads chalky/washed by comparison.
+//
+// Source materials inside son2.blend (docs/MASTER_SCENE.md):
+//   "Dimond"                                — the center-stone diamond glass
+//   "MASTER_SCENE_clear_cut_diamond_glass"  — the side-stone diamond glass
+//   "MASTER_SCENE_realistic_polished_gold"  — the hero metal (retintable)
+
+/** v203a center-stone adjust, verbatim (the "Dimond" treatment). */
+const MASTER_CENTER_STONE_ADJUST = {
+  glass_color: [0.96, 0.985, 1.0, 1.0],
+  glass_color_mix: 0.045,
+  glass_roughness: 0.0,
+  ior: 2.417,
+  saturation_scale: 0.94,
+  hsv_value_scale: 0.53,
+  hsv_value_max: 0.86,
+  diffuse_color: [0.52, 0.56, 0.64, 1.0],
+};
+
+/** v203a side-stone adjust, verbatim (the clear-cut glass treatment). */
+const MASTER_SIDE_STONE_ADJUST = {
+  glass_color: [0.92, 0.965, 1.0, 1.0],
+  glass_color_mix: 0.02,
+  base_color: [0.5, 0.56, 0.66, 1.0],
+  base_color_mix: 0.08,
+  diffuse_color: [0.48, 0.54, 0.64, 1.0],
+  roughness: 0.0,
+  glass_roughness: 0.0,
+  ior: 2.417,
+  saturation_scale: 0.7,
+  hsv_value_scale: 0.64,
+  hsv_value_max: 0.95,
+};
+
+/**
+ * v203a metal adjust per enterprise metal. WHITE is the proven v203a tint
+ * (the entire ring99 contact sheet is this exact retint of the master gold);
+ * YELLOW keeps the master gold's native color (no base_color override);
+ * ROSE retints with the rose preset base through the same v203a shape.
+ */
+const MASTER_METAL_ADJUST: Record<EnterpriseRecipeRequest["metal"], Record<string, unknown>> = {
+  white: {
+    base_color: [0.372, 0.392, 0.424, 1.0],
+    base_color_mix: 1.0,
+    diffuse_color: [0.372, 0.392, 0.424, 1.0],
+    metallic: 1.0,
+    roughness: 0.29,
+    specular_ior_level: 0.4,
+  },
+  yellow: {
+    metallic: 1.0,
+    roughness: 0.29,
+    specular_ior_level: 0.4,
+  },
+  rose: {
+    base_color: [0.78, 0.5, 0.42, 1.0],
+    base_color_mix: 1.0,
+    diffuse_color: [0.78, 0.5, 0.42, 1.0],
+    metallic: 1.0,
+    roughness: 0.29,
+    specular_ior_level: 0.4,
+  },
+};
+
+/**
+ * Colored-stone tints over the master glass: keep the v203 facet behavior but
+ * push the glass color hard toward the gem color (diamond returns the verbatim
+ * v203a adjusts above instead).
+ */
+const MASTER_GEM_TINTS: Record<string, { color: number[]; ior: number }> = {
+  sapphire: { color: [0.07, 0.16, 0.62, 1.0], ior: 1.77 },
+  emerald: { color: [0.05, 0.42, 0.25, 1.0], ior: 1.58 },
+  ruby: { color: [0.65, 0.03, 0.08, 1.0], ior: 1.76 },
+};
+
+/** Stone adjust for a group: diamond = verbatim v203a; gems = tinted glass. */
+function masterStoneAdjust(
+  stoneMaterial: string,
+  placement: "center" | "side",
+): Record<string, unknown> {
+  const base = placement === "center" ? MASTER_CENTER_STONE_ADJUST : MASTER_SIDE_STONE_ADJUST;
+  const tint = MASTER_GEM_TINTS[stoneMaterial];
+  if (!tint) return { ...base };
+  return {
+    ...base,
+    glass_color: tint.color,
+    glass_color_mix: 0.9,
+    ior: tint.ior,
+    saturation_scale: 1.0,
+    hsv_value_scale: 1.0,
+    hsv_value_max: 1.0,
+    diffuse_color: tint.color,
+  };
+}
+
 // Stone passes: studio surfaces that must keep LIGHTING the stones but stop
 // painting camera pixels (legacy lesson: never delete the floor for stone
 // layers — visible_camera=false only). Tokens mirror the legacy _is_studio
@@ -254,16 +355,43 @@ export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record
   const visibility = buildVisibility(request);
   const metal = METAL_PRESETS[request.metal];
 
-  // Same material routing as the procedural enterprise pipeline: saved group
-  // tokens first (metal preset by request.metal, stone material per group),
-  // then the fallback nets.
+  // Same group-token ROUTING as the procedural pipeline (saved tokens first,
+  // then the fallback nets) — but every rule sources the MASTER'S material and
+  // adjusts it the v203a way. The diamond group is the CENTER treatment
+  // ("Dimond"); stone2/stone3 are SIDE treatments (clear-cut glass); metal is
+  // the master gold retinted per the selected metal.
+  const metalAdjust = MASTER_METAL_ADJUST[request.metal];
   const materialMap = [
-    { contains: tokensFor(request.groupTokens, "diamond"), material: `stone_${request.stoneMaterials.diamond}` },
-    { contains: tokensFor(request.groupTokens, "stone2"), material: `stone_${request.stoneMaterials.stone2}` },
-    { contains: tokensFor(request.groupTokens, "stone3"), material: `stone_${request.stoneMaterials.stone3}` },
-    { contains: tokensFor(request.groupTokens, "alloycolour"), material: "selected_metal" },
-    { contains: FALLBACK_TOKENS.diamond, material: "stone_diamond" },
-    { contains: FALLBACK_TOKENS.alloycolour, material: "selected_metal" },
+    {
+      contains: tokensFor(request.groupTokens, "diamond"),
+      source_material: "Dimond",
+      source_material_adjust: masterStoneAdjust(request.stoneMaterials.diamond, "center"),
+    },
+    {
+      contains: tokensFor(request.groupTokens, "stone2"),
+      source_material: "MASTER_SCENE_clear_cut_diamond_glass",
+      source_material_adjust: masterStoneAdjust(request.stoneMaterials.stone2, "side"),
+    },
+    {
+      contains: tokensFor(request.groupTokens, "stone3"),
+      source_material: "MASTER_SCENE_clear_cut_diamond_glass",
+      source_material_adjust: masterStoneAdjust(request.stoneMaterials.stone3, "side"),
+    },
+    {
+      contains: tokensFor(request.groupTokens, "alloycolour"),
+      source_material: "MASTER_SCENE_realistic_polished_gold",
+      source_material_adjust: metalAdjust,
+    },
+    {
+      contains: FALLBACK_TOKENS.diamond,
+      source_material: "MASTER_SCENE_clear_cut_diamond_glass",
+      source_material_adjust: masterStoneAdjust(request.stoneMaterials.diamond, "side"),
+    },
+    {
+      contains: FALLBACK_TOKENS.alloycolour,
+      source_material: "MASTER_SCENE_realistic_polished_gold",
+      source_material_adjust: metalAdjust,
+    },
   ];
 
   return {
@@ -316,20 +444,12 @@ export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record
       ...(visibility.hide.length ? { pass_hide_contains: visibility.hide } : {}),
       ...(visibility.holdout.length ? { pass_holdout_contains: visibility.holdout } : {}),
     },
-    material_strategy: "override",
+    // HYBRID, like v203a: rules dress matched objects in the master's own
+    // materials (source_material + adjust); an unmatched object keeps its
+    // imported material instead of falling back to a procedural preset.
+    material_strategy: "hybrid",
     material_map: materialMap,
-    materials: {
-      selected_metal: {
-        type: "metal",
-        base_color: metal.base,
-        metallic: 1.0,
-        roughness: metal.roughness,
-        specular_ior_level: 0.72,
-      },
-      stone_diamond: STONE_PRESETS.diamond,
-      stone_sapphire: STONE_PRESETS.sapphire,
-      stone_emerald: STONE_PRESETS.emerald,
-      stone_ruby: STONE_PRESETS.ruby,
-    },
+    // No procedural presets — the master .blend is the material source.
+    materials: {},
   };
 }

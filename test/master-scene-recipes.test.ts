@@ -9,12 +9,22 @@
 //      enabled / reference_contains / pose_* / adjustments / camera hide.
 //   3. The angle -> pose mapping ported 1:1 from the proven v203a..e recipes
 //      (outputs/ring99/recipes/) — rotation/scale/translation/exposure.
-//   4. material_map routing from saved groupTokens (metal preset by
-//      request.metal, stone material per group) + fallback nets — the SAME
-//      dialect as buildEnterpriseRecipe.
+//   4. material_map routing from saved groupTokens + fallback nets — the SAME
+//      token dialect as buildEnterpriseRecipe, but every rule sources the
+//      MASTER's materials (v203a law, see regeneration note below).
 //   5. Layered-pass visibility: metal -> pass_hide_contains, stone ->
 //      pass_holdout_contains + transparent film + camera_hide_contains,
 //      full -> neither.
+//
+// GOLDEN regenerations:
+//   1. (FULL + STONE) v203a MATERIAL LAW port (live-E2E fix, batch cmqanibvd):
+//      the procedural override materials rendered chalky stones / washed metal
+//      vs the v203 contact sheet. material_strategy override -> hybrid; every
+//      material_map rule now carries source_material ("Dimond" for the center
+//      group, "MASTER_SCENE_clear_cut_diamond_glass" for side groups,
+//      "MASTER_SCENE_realistic_polished_gold" for metal) +
+//      source_material_adjust ported VERBATIM from v203a_close_front_hero
+//      (white metal = the proven [0.372,0.392,0.424] retint); materials: {}.
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
@@ -29,9 +39,9 @@ import {
 import { buildMasterSceneRecipe as buildFromSibling } from "@/lib/master-scene-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "eac0c9a291343a7baafc548c505cbd01019611cb058b5cb5db8e3b029d15c687";
+  "c0c68f23b0e5a52b225ad20ba738b76783be2206d6f79af26ef9e791bc6d7787";
 const GOLDEN_STONE_SHA256 =
-  "84f59eaf2a531b97c004d3dccce914b6853b13256a7bc0607170bf4299762637";
+  "e5be0ced4a9401e3c0b0de522bb53484782b541bcfea4f212a25eee34eff15ae";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -183,38 +193,78 @@ describe("angle -> pose mapping (ported 1:1 from v203a..e; provenance in pose_so
   });
 });
 
-describe("material_map from groupTokens (same dialect as buildEnterpriseRecipe)", () => {
+describe("material_map — the v203a MASTER material law (source_material rules)", () => {
   const recipe = buildMasterSceneRecipe(reqFull) as AnyRecipe;
 
-  it("routes saved tokens first, then the fallback nets", () => {
-    expect(recipe.material_map[0]).toEqual({
-      contains: ["center_diamond glass"],
-      material: "stone_diamond",
-    });
-    expect(recipe.material_map[3]).toEqual({
-      contains: ["band_metal gold"],
-      material: "selected_metal",
-    });
-    expect(recipe.material_map[4].material).toBe("stone_diamond");
-    expect(recipe.material_map[5].material).toBe("selected_metal");
+  it("routes saved tokens first, then the fallback nets — every rule sources a master material", () => {
+    expect(recipe.material_map[0].contains).toEqual(["center_diamond glass"]);
+    expect(recipe.material_map[0].source_material).toBe("Dimond");
+    expect(recipe.material_map[3].contains).toEqual(["band_metal gold"]);
+    expect(recipe.material_map[3].source_material).toBe(
+      "MASTER_SCENE_realistic_polished_gold",
+    );
+    expect(recipe.material_map[4].source_material).toBe(
+      "MASTER_SCENE_clear_cut_diamond_glass",
+    );
+    expect(recipe.material_map[5].source_material).toBe(
+      "MASTER_SCENE_realistic_polished_gold",
+    );
+    for (const rule of recipe.material_map) {
+      expect(rule.material).toBeUndefined(); // no procedural preset names anywhere
+      expect(rule.source_material_adjust).toBeTruthy();
+    }
   });
 
-  it("selected_metal carries the request.metal preset (white)", () => {
-    expect(recipe.material_strategy).toBe("override");
-    expect(recipe.materials.selected_metal).toEqual({
-      type: "metal",
-      base_color: [0.42, 0.435, 0.455, 1.0],
+  it("hybrid strategy + empty materials block (the master .blend IS the material source)", () => {
+    expect(recipe.material_strategy).toBe("hybrid");
+    expect(recipe.materials).toEqual({});
+  });
+
+  it("white metal carries the PROVEN v203a retint of the master gold", () => {
+    expect(recipe.material_map[3].source_material_adjust).toEqual({
+      base_color: [0.372, 0.392, 0.424, 1.0],
+      base_color_mix: 1.0,
+      diffuse_color: [0.372, 0.392, 0.424, 1.0],
       metallic: 1.0,
       roughness: 0.29,
-      specular_ior_level: 0.72,
+      specular_ior_level: 0.4,
     });
   });
 
-  it("stone materials map per group through the shared presets", () => {
+  it("center diamond carries the verbatim v203a 'Dimond' adjust", () => {
+    expect(recipe.material_map[0].source_material_adjust).toEqual({
+      glass_color: [0.96, 0.985, 1.0, 1.0],
+      glass_color_mix: 0.045,
+      glass_roughness: 0.0,
+      ior: 2.417,
+      saturation_scale: 0.94,
+      hsv_value_scale: 0.53,
+      hsv_value_max: 0.86,
+      diffuse_color: [0.52, 0.56, 0.64, 1.0],
+    });
+  });
+
+  it("yellow metal keeps the master gold's native color (no base_color override)", () => {
+    const yellow = buildMasterSceneRecipe({ ...reqFull, metal: "yellow" }) as AnyRecipe;
+    const adjust = yellow.material_map[3].source_material_adjust;
+    expect(adjust.base_color).toBeUndefined();
+    expect(adjust.metallic).toBe(1.0);
+    expect(adjust.roughness).toBe(0.29);
+  });
+
+  it("colored stones tint the master glass toward the gem color (sapphire stone2)", () => {
     const stone = buildMasterSceneRecipe(reqStone) as AnyRecipe;
-    expect(stone.materials.selected_metal.base_color).toEqual([0.78, 0.5, 0.42, 1.0]); // rose
-    expect(stone.material_map[1].material).toBe("stone_sapphire"); // stone2 preset
-    expect(stone.materials.stone_sapphire.ior).toBe(1.77);
+    // rose metal retint flows through the same v203a shape
+    expect(stone.material_map[3].source_material_adjust.base_color).toEqual([
+      0.78, 0.5, 0.42, 1.0,
+    ]);
+    const sapphire = stone.material_map[1].source_material_adjust;
+    expect(stone.material_map[1].source_material).toBe(
+      "MASTER_SCENE_clear_cut_diamond_glass",
+    );
+    expect(sapphire.glass_color).toEqual([0.07, 0.16, 0.62, 1.0]);
+    expect(sapphire.glass_color_mix).toBe(0.9);
+    expect(sapphire.ior).toBe(1.77);
   });
 });
 
