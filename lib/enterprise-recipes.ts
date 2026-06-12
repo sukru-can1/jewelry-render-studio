@@ -482,7 +482,10 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       center_stone: {
         enabled: request.pass === "full",
         object_contains: centerTokens,
-        fallback_bounds_norm: [0.37, 0.32, 0.63, 0.66],
+        // NO fallback_bounds_norm (live E2E fix): when the stone bounds don't
+        // match (tiny/edge stones get omitted by the worker's frustum guard),
+        // the stage must SKIP — with the fallback ellipse it tinted a giant
+        // amber blob onto the clean white background of stone-less framings.
         padding_px: 12,
         autocontrast_cutoff: 0.5,
         contrast: 1.12,
@@ -498,7 +501,8 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       center_stone_symmetry: {
         enabled: request.pass === "full",
         object_contains: centerTokens,
-        fallback_bounds_norm: [0.37, 0.32, 0.63, 0.66],
+        // NO fallback_bounds_norm — skip on no-match (see center_stone note;
+        // the symmetry blend painted the lavender band across the fallback ellipse).
         padding_px: 22,
         mask_feather: 10,
         max_delta: 30,
@@ -515,7 +519,6 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
         // Emitted for ALL passes so the recipe stays the quality source; the
         // tuned ring99 look is untouched when bounds DO match confidently.
         fallback: "skip",
-        fallback_bounds_norm: [0.38, 0.33, 0.62, 0.65],
         facets: 24,
         dark_alpha: 0.13,
         light_alpha: 0.09,

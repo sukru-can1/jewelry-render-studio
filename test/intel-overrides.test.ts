@@ -53,6 +53,11 @@
 //     [253,253,252], floor_color [237,237,235] -> [249,249,247], vignette
 //     5.5 -> 4. Stone passes carry the same (disabled) block, so both goldens
 //     regenerated for these three value changes.
+// 10. (FULL + STONE) fallback-ellipse removal (live-render fix): center_stone /
+//     center_stone_symmetry / diamond_facets no longer carry
+//     fallback_bounds_norm — when stone bounds don't match (the worker's
+//     frustum guard omits tiny/edge stones) the stages now SKIP instead of
+//     painting an amber/lavender ellipse onto the clean white background.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -68,9 +73,9 @@ import {
 } from "@/lib/enterprise-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "ef44fba14b55513819ec259ebae7359e91afed7887f0434bc97cb0dfea9220f5";
+  "d38d67ae954aaf4e5a6256b16379bcd4fdf0b954081e6b62daf05529c2d38705";
 const GOLDEN_STONE_SHA256 =
-  "d791daa5c1a3371b047e48ad7f9e4fa5997dcaa370b41e8d4ac9f1effa94f7c9";
+  "2a4f04a66827ef5de553a5ce0df2b503ffdc7559ee4306445ae2f22d6184c492";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
