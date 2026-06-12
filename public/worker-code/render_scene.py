@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-backdrop-r3"
+WORKER_BUILD = "20260612-white-sweep-r4"
 
 
 DEFAULT_RECIPE = {
@@ -1016,6 +1016,46 @@ def setup_world(recipe):
         bg.inputs["Strength"].default_value = recipe["world"].get("strength", 0.18)
 
 
+def make_floor_sweep_material(name, color, roughness, specular, camera_strength):
+    """Catalog white-sweep floor: Light Path mix — camera rays get a pure white
+    emission (exact uniform pixels, immune to grazing-angle shading/shadow
+    contamination), all other rays get the matte diffuse floor so product
+    lighting/bounce stays physical. The standard Blender product-viz cheat."""
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    nodes.clear()
+
+    output = nodes.new("ShaderNodeOutputMaterial")
+    output.location = (520, 0)
+
+    mix = nodes.new("ShaderNodeMixShader")
+    mix.location = (300, 0)
+
+    light_path = nodes.new("ShaderNodeLightPath")
+    light_path.location = (0, 240)
+
+    principled = nodes.new("ShaderNodeBsdfPrincipled")
+    principled.location = (0, -60)
+    principled.inputs["Base Color"].default_value = [color[0], color[1], color[2], 1.0]
+    principled.inputs["Roughness"].default_value = float(roughness)
+    if "Specular IOR Level" in principled.inputs:
+        principled.inputs["Specular IOR Level"].default_value = float(specular)
+
+    emission = nodes.new("ShaderNodeEmission")
+    emission.location = (0, -280)
+    emission.inputs["Color"].default_value = [1.0, 1.0, 1.0, 1.0]
+    emission.inputs["Strength"].default_value = float(camera_strength)
+
+    # Fac = Is Camera Ray: 0 -> physical floor (lighting), 1 -> white sweep (camera)
+    links.new(light_path.outputs["Is Camera Ray"], mix.inputs["Fac"])
+    links.new(principled.outputs["BSDF"], mix.inputs[1])
+    links.new(emission.outputs["Emission"], mix.inputs[2])
+    links.new(mix.outputs["Shader"], output.inputs["Surface"])
+    return material
+
+
 def make_backdrop_material(name, color, strength):
     # Pure EMISSION shader (explicit node tree, like make_catalog_diamond_material):
     # the backdrop must paint exact pixels — a Principled BSDF would shade with
@@ -1061,7 +1101,7 @@ def add_catalog_backdrop(bg):
     sweep.name = "catalog_backdrop"
     color = backdrop.get("color", [1.0, 1.0, 1.0])
     sweep.data.materials.append(
-        make_backdrop_material("catalog_backdrop_emission", color, backdrop.get("strength", 1.0))
+        make_backdrop_material("catalog_backdrop_emission", color, backdrop.get("strength", 25.0))
     )
     # Camera-only visibility: paints pure backdrop pixels but contributes ZERO
     # light to the scene — every indirect light-path contribution is disabled
@@ -1086,17 +1126,31 @@ def setup_background(recipe):
     bpy.ops.mesh.primitive_plane_add(size=bg.get("plane_size", 8), location=(0, 0, bg.get("plane_z", -0.04)))
     plane = bpy.context.object
     plane.name = "catalog_shadow_plane"
-    # Floor material: recipe-tunable roughness/specular. The old hardcoded
-    # roughness 0.62 with default specular turned the floor into a grazing-angle
-    # MIRROR once auto_frame raised the camera target — studio cards/lights
-    # reflected across the backdrop as grey bands/rectangles. Default is now a
-    # matte sweep (roughness 1.0, specular ~0) so the backdrop reads as a clean
-    # white at any camera elevation; recipes may override via background.{roughness,specular}.
-    mat = make_material("catalog_warm_white", {
-        "base_color": bg.get("color", [0.98, 0.98, 0.965, 1]),
-        "roughness": bg.get("roughness", 1.0),
-        "specular_ior_level": bg.get("specular", 0.02),
-    })
+    # Floor material — the classic catalog "white sweep" Light Path trick
+    # (background.camera_white, default ON): CAMERA rays see a pure white
+    # emission (exact pixels — the clean sweep the catalog look demands at ANY
+    # camera elevation), while every other ray type sees the matte diffuse
+    # floor, so the product still receives physically-correct floor bounce and
+    # the studio stays unchanged for lighting. Contact-shadow discs are separate
+    # geometry drawn over the floor, so grounding survives. This replaced the
+    # plain matte floor, whose grazing-angle shading (soft shadow wedge +
+    # area-light pools) contaminated the background once auto_frame raised the
+    # camera target — and leaked into the studio_background postprocess's
+    # protected product rectangles as grey blocks.
+    if bg.get("camera_white", True):
+        mat = make_floor_sweep_material(
+            "catalog_warm_white",
+            bg.get("color", [0.98, 0.98, 0.965, 1]),
+            bg.get("roughness", 1.0),
+            bg.get("specular", 0.02),
+            bg.get("camera_white_strength", 25.0),
+        )
+    else:
+        mat = make_material("catalog_warm_white", {
+            "base_color": bg.get("color", [0.98, 0.98, 0.965, 1]),
+            "roughness": bg.get("roughness", 1.0),
+            "specular_ior_level": bg.get("specular", 0.02),
+        })
     plane.data.materials.append(mat)
     # background.visible_camera=false (stone passes): the floor must keep
     # LIGHTING the product — diffuse/glossy/transmission bounce preserved — but
