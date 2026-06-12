@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { requireSession } from "@/lib/auth/rbac";
+import { PageBreadcrumb } from "@/app/components/app-shell/page-breadcrumb";
 
 import { CreateProductForm } from "../create-product-form";
 
@@ -17,6 +18,9 @@ export default async function NewProductPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <PageBreadcrumb
+        items={[{ label: "Products", href: "/products" }, { label: "New" }]}
+      />
       <h1 className="text-xl font-semibold leading-tight text-foreground">
         New product
       </h1>

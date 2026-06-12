@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/lib/format";
 import { applyIntelDecision } from "@/lib/intelligence/operator-actions";
 import {
   DECISION_BADGE_CLASS,
@@ -342,7 +343,7 @@ function IntelReviewControls({ item }: { item: JobIntelView }) {
             : `${a.action}ed`}
         </Badge>
         <span>
-          reviewed {new Date(a.at).toLocaleString()} ·{" "}
+          reviewed {formatDateTime(a.at)} ·{" "}
           <span className="font-mono">{a.userId}</span>
         </span>
         {a.queuedJobId ? (

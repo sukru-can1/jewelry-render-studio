@@ -12,7 +12,7 @@ import {
   deriveBatchStatus,
   summarizeJobs,
 } from "@/lib/orchestration/batch-status";
-import { relativeTime } from "@/lib/format";
+import { formatDateTime, relativeTime } from "@/lib/format";
 import { Badge } from "@/app/components/ui/badge";
 import {
   Tabs,
@@ -22,6 +22,7 @@ import {
 } from "@/app/components/ui/tabs";
 
 import { loadAssignments } from "@/lib/products/assignments";
+import { PageBreadcrumb } from "@/app/components/app-shell/page-breadcrumb";
 
 import { BatchStatusPill } from "../../batches/status-pill";
 import { InspectPanel } from "./inspect-panel";
@@ -138,6 +139,13 @@ export default async function ProductDetailPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <PageBreadcrumb
+        items={[
+          { label: "Products", href: "/products" },
+          { label: product.name },
+        ]}
+      />
+
       <header className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold leading-tight text-foreground">
@@ -182,7 +190,7 @@ export default async function ProductDetailPage({
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Uploaded</dt>
                 <dd className="font-mono text-sm text-foreground">
-                  {new Date(product.createdAt).toISOString().slice(0, 16).replace("T", " ")}
+                  {formatDateTime(product.createdAt)}
                 </dd>
               </div>
               {modelHref ? (

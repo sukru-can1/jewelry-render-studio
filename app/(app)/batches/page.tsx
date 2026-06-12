@@ -10,6 +10,7 @@ import {
   summarizeJobs,
   type BatchProgress,
 } from "@/lib/orchestration/batch-status";
+import { relativeTime } from "@/lib/format";
 
 import { AggregateBar } from "./aggregate-bar";
 import { BatchStatusPill } from "./status-pill";
@@ -187,18 +188,4 @@ function comboSummary(
 
 function arrLen(v: unknown): number {
   return Array.isArray(v) ? v.length : 0;
-}
-
-function relativeTime(value: Date): string {
-  const sec = Math.round((Date.now() - new Date(value).getTime()) / 1000);
-  if (sec < 60) return "just now";
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.round(hr / 24);
-  if (day < 30) return `${day}d ago`;
-  const mon = Math.round(day / 30);
-  if (mon < 12) return `${mon}mo ago`;
-  return `${Math.round(mon / 12)}y ago`;
 }

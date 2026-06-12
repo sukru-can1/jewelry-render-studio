@@ -15,6 +15,7 @@ import { isTerminal } from "@/lib/orchestration/status-map";
 import { loadBatchIntel } from "@/lib/intelligence/read";
 // Full-pass-first preview preference (pure helper, shared with the gallery).
 import { preferredPreviewLayer } from "@/lib/gallery/group";
+import { PageBreadcrumb } from "@/app/components/app-shell/page-breadcrumb";
 
 import { BatchStatusPill } from "../status-pill";
 import { CancelBatchControl } from "./cancel-controls";
@@ -107,6 +108,13 @@ export default async function BatchDetailPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <PageBreadcrumb
+        items={[
+          { label: "Batches", href: "/batches" },
+          { label: batch.productName },
+        ]}
+      />
+
       <SegmentSwitcher batchId={batch.id} active="monitor" />
 
       <header className="flex flex-col gap-3">
