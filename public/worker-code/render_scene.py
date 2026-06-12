@@ -1109,20 +1109,77 @@ def add_center_facet_overlay(objects, recipe):
     return created
 
 
-def setup_camera(recipe):
+def auto_frame_camera(camera_settings, objects):
+    """Deterministic distance-fit framing of the normalized product (camera.auto_frame).
+
+    Auto-orient now stands uploaded models upright, but the hand-tuned camera
+    presets were tuned on a low/flat pose — on an upright ring they frame the
+    band's bottom arc and crop the head (stones) above the frame. Retuning the
+    presets per product shape is fragile; instead the camera frames the product
+    bbox deterministically:
+
+    - bbox = ALL kept product objects — NOT filtered by pass visibility
+      (object_bounds ignores hide_render/is_holdout), so every layered pass
+      frames identically and metal/stone layers stay aligned for compositing.
+    - target = bbox center (+ optional camera.target_offset additive tweak).
+    - The preset's LOOK DIRECTION is preserved: only the distance along
+      normalize(configured_target - configured_position) is recomputed.
+    - distance fits the max bbox dimension into the FOV: with focal length f
+      (mm) on Blender's default 36mm sensor (sensor_fit AUTO; renders here are
+      square so vertical FOV == horizontal), half_fov = atan(18 / f) and
+      distance = (max_dimension / 2) * margin / tan(half_fov), with
+      margin = camera.frame_margin (default 1.18, recipe-tunable).
+
+    Returns (position, target, distance) for the camera transform + DOF focus.
+    """
+    mins, maxs = object_bounds(objects)
+    target = (mins + maxs) * 0.5
+    offset = camera_settings.get("target_offset", [0.0, 0.0, 0.0])
+    target = target + Vector((float(offset[0]), float(offset[1]), float(offset[2])))
+
+    direction = Vector(camera_settings["target"]) - Vector(camera_settings["position"])
+    if direction.length < 1e-9:
+        direction = Vector((0.0, 1.0, 0.0))
+    direction = direction.normalized()
+
+    size = maxs - mins
+    max_dimension = max(size.x, size.y, size.z)
+    focal_length = float(camera_settings.get("focal_length", 90))
+    half_fov = math.atan(18.0 / focal_length)
+    margin = float(camera_settings.get("frame_margin", 1.18))
+    distance = (max_dimension / 2.0) * margin / math.tan(half_fov)
+    position = target - direction * distance
+    print(
+        f"AUTO_FRAME: target=({target.x:.4f}, {target.y:.4f}, {target.z:.4f}) "
+        f"distance={distance:.4f} fov={math.degrees(half_fov * 2.0):.2f}deg"
+    )
+    return position, target, distance
+
+
+def setup_camera(recipe, objects=None):
     cam_data = bpy.data.cameras.new("catalog_camera")
     cam = bpy.data.objects.new("catalog_camera", cam_data)
     bpy.context.collection.objects.link(cam)
     camera = recipe["camera"]
-    cam.location = camera["position"]
-    direction = Vector(camera["target"]) - cam.location
+    position = Vector(camera["position"])
+    target = Vector(camera["target"])
+    focus_distance = (target - position).length
+    # camera.auto_frame (default False = byte-identical behavior): reframe on
+    # the product bbox. Requires the kept product objects; the source-scene
+    # path calls setup_camera without objects and keeps its preset verbatim.
+    if camera.get("auto_frame", False) and objects:
+        position, target, focus_distance = auto_frame_camera(camera, objects)
+    cam.location = position
+    direction = target - position
     cam.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
     cam_data.lens = camera.get("focal_length", 90)
     cam_data.shift_x = float(camera.get("shift_x", 0.0))
     cam_data.shift_y = float(camera.get("shift_y", 0.0))
     dof = camera.get("depth_of_field", {})
     cam_data.dof.use_dof = dof.get("enabled", False)
-    cam_data.dof.focus_distance = dof.get("focus_distance", direction.length)
+    # An explicit depth_of_field.focus_distance still wins; otherwise focus on
+    # the (possibly auto-framed) target — the product center.
+    cam_data.dof.focus_distance = dof.get("focus_distance", focus_distance)
     cam_data.dof.aperture_fstop = dof.get("f_stop", 7.5)
     bpy.context.scene.camera = cam
 
@@ -1226,7 +1283,7 @@ def main():
     add_contact_shadows(recipe)
     add_reflection_cards(recipe)
     add_lights(recipe)
-    setup_camera(recipe)
+    setup_camera(recipe, objects)
     overlay_objects = add_center_facet_overlay(objects, recipe)
     image_bounds = object_image_bounds(objects)
     bpy.context.scene.render.filepath = parsed.output
