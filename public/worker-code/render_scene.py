@@ -381,9 +381,20 @@ def setup_master_scene(master_path: Path, model_path: Path, recipe):
     reference_objects, reference = measure_reference_product(config)
     deleted = delete_reference_product(reference_objects)
 
+    before_import = set(bpy.data.objects)
     objects = import_model(model_path)
     if not objects:
         raise RuntimeError("Uploaded product contains no mesh objects.")
+    # Uploaded product files routinely embed their own LIGHT/CAMERA objects
+    # (FBX/GLTF exports, saved .blend working files). In the standard path they
+    # land in a procedural scene; HERE they would silently re-light the hand-
+    # authored studio — the entire point of the master scene is that ITS
+    # camera/lights are the look. Remove imported non-mesh objects (EMPTYs are
+    # kept: already unparented by flatten_hierarchy and they do not render).
+    for obj in [o for o in bpy.data.objects if o not in before_import and o.type in {"LIGHT", "CAMERA"}]:
+        print(f"MASTER_SWAP: dropping imported {obj.type} '{obj.name}' (master scene owns lighting/camera)")
+        bpy.data.objects.remove(obj, do_unlink=True)
+    bpy.context.view_layer.update()
     pivot = create_product_pivot(objects)
     imported_bounds = bounds_summary(objects)
     scale = place_product_on_reference(objects, recipe["model"], reference, pivot)
