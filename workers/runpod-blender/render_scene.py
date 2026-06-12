@@ -12,6 +12,13 @@ from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Euler, Matrix, Vector
 
 
+# Deploy-verification build marker. UPDATE THIS TOKEN ON EVERY EDIT to
+# render_scene.py — it is printed at main() start and written into the render
+# metadata JSON, so a stale RunPod image or cached worker-code download is
+# detectable from any job's stdout and metadata without guessing.
+WORKER_BUILD = "20260612-single-pivot-r1"
+
+
 DEFAULT_RECIPE = {
     "render": {
         "resolution": [1400, 1400],
@@ -146,6 +153,31 @@ def flatten_hierarchy(objects):
             obj.parent = None
             obj.matrix_world = world
     bpy.context.view_layer.update()
+
+
+def create_product_pivot(objects):
+    """Create ONE world-origin EMPTY and parent every imported mesh to it.
+
+    Per-object matrix_world writes proved unreliable on imported FBX scenes —
+    live renders showed meshes scattering non-deterministically, and the
+    flatten-unparent pass reduced but did not cure it. With a single pivot,
+    every whole-product transform (auto_orient, auto_center/auto_scale,
+    rotation_degrees, translation, ground_to_plane) is exactly ONE matrix
+    write on ONE object; the meshes follow through evaluated parenting, so
+    there is nothing left to diverge across objects.
+
+    flatten_hierarchy has already run, so each mesh's matrix_basis equals its
+    world matrix. With the pivot at identity and matrix_parent_inverse forced
+    to Identity, world = pivot @ I @ basis = basis — parenting is an exact
+    pose no-op.
+    """
+    pivot = bpy.data.objects.new("product_pivot", None)
+    bpy.context.scene.collection.objects.link(pivot)
+    for obj in objects:
+        obj.parent = pivot
+        obj.matrix_parent_inverse = Matrix.Identity(4)
+    bpy.context.view_layer.update()
+    return pivot
 
 
 def import_model(path: Path):
@@ -365,7 +397,7 @@ def filter_product_objects(objects, settings):
     return selected
 
 
-def auto_orient_model(objects, settings):
+def auto_orient_model(objects, settings, pivot=None):
     """Legacy 'stand upright + orient head' normalization (model.auto_orient).
 
     Ported from the legacy master-scene placement: uploaded models often import
@@ -377,6 +409,11 @@ def auto_orient_model(objects, settings):
     unaffected. Must run BEFORE the auto_center/auto_scale bounds are computed
     (and before ground_to_plane) so centering, scaling and grounding all operate
     on the upright pose. Default False: absent flag = behavior unchanged.
+
+    With a product pivot (single-pivot architecture) both rotations are single
+    writes on the pivot's matrix_world; bounds are still read from the meshes'
+    evaluated matrix_world. pivot=None falls back to legacy per-object writes
+    so callers without a pivot (none in the standard path) keep old behavior.
     """
     if not settings.get("auto_orient", False):
         return
@@ -392,8 +429,11 @@ def auto_orient_model(objects, settings):
     else:
         rotation = Matrix.Identity(4)  # already upright
     upright = Matrix.Translation(center) @ rotation @ Matrix.Translation(-center)
-    for obj in objects:
-        obj.matrix_world = upright @ obj.matrix_world
+    if pivot is not None:
+        pivot.matrix_world = upright @ pivot.matrix_world
+    else:
+        for obj in objects:
+            obj.matrix_world = upright @ obj.matrix_world
     bpy.context.view_layer.update()
 
     # Head matching uses object_signature (name + materials) — a superset of the
@@ -424,15 +464,18 @@ def auto_orient_model(objects, settings):
         if (dx * dx + dz * dz) > 1e-8:
             phi = math.atan2(dx, dz)  # head direction angle from +Z toward +X
             head_matrix = Matrix.Translation(center) @ Matrix.Rotation(-phi, 4, "Y") @ Matrix.Translation(-center)
-            for obj in objects:
-                obj.matrix_world = head_matrix @ obj.matrix_world
+            if pivot is not None:
+                pivot.matrix_world = head_matrix @ pivot.matrix_world
+            else:
+                for obj in objects:
+                    obj.matrix_world = head_matrix @ obj.matrix_world
             bpy.context.view_layer.update()
             head_degrees = math.degrees(-phi)
 
     print(f"AUTO_ORIENT: thin axis {'XYZ'[thin]} -> Y, head rotated {head_degrees:.1f} deg about Y")
 
 
-def normalize(objects, settings):
+def normalize(objects, settings, pivot=None):
     if settings.get("shade_smooth", True):
         smooth_exclude = [token.lower() for token in settings.get("shade_smooth_exclude_contains", [])]
         for obj in objects:
@@ -444,7 +487,7 @@ def normalize(objects, settings):
                 bpy.ops.object.shade_smooth()
             obj.select_set(False)
 
-    auto_orient_model(objects, settings)
+    auto_orient_model(objects, settings, pivot)
 
     bpy.context.view_layer.update()
     mins = Vector((float("inf"), float("inf"), float("inf")))
@@ -469,10 +512,16 @@ def normalize(objects, settings):
     # only composed correctly under accidental invariants (coincident object
     # origins straight from import) and broke once auto_orient_model rewrote
     # matrix_world with rotations — the product was flung out of frame.
+    # Single-pivot architecture: the composed matrix is written to the PIVOT
+    # only — even per-object matrix_world loops scattered FBX meshes
+    # non-deterministically in live renders, one write on one object cannot.
     translation = Matrix.Translation(-center) if settings.get("auto_center", True) else Matrix.Identity(4)
     matrix = Matrix.Scale(scale, 4) @ translation
-    for obj in objects:
-        obj.matrix_world = matrix @ obj.matrix_world
+    if pivot is not None:
+        pivot.matrix_world = matrix @ pivot.matrix_world
+    else:
+        for obj in objects:
+            obj.matrix_world = matrix @ obj.matrix_world
     bpy.context.view_layer.update()
 
 
@@ -489,6 +538,18 @@ def transform_vector(value, default=1.0):
 
 
 def apply_object_transforms(objects, model_settings):
+    """Recipe-targeted PER-OBJECT transforms (model.object_transforms).
+
+    Intentionally NOT routed through the product pivot: this moves token-
+    matched subsets relative to the rest of the product, so per-object writes
+    are the point here. CAVEAT (single-pivot architecture): meshes are now
+    parented to product_pivot, so `obj.location` below is PIVOT-LOCAL while
+    the bounds-derived pivot point is WORLD-space — the frames coincide only
+    while the pivot is identity. After normalize() the offsets are interpreted
+    in the imported model's pre-normalize frame (unscaled, unoriented units).
+    Accepted trade-off: object_transforms is a rarely-used escape hatch and
+    keeping it byte-stable was chosen over re-deriving it in pivot space.
+    """
     transforms = model_settings.get("object_transforms", [])
     if not transforms:
         return
@@ -514,7 +575,7 @@ def apply_object_transforms(objects, model_settings):
             obj.scale.z *= scale.z
 
 
-def add_generated_band(objects, model_settings):
+def add_generated_band(objects, model_settings, pivot=None):
     config = model_settings.get("generated_band") or {}
     if not config.get("enabled", False):
         return []
@@ -565,6 +626,16 @@ def add_generated_band(objects, model_settings):
     bpy.context.view_layer.objects.active = band
     bpy.ops.object.shade_smooth()
     band.select_set(False)
+    if pivot is not None:
+        # The band is built in normalized world space AFTER normalize() ran, so
+        # the pivot is no longer identity. Keep-transform parent it (parent
+        # inverse cancels the current pivot matrix exactly) so the band follows
+        # the pivot-level transform_model writes (rotation/translation/
+        # ground_to_plane) exactly like the imported meshes — previously it
+        # rode the per-object loops.
+        band.parent = pivot
+        band.matrix_parent_inverse = pivot.matrix_world.inverted()
+        bpy.context.view_layer.update()
     objects.append(band)
     return [band]
 
@@ -597,26 +668,44 @@ def bounds_summary(objects):
     }
 
 
-def transform_model(objects, model_settings, background_settings):
+def transform_model(objects, model_settings, background_settings, pivot=None):
+    """Whole-product recipe transforms: rotation_degrees, translation,
+    ground_to_plane. All three act on the ENTIRE product, so in the
+    single-pivot architecture each is one world-space matrix composed onto the
+    pivot — including ground_to_plane's lift, which becomes a world-space
+    [0, 0, dz] translation matrix instead of per-object location math.
+    pivot=None falls back to the legacy per-object writes."""
     rotation = model_settings.get("rotation_degrees", [0, 0, 0])
     if any(abs(float(value)) > 0.0001 for value in rotation):
         matrix = Euler([math.radians(float(value)) for value in rotation], "XYZ").to_matrix().to_4x4()
-        for obj in objects:
-            obj.matrix_world = matrix @ obj.matrix_world
+        if pivot is not None:
+            pivot.matrix_world = matrix @ pivot.matrix_world
+            bpy.context.view_layer.update()
+        else:
+            for obj in objects:
+                obj.matrix_world = matrix @ obj.matrix_world
 
     translation = model_settings.get("translation", [0, 0, 0])
     if any(abs(float(value)) > 0.0001 for value in translation):
         offset = Vector((float(translation[0]), float(translation[1]), float(translation[2])))
-        for obj in objects:
-            obj.location += offset
+        if pivot is not None:
+            pivot.matrix_world = Matrix.Translation(offset) @ pivot.matrix_world
+            bpy.context.view_layer.update()
+        else:
+            for obj in objects:
+                obj.location += offset
 
     if model_settings.get("ground_to_plane", True):
         mins, _ = object_bounds(objects)
         plane_z = float(background_settings.get("plane_z", -0.04))
         clearance = float(model_settings.get("ground_clearance", 0.015))
         lift = plane_z + clearance - mins.z
-        for obj in objects:
-            obj.location.z += lift
+        if pivot is not None:
+            pivot.matrix_world = Matrix.Translation(Vector((0.0, 0.0, lift))) @ pivot.matrix_world
+            bpy.context.view_layer.update()
+        else:
+            for obj in objects:
+                obj.location.z += lift
 
 
 def apply_pass_visibility(objects, model_settings):
@@ -1234,6 +1323,7 @@ def object_image_bounds(objects):
 
 
 def main():
+    print(f"WORKER_BUILD: {WORKER_BUILD}")
     parsed = args()
     recipe = deep_merge(DEFAULT_RECIPE, json.loads(Path(parsed.recipe).read_text(encoding="utf-8")))
     if recipe.get("source_scene", {}).get("enabled", False):
@@ -1246,6 +1336,7 @@ def main():
         Path(parsed.metadata).write_text(
             json.dumps(
                 {
+                    "worker_build": WORKER_BUILD,
                     "recipe": recipe,
                     "source_scene": True,
                     "scene": bpy.context.scene.name,
@@ -1266,16 +1357,20 @@ def main():
     setup_render(recipe)
     setup_world(recipe)
     objects = import_model(Path(parsed.model))
+    # Single-pivot architecture: EVERY imported mesh (including ones the
+    # include/exclude filter later hides) hangs off one identity pivot; all
+    # whole-product transforms below write only pivot.matrix_world.
+    pivot = create_product_pivot(objects)
     objects = filter_product_objects(objects, recipe["model"])
     if not objects:
         raise RuntimeError("No product mesh objects matched model include/exclude filters.")
     imported_bounds = bounds_summary(objects)
-    normalize(objects, recipe["model"])
+    normalize(objects, recipe["model"], pivot)
     normalized_bounds = bounds_summary(objects)
     apply_object_transforms(objects, recipe["model"])
-    generated_objects = add_generated_band(objects, recipe["model"])
+    generated_objects = add_generated_band(objects, recipe["model"], pivot)
     object_transformed_bounds = bounds_summary(objects)
-    transform_model(objects, recipe["model"], recipe["background"])
+    transform_model(objects, recipe["model"], recipe["background"], pivot)
     transformed_bounds = bounds_summary(objects)
     apply_pass_visibility(objects, recipe["model"])
     assign_materials(objects, recipe)
@@ -1291,6 +1386,7 @@ def main():
     Path(parsed.metadata).write_text(
         json.dumps(
             {
+                "worker_build": WORKER_BUILD,
                 "recipe": recipe,
                 "model_bounds": {
                     "imported": imported_bounds,
