@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-master-scene-r12"
+WORKER_BUILD = "20260612-master-scene-r13"
 
 
 DEFAULT_RECIPE = {
@@ -464,6 +464,39 @@ def apply_master_camera_orbit(config, reference):
     )
     az = math.radians(float(orbit.get("azimuth", 30.0)))
     el = math.radians(float(orbit.get("elevation", 25.0)))
+
+    # ENSEMBLE-PRESERVING rig rotation (r13): the studio's lights + dark facet
+    # cards are hand-aimed at the AUTHORED camera direction — orbiting the
+    # camera alone (r11) kept the framing but un-aimed the cards (lost stone
+    # fire); product poses (r12) kept the fire but the close camera crops the
+    # ring. Rotating camera+lights+cards TOGETHER about the reference center
+    # by delta_az preserves the artist's relative geometry exactly (the
+    # elevation delta is the only approximation).
+    rig = None
+    if orbit.get("rotate_rig", False):
+        cam_off = camera.matrix_world.translation - center
+        authored_az = math.atan2(cam_off.x, -cam_off.y)
+        delta = az - authored_az
+        pivot_rot = (
+            Matrix.Translation(center)
+            @ Matrix.Rotation(delta, 4, "Z")
+            @ Matrix.Translation(-center)
+        )
+        tokens = ["master_scene", "news_final", "gem_real", "adaptive_reflection"]
+        rotated = []
+        for obj in bpy.context.scene.objects:
+            if obj.type == "LIGHT" or (
+                obj.type == "MESH" and any(t in object_signature(obj) for t in tokens)
+            ):
+                obj.matrix_world = pivot_rot @ obj.matrix_world
+                rotated.append(obj.name)
+        bpy.context.view_layer.update()
+        rig = {"delta_az_degrees": math.degrees(delta), "rotated": rotated}
+        print(
+            f"MASTER_ORBIT_RIG: rotated {len(rotated)} rig objects by {math.degrees(delta):.1f} deg "
+            f"(authored az {math.degrees(authored_az):.1f})"
+        )
+
     camera.location = Vector(
         (
             center.x + distance * math.cos(el) * math.sin(az),
@@ -503,6 +536,7 @@ def apply_master_camera_orbit(config, reference):
         "focal_length": camera.data.lens,
         "use_dof": camera.data.dof.use_dof,
         "fstop": camera.data.dof.aperture_fstop if camera.data.dof.use_dof else None,
+        "rig": rig,
     }
 
 

@@ -65,6 +65,14 @@
 //      CENTER, and v203 itself never grounded. pose_ground_to_reference is
 //      no longer emitted (stays a worker capability); FULL_RING_SCALE
 //      0.55 -> 0.78 (ring ~44% -> ~62% of frame height, centered).
+//   8. (FULL + STONE) THE r13 SYNTHESIS: 0.78 centered still cropped (the
+//      authored close camera cannot frame a full ring — proven across
+//      batches cmqat8crw/cmqaxk454/cmqaxtkfb). Angles return to the legacy
+//      catalog ORBITS but with rotate_rig: true — the worker rotates the
+//      studio's lights + dark facet cards about the reference center by the
+//      same azimuth delta as the camera, preserving the artist's
+//      camera<->light<->card geometry at the catalog framing. Poses zeroed;
+//      uniform -0.94 exposure returns.
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
@@ -80,9 +88,9 @@ import {
 import { buildMasterSceneRecipe as buildFromSibling } from "@/lib/master-scene-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "0a87e1157b9dc04f971fcf125927c61d32c12bda7c936687a48dc26d0740d00d";
+  "3677d1b5eb685f53e6cc2ed9ae09aad605f95c51aa7344840b6dc33a0606e651";
 const GOLDEN_STONE_SHA256 =
-  "d453485b3153b0e4b638afe482af10bdefe8f355dcc85868e5fac6857a83a60b";
+  "1a27be12962ffd988e7531aa16da3b87304acb39c80cd98eed1e2eb737e991aa";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -178,60 +186,44 @@ describe("master_scene block — the worker contract", () => {
   });
 });
 
-describe("angle -> FULL-RING v203 pose (authored camera + ensemble; notes 6+7)", () => {
-  // The proven v203 poses, shrunk x0.78 (FULL_RING_SCALE), CENTERED on the
-  // reference center (no grounding — note 7).
+describe("angle -> catalog orbit WITH rig rotation (the r13 synthesis; note 8)", () => {
   const expected = {
-    hero: {
-      source: "v203a_close_front_hero",
-      rotation: [-16, 0, -16],
-      scale: 0.741, // 0.95 * 0.78
-      translation: [0.0, 0.0, -0.01],
-      exposure: -0.94,
-    },
-    front: {
-      source: "v203b_close_catalog_left",
-      rotation: [0, 0, -34],
-      scale: 0.7098, // 0.91 * 0.78
-      translation: [-0.004, 0.0, -0.01],
-      exposure: -0.95,
-    },
-    top: {
-      source: "v203e_close_upper_ring_shape",
-      rotation: [12, 0, -26],
-      scale: 0.702, // 0.9 * 0.78
-      translation: [0.0, 0.0, -0.006],
-      exposure: -0.93,
-    },
-    profile: {
-      source: "v203d_close_low_side",
-      rotation: [-7, 0, -74],
-      scale: 0.6864, // 0.88 * 0.78
-      translation: [0.0, 0.0, -0.008],
-      exposure: -0.96,
-    },
+    hero: { source: "legacy view1", azimuth: 30, elevation: 25, distance_scale: 1.0, focal_length: 85 },
+    front: { source: "legacy view2", azimuth: 180, elevation: 15, distance_scale: 1.0, focal_length: 85 },
+    top: { source: "legacy view4", azimuth: -30, elevation: 70, distance_scale: 0.8, focal_length: 85 },
+    profile: { source: "legacy Camera", azimuth: -45, elevation: 15, distance_scale: 1.0, focal_length: 50 },
   } as const;
 
-  for (const [angle, pose] of Object.entries(expected)) {
-    it(`${angle} <- ${pose.source} at full-ring scale, centered`, () => {
+  for (const [angle, orbit] of Object.entries(expected)) {
+    it(`${angle} <- ${orbit.source}, ensemble rotated with the camera`, () => {
       const recipe = buildMasterSceneRecipe({
         ...reqFull,
         angle: angle as EnterpriseRecipeRequest["angle"],
       }) as AnyRecipe;
-      expect(recipe.master_scene.pose_rotation_degrees).toEqual([...pose.rotation]);
-      expect(recipe.master_scene.pose_scale).toBeCloseTo(pose.scale, 10);
-      expect(recipe.master_scene.pose_translation).toEqual([...pose.translation]);
-      // Centered on the reference center — NOT grounded (note 7: the studio's
-      // painted shadow + camera aim live at the center; grounding sat the
-      // ring low and off its shadow).
+      // rotate_rig carries the studio's lights + cards around WITH the
+      // camera — the artist's relative geometry is preserved (note 8).
+      expect(recipe.master_scene.camera_orbit).toEqual({
+        azimuth: orbit.azimuth,
+        elevation: orbit.elevation,
+        distance_scale: orbit.distance_scale,
+        focal_length: orbit.focal_length,
+        rotate_rig: true,
+      });
+      // Product stays in its reference pose; no grounding, no pose scale.
+      expect(recipe.master_scene.pose_rotation_degrees).toEqual([0, 0, 0]);
+      expect(recipe.master_scene.pose_scale).toBe(1.0);
       expect(recipe.master_scene.pose_ground_to_reference).toBeUndefined();
-      // The authored camera owns the view — no orbit emitted (note 6).
-      expect(recipe.master_scene.camera_orbit).toBeUndefined();
-      expect(recipe.render.exposure).toBe(pose.exposure);
-      expect(recipe.enterprise.pose_source).toBe(pose.source);
-      expect(MASTER_POSES[angle as keyof typeof MASTER_POSES].source).toBe(pose.source);
+      expect(recipe.render.exposure).toBe(-0.94);
+      expect(recipe.enterprise.pose_source).toBe(orbit.source);
+      expect(MASTER_CATALOG_ORBITS[angle as keyof typeof MASTER_CATALOG_ORBITS].source).toBe(
+        orbit.source,
+      );
     });
   }
+
+  it("the v203 close poses remain exported as provenance", () => {
+    expect(MASTER_POSES.hero.source).toBe("v203a_close_front_hero");
+  });
 
   it("the legacy orbit table stays exported (worker capability for explicit recipes)", () => {
     expect(MASTER_CATALOG_ORBITS.hero.source).toBe("legacy view1");

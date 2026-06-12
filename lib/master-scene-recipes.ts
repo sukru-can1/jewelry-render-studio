@@ -207,16 +207,8 @@ export const MASTER_CATALOG_ORBITS: Record<EnterpriseAngleKey, MasterCameraOrbit
   },
 };
 
-/**
- * Shrink factor turning the v203 close poses into FULL-RING catalog framing
- * through the AUTHORED camera (the studio's light/card ensemble stays aimed
- * exactly as the artist tuned it). The product stays CENTERED on the
- * reference center — the camera's aim AND the studio's static painted
- * contact-shadow mesh both live there (live r12 batch: grounding pushed the
- * ring low in frame and off its shadow; v203 itself never grounded).
- * 0.55 framed the ring at ~44% of frame height; 0.78 targets ~62%.
- */
-const FULL_RING_SCALE = 0.78;
+// (Full-ring pose-scale experiments retired by the r13 rig-rotation synthesis
+// — provenance in test/master-scene-recipes.test.ts regeneration notes 6-7.)
 
 // The v203 studio trim, verbatim from v203a (identical across v203a..e):
 // softboxes dimmed for contrast, the micro-sparkle pin boosted and cooled.
@@ -453,7 +445,7 @@ export function buildMasterSceneRecipe(
   request: EnterpriseRecipeRequest,
   tuning: MasterSceneTuning = {},
 ): Record<string, unknown> {
-  const pose = MASTER_POSES[request.angle];
+  const orbit = MASTER_CATALOG_ORBITS[request.angle];
   const visibility = buildVisibility(request);
   const metal = METAL_PRESETS[request.metal];
 
@@ -501,8 +493,8 @@ export function buildMasterSceneRecipe(
     enterprise: {
       workflow: "master_scene_catalog",
       angle: request.angle,
-      angle_label: pose.label,
-      pose_source: pose.source,
+      angle_label: orbit.label,
+      pose_source: orbit.source,
       pass: request.pass,
       metal: request.metal,
       metal_label: metal.label,
@@ -511,17 +503,24 @@ export function buildMasterSceneRecipe(
     master_scene: {
       enabled: true,
       reference_contains: [...MASTER_REFERENCE_CONTAINS],
-      // FULL-RING CATALOG POSES — the v203 ensemble preserved. The studio's
-      // lights + dark cards + AUTHORED camera are a tuned unit; moving the
-      // camera (the r11 orbit round) kept the framing but lost the cards'
-      // aimed reflections — the stone fire. So: the proven v203 pose per
-      // angle, shrunk by FULL_RING_SCALE so the WHOLE ring fits the authored
-      // frame, re-grounded onto the reference floor line (worker r12
-      // pose_ground_to_reference). camera_orbit remains a worker capability
-      // for explicit recipes but is no longer emitted here.
-      pose_rotation_degrees: pose.rotation,
-      pose_scale: Number((pose.scale * FULL_RING_SCALE).toFixed(4)),
-      pose_translation: pose.translation,
+      // THE SYNTHESIS (r13): catalog orbit framing + the v203 ensemble.
+      // rotate_rig makes the worker rotate the studio's lights + dark facet
+      // cards about the reference center by the same azimuth delta as the
+      // camera — the artist's camera<->light<->card geometry is preserved
+      // exactly while the view becomes the legacy full-ring catalog angle.
+      // (r11 orbit alone un-aimed the cards; r12/v2 poses kept the fire but
+      // the close camera crops a full ring — live batches cmqat8crw,
+      // cmqaxk454, cmqaxtkfb.) Product stays in its reference pose.
+      pose_rotation_degrees: [0, 0, 0],
+      pose_scale: 1.0,
+      pose_translation: [0, 0, 0],
+      camera_orbit: {
+        azimuth: orbit.azimuth,
+        elevation: orbit.elevation,
+        distance_scale: orbit.distanceScale,
+        focal_length: orbit.focalLength,
+        rotate_rig: true,
+      },
       // NO depth_of_field override: the authored camera's DOF IS the look.
       // Products are normalized onto the reference envelope, so the artist's
       // hand-focused camera is correct for any swap; the worker bakes an
@@ -544,10 +543,10 @@ export function buildMasterSceneRecipe(
       denoise: true,
       view_transform: "Filmic",
       look: "Medium High Contrast",
-      // Per-pose exposure from the matching v203 recipe + optional tuning
-      // offset, clamped to a sane studio range.
+      // Uniform catalog exposure (v203a's proven studio value) + optional
+      // tuning offset, clamped to a sane studio range.
       exposure: Number(
-        Math.min(0, Math.max(-2, pose.exposure + (tuning.exposureOffset ?? 0))).toFixed(4),
+        Math.min(0, Math.max(-2, -0.94 + (tuning.exposureOffset ?? 0))).toFixed(4),
       ),
       gamma: 1.0,
       transparent: request.pass === "stone",
