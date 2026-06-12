@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-single-pivot-r1"
+WORKER_BUILD = "20260612-matte-floor-r2"
 
 
 DEFAULT_RECIPE = {
@@ -1021,7 +1021,17 @@ def setup_background(recipe):
     bpy.ops.mesh.primitive_plane_add(size=bg.get("plane_size", 8), location=(0, 0, bg.get("plane_z", -0.04)))
     plane = bpy.context.object
     plane.name = "catalog_shadow_plane"
-    mat = make_material("catalog_warm_white", {"base_color": bg.get("color", [0.98, 0.98, 0.965, 1]), "roughness": 0.62})
+    # Floor material: recipe-tunable roughness/specular. The old hardcoded
+    # roughness 0.62 with default specular turned the floor into a grazing-angle
+    # MIRROR once auto_frame raised the camera target — studio cards/lights
+    # reflected across the backdrop as grey bands/rectangles. Default is now a
+    # matte sweep (roughness 1.0, specular ~0) so the backdrop reads as a clean
+    # white at any camera elevation; recipes may override via background.{roughness,specular}.
+    mat = make_material("catalog_warm_white", {
+        "base_color": bg.get("color", [0.98, 0.98, 0.965, 1]),
+        "roughness": bg.get("roughness", 1.0),
+        "specular_ior_level": bg.get("specular", 0.02),
+    })
     plane.data.materials.append(mat)
     # background.visible_camera=false (stone passes): the floor must keep
     # LIGHTING the product — diffuse/glossy/transmission bounce preserved — but
