@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Box, Plus } from "lucide-react";
 
@@ -17,6 +18,8 @@ import { ProductCard } from "./product-card";
 // requireSession is still required).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Products" };
 
 const EMPTY_BODY =
   "Upload your first jewelry model to inspect it and assign its parts to render groups.";

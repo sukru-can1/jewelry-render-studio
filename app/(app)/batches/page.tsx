@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Box, Layers } from "lucide-react";
 
@@ -20,6 +21,8 @@ import { BatchStatusPill } from "./status-pill";
 // dispatch client (ORCH-02; enforced by test/orch-db-only.test.ts source guard).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Batches" };
 
 const EMPTY_BODY =
   "Build a batch from a product to start rendering. It'll show up here with live progress.";

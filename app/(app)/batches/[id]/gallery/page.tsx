@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireSession } from "@/lib/auth/rbac";
@@ -21,6 +22,8 @@ import type { GalleryCardLayer } from "./layer-card";
 // src> resolves through the auth-gated /api/file proxy (T-05-07) inside the cards.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Outputs" };
 
 export default async function BatchGalleryPage({
   params,

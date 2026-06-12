@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -15,6 +16,8 @@ import { SettingsForms, type SettingsData } from "./settings-forms";
 // <SettingsForms/> client component. Node runtime (Prisma).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Domain Settings" };
 
 export default async function SettingsPage() {
   try {

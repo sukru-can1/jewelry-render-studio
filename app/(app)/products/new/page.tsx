@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import { requireSession } from "@/lib/auth/rbac";
 
 import { CreateProductForm } from "../create-product-form";
@@ -7,6 +9,8 @@ import { CreateProductForm } from "../create-product-form";
 // layout), then renders the "New product" heading and the client form. The
 // model itself uploads direct-to-PRIVATE-Blob from the form's dropzone.
 export const runtime = "nodejs";
+
+export const metadata: Metadata = { title: "New product" };
 
 export default async function NewProductPage() {
   await requireSession();

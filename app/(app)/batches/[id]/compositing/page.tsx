@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { list } from "@vercel/blob";
 
@@ -36,6 +37,8 @@ import { DownloadAllDeliverables } from "./download-all-action";
 // therefore derived from list({prefix:deliverablePrefix(id)}), never from layers.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Compositing" };
 
 export default async function BatchCompositingPage({
   params,

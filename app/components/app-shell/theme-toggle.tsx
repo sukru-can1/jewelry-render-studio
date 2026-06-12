@@ -2,35 +2,48 @@
 
 import * as React from "react";
 import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import { Button } from "@/app/components/ui/button";
 
 /**
  * UI-SPEC §1 top bar — theme toggle. Dark is the default ops-console theme
- * (set on <html class="dark"> in the root layout). This flips the `.dark`
- * class on the document element. Motion respects prefers-reduced-motion via
- * opacity-only transitions in the token layer.
+ * (next-themes defaultTheme="dark" in the root layout). useTheme() reads and
+ * persists the choice via localStorage so it survives reloads. Until mounted we
+ * render the same static markup on server and client (no hydration mismatch).
+ * Motion respects prefers-reduced-motion via opacity-only transitions in the
+ * token layer.
  */
 export function ThemeToggle() {
-  // Initialize from the current document class so the icon matches on mount.
-  const [isDark, setIsDark] = React.useState(true);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
+    setMounted(true);
   }, []);
 
-  function toggle() {
-    const next = !document.documentElement.classList.contains("dark");
-    document.documentElement.classList.toggle("dark", next);
-    setIsDark(next);
+  if (!mounted) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Toggle theme"
+        className="size-9"
+      >
+        <Sun className="size-4" />
+      </Button>
+    );
   }
+
+  const isDark = resolvedTheme === "dark";
 
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon"
-      onClick={toggle}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
       className="size-9"
     >

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Layers } from "lucide-react";
@@ -22,6 +23,8 @@ import { BatchBuilder } from "./batch-builder";
 // runtime (Prisma); force-dynamic so the live Admin-editable domain is always fresh.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Build batch" };
 
 export default async function NewBatchPage({
   params,

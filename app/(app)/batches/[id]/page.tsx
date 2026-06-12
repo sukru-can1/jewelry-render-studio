@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Images } from "lucide-react";
 
@@ -29,6 +30,17 @@ import { SegmentSwitcher } from "./segment-switcher";
 // import the GPU dispatch client (ORCH-02; test/orch-db-only.test.ts source guard).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Tab title (UX audit B7): NO DB call — the short batch id is enough to tell
+// browser tabs apart.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  return { title: `Batch · ${id.slice(0, 8)}` };
+}
 
 // Render a job's combo Json into the "view1 · white · diamond · stone" mono string.
 // Reads the CANONICAL combo keys (angleKey/metalKey/stoneGroup/pass) the expander

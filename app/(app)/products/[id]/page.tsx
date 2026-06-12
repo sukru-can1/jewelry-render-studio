@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Box } from "lucide-react";
@@ -34,6 +35,21 @@ import { BuildBatchButton } from "./build-batch-button";
 // /api/file proxy (privateUrl, T-02-15).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Tab title (UX audit B7): a lightweight name-only select — the page's own
+// query is left untouched.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const product = await prisma.product.findUnique({
+    where: { id },
+    select: { name: true },
+  });
+  return { title: product?.name ?? "Product" };
+}
 
 const STATUS_PILL: Record<string, { label: string; variant: "secondary" | "outline" | "destructive" | "default" }> = {
   needs_inspection: { label: "needs inspection", variant: "outline" },
