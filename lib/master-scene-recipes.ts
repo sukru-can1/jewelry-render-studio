@@ -149,6 +149,67 @@ export const MASTER_EXTRA_POSES: Record<string, MasterScenePose> = {
   },
 };
 
+export type MasterCameraOrbit = {
+  label: string;
+  /** Which legacy camera this orbit ports (provenance, also tested). */
+  source: string;
+  azimuth: number;
+  elevation: number;
+  /** Multiplies the worker's distance = ref max_dim * 3.5. */
+  distanceScale: number;
+  focalLength: number;
+};
+
+/**
+ * THE CATALOG ANGLES — the legacy Flask app's four proven full-ring views
+ * (external-work models.py DEFAULT_CAMERA_PRESETS + _create_fresh_scene.py
+ * cam_configs), ported as camera ORBITS about the reference center. The v203
+ * close poses crop the ring (head close-ups); these frame the WHOLE product
+ * exactly like the Glamira catalog reference. Product stays in its reference
+ * pose (upright, head up); the camera moves — the legacy mechanism.
+ */
+export const MASTER_CATALOG_ORBITS: Record<EnterpriseAngleKey, MasterCameraOrbit> = {
+  // view1 — the classic catalog three-quarter hero.
+  hero: {
+    label: "catalog three-quarter",
+    source: "legacy view1",
+    azimuth: 30,
+    elevation: 25,
+    distanceScale: 1.0,
+    focalLength: 85,
+  },
+  // view2 — the straight face-on full circle.
+  front: {
+    label: "catalog face-on",
+    source: "legacy view2",
+    azimuth: 180,
+    elevation: 15,
+    distanceScale: 1.0,
+    focalLength: 85,
+  },
+  // view4 — the high three-quarter (ring seen from above).
+  top: {
+    label: "catalog high three-quarter",
+    source: "legacy view4",
+    azimuth: -30,
+    elevation: 70,
+    distanceScale: 0.8,
+    focalLength: 85,
+  },
+  // "Camera" — the low side three-quarter (wider 50mm lens).
+  profile: {
+    label: "catalog low side",
+    source: "legacy Camera",
+    azimuth: -45,
+    elevation: 15,
+    distanceScale: 1.0,
+    focalLength: 50,
+  },
+};
+
+/** Uniform studio exposure for the catalog orbits (v203a's proven value). */
+const MASTER_CATALOG_EXPOSURE = -0.94;
+
 // The v203 studio trim, verbatim from v203a (identical across v203a..e):
 // softboxes dimmed for contrast, the micro-sparkle pin boosted and cooled.
 const V203_LIGHT_ADJUSTMENTS = [
@@ -345,13 +406,46 @@ const STONE_PASS_CAMERA_HIDE = [
 ];
 
 /**
+ * Optional contrast/light tuning over the v203 baseline — the master
+ * pipeline's equivalent of the procedural profileOverrides. Absent = the
+ * EXACT v203 values (goldens lock this). exposureOffset ADDS to the per-pose
+ * exposure (negative = darker); the *Scale factors MULTIPLY the matching
+ * V203_LIGHT_ADJUSTMENTS power_scale entries.
+ */
+export type MasterSceneTuning = {
+  exposureOffset?: number;
+  softboxScale?: number;
+  fillScale?: number;
+  topScale?: number;
+  sparkleScale?: number;
+};
+
+function tunedLightAdjustments(tuning: MasterSceneTuning) {
+  const factor: Record<string, number | undefined> = {
+    large_front_left_softbox: tuning.softboxScale,
+    weak_front_right_fill: tuning.fillScale,
+    low_top_softbox: tuning.topScale,
+    diamond_micro_sparkle: tuning.sparkleScale,
+  };
+  return V203_LIGHT_ADJUSTMENTS.map((adj) => {
+    const f = factor[adj.contains[0]];
+    if (f === undefined) return adj;
+    return { ...adj, power_scale: Number((adj.power_scale * f).toFixed(4)) };
+  });
+}
+
+/**
  * Build a v203-style master-scene recipe from the SAME EnterpriseRecipeRequest
  * shape as buildEnterpriseRecipe. The studio .blend supplies camera/lights/
  * cards; this recipe supplies the product swap, pose, materials and layered-
- * pass visibility.
+ * pass visibility. `tuning` (optional) offsets exposure / scales studio
+ * lights over the v203 baseline — absent keys change NOTHING.
  */
-export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record<string, unknown> {
-  const pose = MASTER_POSES[request.angle];
+export function buildMasterSceneRecipe(
+  request: EnterpriseRecipeRequest,
+  tuning: MasterSceneTuning = {},
+): Record<string, unknown> {
+  const orbit = MASTER_CATALOG_ORBITS[request.angle];
   const visibility = buildVisibility(request);
   const metal = METAL_PRESETS[request.metal];
 
@@ -399,8 +493,8 @@ export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record
     enterprise: {
       workflow: "master_scene_catalog",
       angle: request.angle,
-      angle_label: pose.label,
-      pose_source: pose.source,
+      angle_label: orbit.label,
+      pose_source: orbit.source,
       pass: request.pass,
       metal: request.metal,
       metal_label: metal.label,
@@ -409,9 +503,21 @@ export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record
     master_scene: {
       enabled: true,
       reference_contains: [...MASTER_REFERENCE_CONTAINS],
-      pose_rotation_degrees: pose.rotation,
-      pose_scale: pose.scale,
-      pose_translation: pose.translation,
+      // CATALOG ANGLES (the legacy Flask app's framing): the product stays in
+      // its reference pose — upright, head up, on the reference envelope —
+      // and the CAMERA orbits (worker apply_master_camera_orbit). The v203
+      // close poses (MASTER_POSES) cropped the ring; the catalog standard
+      // shows the whole product per the Glamira reference sheet.
+      pose_rotation_degrees: [0, 0, 0],
+      pose_scale: 1.0,
+      pose_translation: [0, 0, 0],
+      camera_orbit: {
+        azimuth: orbit.azimuth,
+        elevation: orbit.elevation,
+        distance_scale: orbit.distanceScale,
+        focal_length: orbit.focalLength,
+        fstop: 2.8,
+      },
       // NO depth_of_field override: the authored camera's DOF IS the look.
       // Products are normalized onto the reference envelope, so the artist's
       // hand-focused camera is correct for any swap; the worker bakes an
@@ -421,7 +527,7 @@ export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record
       // verdict 1/5 both angles) — depth_of_field remains available as an
       // explicit recipe override only.
       apply_recipe_materials: true,
-      light_adjustments: V203_LIGHT_ADJUSTMENTS,
+      light_adjustments: tunedLightAdjustments(tuning),
       object_adjustments: V203_OBJECT_ADJUSTMENTS,
       reflection_cards: V203_REFLECTION_CARDS,
       // Stone passes only: hide studio surfaces from camera (lighting kept) so
@@ -434,8 +540,14 @@ export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record
       denoise: true,
       view_transform: "Filmic",
       look: "Medium High Contrast",
-      // Per-pose exposure ported from the matching v203 recipe.
-      exposure: pose.exposure,
+      // Uniform catalog exposure (v203a's proven studio value) + optional
+      // tuning offset, clamped to a sane studio range.
+      exposure: Number(
+        Math.min(
+          0,
+          Math.max(-2, MASTER_CATALOG_EXPOSURE + (tuning.exposureOffset ?? 0)),
+        ).toFixed(4),
+      ),
       gamma: 1.0,
       transparent: request.pass === "stone",
     },

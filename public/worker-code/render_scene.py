@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-master-scene-r9"
+WORKER_BUILD = "20260612-master-scene-r10"
 
 
 DEFAULT_RECIPE = {
@@ -423,6 +423,64 @@ def refocus_master_camera(config, product_objects):
     }
 
 
+def apply_master_camera_orbit(config, reference):
+    """Catalog-angle camera orbit — the legacy Flask app's proven framing,
+    ported VERBATIM (external-work blender_scripts.py ~1197-1214).
+
+    The four catalog views (view1/view2/view4/Camera) are azimuth/elevation
+    orbits about the REFERENCE CENTER at distance = max_dim * 3.5 *
+    distance_scale, look-at center, with the legacy f/2.8 focus-on-center DOF
+    (center stone sharp, far band softens — the catalog look). The product
+    stays in its reference pose; this REPLACES the authored close-up camera
+    position for the render. Opt-in: absent camera_orbit keeps the authored
+    v203 close camera untouched.
+    """
+    orbit = config.get("camera_orbit")
+    if not orbit:
+        return None
+    camera = bpy.context.scene.camera
+    if camera is None:
+        return None
+
+    center = Vector(reference["center"])
+    distance = (
+        float(orbit.get("distance_scale", 1.0)) * float(reference["max_dimension"]) * 3.5
+    )
+    az = math.radians(float(orbit.get("azimuth", 30.0)))
+    el = math.radians(float(orbit.get("elevation", 25.0)))
+    camera.location = Vector(
+        (
+            center.x + distance * math.cos(el) * math.sin(az),
+            center.y - distance * math.cos(el) * math.cos(az),
+            center.z + distance * math.sin(el),
+        )
+    )
+    look_at(camera, center)
+    if "focal_length" in orbit and hasattr(camera.data, "lens"):
+        camera.data.lens = float(orbit["focal_length"])
+    # The authored close-up camera may carry sensor shift / clip values that
+    # are wrong for an orbit framing — neutralize them.
+    if hasattr(camera.data, "shift_x"):
+        camera.data.shift_x = 0.0
+        camera.data.shift_y = 0.0
+    camera.data.clip_start = min(camera.data.clip_start, distance * 0.05)
+    camera.data.dof.use_dof = True
+    camera.data.dof.focus_object = None
+    camera.data.dof.focus_distance = distance
+    camera.data.dof.aperture_fstop = float(orbit.get("fstop", 2.8))
+    print(
+        f"MASTER_ORBIT: az={math.degrees(az):.1f} el={math.degrees(el):.1f} "
+        f"dist={distance:.5f} lens={camera.data.lens:.1f} fstop={camera.data.dof.aperture_fstop}"
+    )
+    return {
+        "azimuth": math.degrees(az),
+        "elevation": math.degrees(el),
+        "distance": distance,
+        "focal_length": camera.data.lens,
+        "fstop": camera.data.dof.aperture_fstop,
+    }
+
+
 def setup_master_scene(master_path: Path, model_path: Path, recipe):
     """Master-scene product swap — the proven v203 pipeline, generalized.
 
@@ -483,6 +541,9 @@ def setup_master_scene(master_path: Path, model_path: Path, recipe):
     add_reflection_cards_from_configs(config.get("reflection_cards", []))
     hidden = apply_master_camera_hide(config, objects)
     focus = refocus_master_camera(config, objects)
+    # Catalog-angle orbit LAST — when present it owns the camera entirely
+    # (position, look-at, lens, DOF), overriding the authored close framing.
+    orbit = apply_master_camera_orbit(config, reference)
 
     return objects, {
         "reference": {**reference, "deleted_objects": deleted},
@@ -494,6 +555,7 @@ def setup_master_scene(master_path: Path, model_path: Path, recipe):
         "camera_hidden_objects": hidden,
         "camera_focus": focus,
         "camera_focus_preserved": preserved_focus,
+        "camera_orbit": orbit,
     }
 
 

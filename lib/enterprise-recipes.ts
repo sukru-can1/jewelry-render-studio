@@ -619,8 +619,11 @@ export const enterpriseMetalLabels = Object.fromEntries(
 // finish initializing).
 export {
   buildMasterSceneRecipe,
+  MASTER_CATALOG_ORBITS,
   MASTER_EXTRA_POSES,
   MASTER_POSES,
   MASTER_REFERENCE_CONTAINS,
+  type MasterCameraOrbit,
   type MasterScenePose,
+  type MasterSceneTuning,
 } from "@/lib/master-scene-recipes";

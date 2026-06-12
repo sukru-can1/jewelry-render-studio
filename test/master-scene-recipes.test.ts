@@ -36,12 +36,21 @@
 //      swapped product; the worker (r9) bakes an object-targeted focus into
 //      a scalar before reference deletion, and depth_of_field is now an
 //      explicit recipe override only (no longer emitted by the builder).
+//   4. (FULL + STONE) CATALOG ANGLES (user directive + Glamira reference
+//      sheet): the v203 close poses crop the ring; the catalog standard
+//      shows the WHOLE product. Angles now port the legacy Flask app's four
+//      proven camera views (view1/view2/view4/Camera az-el orbits about the
+//      reference center, distance = max_dim*3.5*scale, f/2.8 focus-on-center)
+//      as master_scene.camera_orbit (worker r10). Product pose is zeroed
+//      (reference pose, upright); exposure is the uniform v203a -0.94.
+//      MASTER_POSES stays exported as the close-up provenance set.
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
 import {
   buildMasterSceneRecipe,
+  MASTER_CATALOG_ORBITS,
   MASTER_EXTRA_POSES,
   MASTER_POSES,
   MASTER_REFERENCE_CONTAINS,
@@ -50,9 +59,9 @@ import {
 import { buildMasterSceneRecipe as buildFromSibling } from "@/lib/master-scene-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "c0c68f23b0e5a52b225ad20ba738b76783be2206d6f79af26ef9e791bc6d7787";
+  "0028a9f0722cd8b980b66cfdf2a2d030eca4e879276320f7459fd68ef603abd4";
 const GOLDEN_STONE_SHA256 =
-  "e5be0ced4a9401e3c0b0de522bb53484782b541bcfea4f212a25eee34eff15ae";
+  "28db2e603d215ec0f8b3a16cf8628faeb367d8f772332ecb3a5adde8b4258153";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -148,54 +157,45 @@ describe("master_scene block — the worker contract", () => {
   });
 });
 
-describe("angle -> pose mapping (ported 1:1 from v203a..e; provenance in pose_source)", () => {
-  // The v203 table: rotation/scale/translation from group_adjustments,
-  // exposure from render.exposure of the matching recipe.
+describe("angle -> catalog orbit (the legacy Flask app's four views; regeneration note 4)", () => {
+  // models.py DEFAULT_CAMERA_PRESETS + _create_fresh_scene.py cam_configs.
   const expected = {
-    hero: {
-      source: "v203a_close_front_hero",
-      rotation: [-16, 0, -16],
-      scale: 0.95,
-      translation: [0.0, 0.0, -0.01],
-      exposure: -0.94,
-    },
-    front: {
-      source: "v203b_close_catalog_left",
-      rotation: [0, 0, -34],
-      scale: 0.91,
-      translation: [-0.004, 0.0, -0.01],
-      exposure: -0.95,
-    },
-    top: {
-      source: "v203e_close_upper_ring_shape",
-      rotation: [12, 0, -26],
-      scale: 0.9,
-      translation: [0.0, 0.0, -0.006],
-      exposure: -0.93,
-    },
-    profile: {
-      source: "v203d_close_low_side",
-      rotation: [-7, 0, -74],
-      scale: 0.88,
-      translation: [0.0, 0.0, -0.008],
-      exposure: -0.96,
-    },
+    hero: { source: "legacy view1", azimuth: 30, elevation: 25, distance_scale: 1.0, focal_length: 85 },
+    front: { source: "legacy view2", azimuth: 180, elevation: 15, distance_scale: 1.0, focal_length: 85 },
+    top: { source: "legacy view4", azimuth: -30, elevation: 70, distance_scale: 0.8, focal_length: 85 },
+    profile: { source: "legacy Camera", azimuth: -45, elevation: 15, distance_scale: 1.0, focal_length: 50 },
   } as const;
 
-  for (const [angle, pose] of Object.entries(expected)) {
-    it(`${angle} <- ${pose.source}`, () => {
+  for (const [angle, orbit] of Object.entries(expected)) {
+    it(`${angle} <- ${orbit.source}`, () => {
       const recipe = buildMasterSceneRecipe({
         ...reqFull,
         angle: angle as EnterpriseRecipeRequest["angle"],
       }) as AnyRecipe;
-      expect(recipe.master_scene.pose_rotation_degrees).toEqual([...pose.rotation]);
-      expect(recipe.master_scene.pose_scale).toBe(pose.scale);
-      expect(recipe.master_scene.pose_translation).toEqual([...pose.translation]);
-      expect(recipe.render.exposure).toBe(pose.exposure);
-      expect(recipe.enterprise.pose_source).toBe(pose.source);
-      expect(MASTER_POSES[angle as keyof typeof MASTER_POSES].source).toBe(pose.source);
+      expect(recipe.master_scene.camera_orbit).toEqual({
+        azimuth: orbit.azimuth,
+        elevation: orbit.elevation,
+        distance_scale: orbit.distance_scale,
+        focal_length: orbit.focal_length,
+        fstop: 2.8,
+      });
+      // Product stays in the REFERENCE pose — the camera moves, not the ring.
+      expect(recipe.master_scene.pose_rotation_degrees).toEqual([0, 0, 0]);
+      expect(recipe.master_scene.pose_scale).toBe(1.0);
+      expect(recipe.master_scene.pose_translation).toEqual([0, 0, 0]);
+      // Uniform catalog exposure (v203a's studio value).
+      expect(recipe.render.exposure).toBe(-0.94);
+      expect(recipe.enterprise.pose_source).toBe(orbit.source);
+      expect(MASTER_CATALOG_ORBITS[angle as keyof typeof MASTER_CATALOG_ORBITS].source).toBe(
+        orbit.source,
+      );
     });
   }
+
+  it("the v203 close poses remain exported as provenance (no longer drive angles)", () => {
+    expect(MASTER_POSES.hero.source).toBe("v203a_close_front_hero");
+    expect(MASTER_POSES.profile.source).toBe("v203d_close_low_side");
+  });
 
   it("keeps v203c_close_catalog_right as the exported 5th pose (no 5th angle key)", () => {
     expect(MASTER_EXTRA_POSES.catalog_right).toEqual({
