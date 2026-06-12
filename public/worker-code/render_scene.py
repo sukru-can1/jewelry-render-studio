@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-debug-fx-r6"
+WORKER_BUILD = "20260612-master-scene-r7"
 
 
 DEFAULT_RECIPE = {
@@ -126,6 +126,9 @@ def args():
     parser.add_argument("--recipe", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--metadata", required=True)
+    # Optional master-scene studio .blend: master_scene.enabled recipes open
+    # this file as the scene and swap its reference product for --model.
+    parser.add_argument("--master", default=None)
     import sys
 
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -249,6 +252,165 @@ def setup_source_scene(path: Path, recipe):
     return source_scene_mesh_objects(recipe)
 
 
+def measure_reference_product(config):
+    """Find the master scene's built-in reference product via
+    master_scene.reference_contains tokens (object_signature matching) and
+    measure its placement envelope BEFORE deletion. The envelope (bbox center +
+    max dimension) is the placement contract the uploaded product is normalized
+    onto — the legacy hand-measured REF_CENTER/REF_MAXDIM constants
+    (external-work blender_scripts.py ~893), now measured live so any master
+    .blend works without baked-in numbers."""
+    tokens = [token.lower() for token in config.get("reference_contains", [])]
+    if not tokens:
+        raise RuntimeError("master_scene.reference_contains must list the reference product tokens.")
+    matched = [
+        obj
+        for obj in bpy.context.scene.objects
+        if obj.type == "MESH" and any(token in object_signature(obj) for token in tokens)
+    ]
+    if not matched:
+        raise RuntimeError("No reference product meshes matched master_scene.reference_contains.")
+    return matched, bounds_summary(matched)
+
+
+def delete_reference_product(objects):
+    """DELETE (not hide) the reference meshes — deletion frees their object
+    names so the imported product keeps its original names for token matching
+    (legacy product-swap lesson, blender_scripts.py ~831-840)."""
+    names = sorted(obj.name for obj in objects)
+    for obj in objects:
+        bpy.data.objects.remove(obj, do_unlink=True)
+    bpy.context.view_layer.update()
+    return names
+
+
+def place_product_on_reference(objects, settings, reference, pivot):
+    """Normalize the imported product onto the measured reference envelope.
+
+    Legacy single-composed-matrix placement (blender_scripts.py ~906-927), on
+    the product PIVOT: stand upright / orient head via auto_orient_model
+    (rotations preserve lengths, so the max dimension — and therefore the
+    scale below — is unaffected), then ONE world-space matrix: translate the
+    product bbox center to the origin -> scale to the reference max dimension
+    -> translate to the reference center."""
+    apply_shade_smooth(objects, settings)
+    auto_orient_model(objects, settings, pivot)
+
+    mins, maxs = object_bounds(objects)
+    center = (mins + maxs) * 0.5
+    size = maxs - mins
+    current_max = max(size.x, size.y, size.z)
+    ref_center = Vector(reference["center"])
+    ref_maxdim = float(reference["max_dimension"])
+    scale = ref_maxdim / current_max if current_max > 0 else 1.0
+    pivot.matrix_world = (
+        Matrix.Translation(ref_center) @ Matrix.Scale(scale, 4) @ Matrix.Translation(-center)
+    ) @ pivot.matrix_world
+    bpy.context.view_layer.update()
+    print(
+        f"MASTER_PLACE: scaled x{scale:.4f} onto reference "
+        f"center=({ref_center.x:.4f}, {ref_center.y:.4f}, {ref_center.z:.4f}) maxdim={ref_maxdim:.5f}"
+    )
+    return scale
+
+
+def apply_master_pose(config, reference, pivot):
+    """Per-angle PRODUCT POSE about the reference center — the v203 contract:
+    the studio camera is FIXED; rotating/scaling/nudging the product creates
+    the catalog angles. Mirrors the group_adjustments math (scale about the
+    center, rotate, then translate) as one composed matrix on the pivot."""
+    rotation = [math.radians(float(v)) for v in config.get("pose_rotation_degrees", [0.0, 0.0, 0.0])]
+    scale = float(config.get("pose_scale", 1.0))
+    translation = transform_vector(config.get("pose_translation", [0, 0, 0]), 0.0)
+    center = Vector(reference["center"])
+    pose = (
+        Matrix.Translation(center + translation)
+        @ Euler(rotation, "XYZ").to_matrix().to_4x4()
+        @ Matrix.Scale(scale, 4)
+        @ Matrix.Translation(-center)
+    )
+    pivot.matrix_world = pose @ pivot.matrix_world
+    bpy.context.view_layer.update()
+
+
+def apply_master_camera_hide(config, product_objects):
+    """master_scene.camera_hide_contains: studio meshes matching these tokens
+    get visible_camera=False — they keep LIGHTING the product (diffuse/glossy/
+    transmission bounce preserved) but stop painting pixels. The legacy stone-
+    pass lesson: never delete the floor for stone layers; hide it from camera
+    only, so render.transparent ships pure stones-on-alpha. Product meshes are
+    exempt — their pass behavior is owned by apply_pass_visibility."""
+    tokens = [token.lower() for token in config.get("camera_hide_contains", [])]
+    if not tokens:
+        return []
+    product = set(product_objects)
+    hidden = []
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH" or obj in product:
+            continue
+        if any(token in object_signature(obj) for token in tokens) and hasattr(obj, "visible_camera"):
+            obj.visible_camera = False
+            hidden.append(obj.name)
+    return hidden
+
+
+def setup_master_scene(master_path: Path, model_path: Path, recipe):
+    """Master-scene product swap — the proven v203 pipeline, generalized.
+
+    Renders INSIDE the human-authored studio .blend (its camera, lights and
+    cards ARE the look) and swaps the built-in reference product for the
+    uploaded model: open mainfile -> measure + delete the reference -> import
+    the product (flatten + single pivot) -> normalize onto the reference
+    envelope -> per-angle pose -> pass visibility -> recipe materials -> scene
+    adjustments. The procedural studio builders (setup_background, add_lights,
+    add_reflection_cards, setup_camera, add_contact_shadows) are deliberately
+    NOT called — the master scene owns all of that."""
+    config = recipe.get("master_scene", {})
+    bpy.ops.wm.open_mainfile(filepath=str(master_path))
+
+    scene_name = config.get("scene_name")
+    if scene_name and scene_name in bpy.data.scenes:
+        bpy.context.window.scene = bpy.data.scenes[scene_name]
+
+    camera_name = config.get("camera_name")
+    if camera_name and camera_name in bpy.data.objects and bpy.data.objects[camera_name].type == "CAMERA":
+        bpy.context.scene.camera = bpy.data.objects[camera_name]
+
+    setup_render(recipe)
+
+    reference_objects, reference = measure_reference_product(config)
+    deleted = delete_reference_product(reference_objects)
+
+    objects = import_model(model_path)
+    if not objects:
+        raise RuntimeError("Uploaded product contains no mesh objects.")
+    pivot = create_product_pivot(objects)
+    imported_bounds = bounds_summary(objects)
+    scale = place_product_on_reference(objects, recipe["model"], reference, pivot)
+    apply_master_pose(config, reference, pivot)
+    placed_bounds = bounds_summary(objects)
+
+    # Same order as the standard path: pass visibility FIRST (its tokens match
+    # the product's ORIGINAL material names), then recipe material assignment.
+    apply_pass_visibility(objects, recipe["model"])
+    if config.get("apply_recipe_materials", True):
+        assign_materials(objects, recipe)
+
+    apply_scene_adjustments(config)
+    add_reflection_cards_from_configs(config.get("reflection_cards", []))
+    hidden = apply_master_camera_hide(config, objects)
+
+    return objects, {
+        "reference": {**reference, "deleted_objects": deleted},
+        "product": {
+            "imported": imported_bounds,
+            "placed": placed_bounds,
+            "scale_to_reference": scale,
+        },
+        "camera_hidden_objects": hidden,
+    }
+
+
 def look_at(obj, target):
     direction = Vector(target) - obj.location
     obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
@@ -300,8 +462,11 @@ def apply_source_camera_adjustment(recipe):
         camera.data.shift_y = float(config["shift_y"])
 
 
-def apply_source_scene_adjustments(recipe):
-    config = recipe.get("source_scene", {})
+def apply_scene_adjustments(config):
+    """Token-matched scene adjustments (group/object/light), shared core for
+    the source-scene AND master-scene paths: the config dict carries
+    group_adjustments / object_adjustments / light_adjustments. Extracted
+    verbatim from apply_source_scene_adjustments."""
     for adjustment in config.get("group_adjustments", []):
         tokens = [token.lower() for token in adjustment.get("contains", [])]
         if not tokens:
@@ -377,6 +542,10 @@ def apply_source_scene_adjustments(recipe):
                 data.size_y = float(adjustment["size_y"])
             if "color" in adjustment:
                 data.color = adjustment["color"][:3]
+
+
+def apply_source_scene_adjustments(recipe):
+    apply_scene_adjustments(recipe.get("source_scene", {}))
 
 
 def filter_product_objects(objects, settings):
@@ -475,17 +644,26 @@ def auto_orient_model(objects, settings, pivot=None):
     print(f"AUTO_ORIENT: thin axis {'XYZ'[thin]} -> Y, head rotated {head_degrees:.1f} deg about Y")
 
 
+def apply_shade_smooth(objects, settings):
+    """Shade-smooth pass (model.shade_smooth + shade_smooth_exclude_contains),
+    extracted verbatim from normalize() so the master-scene path can reuse it
+    without pulling in the auto_center/auto_scale normalization (the master
+    path normalizes onto the measured REFERENCE envelope instead)."""
+    if not settings.get("shade_smooth", True):
+        return
+    smooth_exclude = [token.lower() for token in settings.get("shade_smooth_exclude_contains", [])]
+    for obj in objects:
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        if any(token in object_signature(obj) for token in smooth_exclude):
+            bpy.ops.object.shade_flat()
+        else:
+            bpy.ops.object.shade_smooth()
+        obj.select_set(False)
+
+
 def normalize(objects, settings, pivot=None):
-    if settings.get("shade_smooth", True):
-        smooth_exclude = [token.lower() for token in settings.get("shade_smooth_exclude_contains", [])]
-        for obj in objects:
-            bpy.context.view_layer.objects.active = obj
-            obj.select_set(True)
-            if any(token in object_signature(obj) for token in smooth_exclude):
-                bpy.ops.object.shade_flat()
-            else:
-                bpy.ops.object.shade_smooth()
-            obj.select_set(False)
+    apply_shade_smooth(objects, settings)
 
     auto_orient_model(objects, settings, pivot)
 
@@ -1510,6 +1688,39 @@ def main():
     print(f"WORKER_BUILD: {WORKER_BUILD}")
     parsed = args()
     recipe = deep_merge(DEFAULT_RECIPE, json.loads(Path(parsed.recipe).read_text(encoding="utf-8")))
+    if recipe.get("master_scene", {}).get("enabled", False):
+        if not parsed.master:
+            raise RuntimeError(
+                "master_scene.enabled recipe requires --master (handler input.master_scene was not provided)."
+            )
+        objects, master_meta = setup_master_scene(Path(parsed.master), Path(parsed.model), recipe)
+        image_bounds = object_image_bounds(objects)
+        bpy.context.scene.render.filepath = parsed.output
+        bpy.ops.render.render(write_still=True)
+        Path(parsed.metadata).write_text(
+            json.dumps(
+                {
+                    "worker_build": WORKER_BUILD,
+                    "recipe": recipe,
+                    "master_scene": True,
+                    "scene": bpy.context.scene.name,
+                    "camera": bpy.context.scene.camera.name if bpy.context.scene.camera else None,
+                    **master_meta,
+                    "selected_objects": [obj.name for obj in objects],
+                    "lights": [
+                        obj.name
+                        for obj in bpy.context.scene.objects
+                        if obj.type == "LIGHT" and not obj.hide_render
+                    ],
+                    "world": bpy.context.scene.world.name if bpy.context.scene.world else None,
+                    "object_image_bounds": image_bounds,
+                    "materials": [material.name for material in bpy.data.materials],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        return
     if recipe.get("source_scene", {}).get("enabled", False):
         objects = setup_source_scene(Path(parsed.model), recipe)
         if not objects:

@@ -80,6 +80,10 @@ def handler(job):
     operation = job_input.get("operation", "render")
     job_id = job_input["job_id"]
     model = job_input["model"]
+    # Optional master-scene studio .blend ({url, pathname}) downloaded ALONGSIDE
+    # the product model: master_scene recipes render inside this studio and swap
+    # its reference product for the uploaded model (render_scene.py --master).
+    master_scene = job_input.get("master_scene")
     recipe = job_input.get("recipe", {})
     output = job_input.get("output", {})
     prefix = output.get("prefix") or f"renders/{job_id}"
@@ -94,6 +98,11 @@ def handler(job):
         metadata_path = work / "metadata.json"
 
         download(model["url"], model_path)
+        master_path = None
+        if master_scene:
+            runpod.serverless.progress_update(job, "Downloading master scene")
+            master_path = work / ("master" + Path(master_scene["pathname"]).suffix)
+            download(master_scene["url"], master_path)
         recipe_path.write_text(json.dumps(recipe, indent=2), encoding="utf-8")
 
         if operation == "inspect_materials":
@@ -153,6 +162,9 @@ def handler(job):
                 "--metadata",
                 str(metadata_path),
             ]
+            # --master only when provided — absent input.master_scene keeps the
+            # command line (and therefore behavior) byte-identical to before.
+            + (["--master", str(master_path)] if master_path else [])
         )
         if completed.returncode != 0:
             return {
