@@ -412,6 +412,10 @@ export function buildMasterSceneRecipe(request: EnterpriseRecipeRequest): Record
       pose_rotation_degrees: pose.rotation,
       pose_scale: pose.scale,
       pose_translation: pose.translation,
+      // The authored camera transform stays in the master .blend, but the
+      // worker refocuses it after product swap. A tighter f-stop fixes the
+      // soft cloud-app beauty renders while preserving the v203 view.
+      depth_of_field: { enabled: true, f_stop: 16.0 },
       apply_recipe_materials: true,
       light_adjustments: V203_LIGHT_ADJUSTMENTS,
       object_adjustments: V203_OBJECT_ADJUSTMENTS,

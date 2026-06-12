@@ -295,6 +295,9 @@ describe("createBatch — transactional fan-out (BATCH-07)", () => {
     }
     // The primary full beauty pass is persisted on the combo for every angle×metal.
     expect(rows.filter((r) => r.combo.pass === "full")).toHaveLength(2);
+    for (const row of rows) {
+      expect((row.recipe as { master_scene?: { enabled?: boolean } }).master_scene?.enabled).toBe(true);
+    }
 
     expect(result.ok).toBe(true);
     if (result.ok) {

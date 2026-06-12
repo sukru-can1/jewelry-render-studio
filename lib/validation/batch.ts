@@ -42,10 +42,11 @@ export const createBatchSchema = z.object({
   // path, byte-for-byte. createBatch does NOT consume it yet (09-02 wires it);
   // this only lands the validated contract for the UI (09-03) + orchestration.
   optimizeWithAi: z.boolean().optional().default(false),
-  // Recipe generator selection. OPTIONAL, defaults "procedural" so the server
-  // contract stays byte-identical for pre-toggle clients; the batch-builder UI
+  // Recipe generator selection. OPTIONAL, defaults "master" so the server
+  // never falls back to the soft procedural studio when old clients omit it.
   // sends "master" by default (the v203 studio pipeline — the quality road).
-  pipeline: pipelineEnum.optional().default("procedural"),
+  // Explicit "procedural" remains available only when requested.
+  pipeline: pipelineEnum.optional().default("master"),
 });
 
 export type CreateBatchInput = z.infer<typeof createBatchSchema>;

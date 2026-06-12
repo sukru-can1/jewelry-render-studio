@@ -25,6 +25,9 @@
 //      "MASTER_SCENE_realistic_polished_gold" for metal) +
 //      source_material_adjust ported VERBATIM from v203a_close_front_hero
 //      (white metal = the proven [0.372,0.392,0.424] retint); materials: {}.
+//   2. (FULL + STONE) explicit master-camera DOF policy: worker refocuses the
+//      authored camera after product swap and uses f/16 so cloud beauty renders
+//      do not inherit stale/deleted reference-product focus and render soft.
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
@@ -39,9 +42,9 @@ import {
 import { buildMasterSceneRecipe as buildFromSibling } from "@/lib/master-scene-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "c0c68f23b0e5a52b225ad20ba738b76783be2206d6f79af26ef9e791bc6d7787";
+  "ddf801e53e05cf87be2311f981de50c07856d9eb5f8107426c686d93a4c254e3";
 const GOLDEN_STONE_SHA256 =
-  "e5be0ced4a9401e3c0b0de522bb53484782b541bcfea4f212a25eee34eff15ae";
+  "1d294be9408b3a6dfa9a7540b5ef94fe2171b8d845707a7a2fcd1f6c5541cbdf";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -103,6 +106,10 @@ describe("master_scene block — the worker contract", () => {
     ]);
     expect(master.reference_contains).toEqual([...MASTER_REFERENCE_CONTAINS]);
     expect(master.apply_recipe_materials).toBe(true);
+  });
+
+  it("carries an explicit post-swap camera focus policy for crisp catalog renders", () => {
+    expect(master.depth_of_field).toEqual({ enabled: true, f_stop: 16.0 });
   });
 
   it("carries the v203 studio trim (light adjustments, helper-card adjustments, 3 adaptive cards)", () => {
