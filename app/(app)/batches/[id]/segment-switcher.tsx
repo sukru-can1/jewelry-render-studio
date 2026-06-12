@@ -12,8 +12,8 @@ import { cn } from "@/lib/utils";
 // Component route) styled like the inherited toggle-group; the `active` segment is
 // the neutral-filled "on" state. 44px hit-area on every segment (inherited rule).
 //
-// This plan owns rendering the switcher on the compositing page; wiring it onto the
-// monitor/gallery pages is a nice-to-have left for a follow-up.
+// The switcher renders on all three batch surfaces (monitor, gallery, compositing),
+// including their error branches, so an operator can always move between segments.
 
 type Segment = "monitor" | "gallery" | "compositing";
 

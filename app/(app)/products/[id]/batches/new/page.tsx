@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Layers } from "lucide-react";
@@ -13,6 +14,7 @@ import {
 } from "@/lib/batches/builder-data";
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
+import { PageBreadcrumb } from "@/app/components/app-shell/page-breadcrumb";
 
 import { BatchBuilder } from "./batch-builder";
 
@@ -22,6 +24,8 @@ import { BatchBuilder } from "./batch-builder";
 // runtime (Prisma); force-dynamic so the live Admin-editable domain is always fresh.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Build batch" };
 
 export default async function NewBatchPage({
   params,
@@ -88,6 +92,14 @@ export default async function NewBatchPage({
 
   return (
     <div className="flex flex-col gap-8 pb-28 lg:pb-8">
+      <PageBreadcrumb
+        items={[
+          { label: "Products", href: "/products" },
+          { label: product.name, href: `/products/${product.id}` },
+          { label: "Build batch" },
+        ]}
+      />
+
       <header className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold leading-tight text-foreground">

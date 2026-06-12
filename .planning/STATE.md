@@ -95,6 +95,12 @@ Progress: [██████████] 100%
 | Phase 09 P02 | 37m | 3 tasks | 15 files |
 | Phase 09 P04 | 85min | 3 tasks | 17 files |
 
+## Quick Tasks Completed
+
+| ID | Description | Completed | Commits |
+|----|-------------|-----------|---------|
+| 260612-i11-ui-ux-wiring-fixes | UI/UX + screen-wiring fix pass from a 12-finding UX audit: SegmentSwitcher on all batch surfaces, "View outputs" CTA, product→recent-batches section, branded 404s, honest retry links, next-themes persistence, app-wide page titles, (app) error boundary, shared lib/format.ts dates, gallery header hierarchy, canonical empty states, breadcrumbs | 2026-06-12 | dfaa59c, e97e934, 673d186 |
+
 ## Accumulated Context
 
 ### Decisions

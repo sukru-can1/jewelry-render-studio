@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { Layers } from "lucide-react";
 import { list } from "@vercel/blob";
 
 import { requireSession } from "@/lib/auth/rbac";
@@ -16,6 +18,7 @@ import {
   deliverablePathname,
   deliverablePrefix,
 } from "@/lib/compositing/deliverable";
+import { PageBreadcrumb } from "@/app/components/app-shell/page-breadcrumb";
 
 import { SegmentSwitcher } from "../segment-switcher";
 import { LayerCompositor } from "./compositor";
@@ -37,6 +40,8 @@ import { DownloadAllDeliverables } from "./download-all-action";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = { title: "Compositing" };
+
 export default async function BatchCompositingPage({
   params,
 }: {
@@ -56,9 +61,14 @@ export default async function BatchCompositingPage({
             Couldn&apos;t load this batch for compositing. Check your connection
             and try again.
           </p>
-          <Button variant="secondary" className="mt-4" asChild>
-            <Link href="/batches">Retry</Link>
-          </Button>
+          <div className="mt-4 flex gap-2">
+            <Button asChild>
+              <Link href={`/batches/${id}/compositing`}>Try again</Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href="/batches">Back to batches</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -113,6 +123,14 @@ export default async function BatchCompositingPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <PageBreadcrumb
+        items={[
+          { label: "Batches", href: "/batches" },
+          { label: gallery.productName, href: `/batches/${gallery.id}` },
+          { label: "Compositing" },
+        ]}
+      />
+
       <SegmentSwitcher batchId={id} active="compositing" />
 
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -142,14 +160,19 @@ export default async function BatchCompositingPage({
       ) : null}
 
       {variants.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-card px-6 py-16 text-center">
-          <p className="text-base font-semibold text-foreground">
-            No composable layers yet
-          </p>
-          <p className="max-w-md text-sm text-muted-foreground">
-            This batch hasn&apos;t produced any finished layers to composite yet.
-            Check its progress in the monitor.
-          </p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border py-16 text-center">
+          <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Layers className="size-5" strokeWidth={1.75} aria-hidden />
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-foreground">
+              No composable layers yet
+            </p>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              This batch hasn&apos;t produced any finished layers to composite yet.
+              Check its progress in the monitor.
+            </p>
+          </div>
           <Button variant="secondary" className="mt-2" asChild>
             <Link href={`/batches/${gallery.id}`}>View batch progress</Link>
           </Button>

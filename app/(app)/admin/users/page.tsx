@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { requireRole } from "@/lib/auth/rbac";
@@ -12,6 +13,8 @@ import { UsersTable, type AdminUser } from "./users-table";
 // surface. Node runtime (Prisma + the auth boundary are not edge-safe).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Users" };
 
 export default async function UsersPage() {
   try {

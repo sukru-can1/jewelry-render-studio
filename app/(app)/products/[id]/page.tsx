@@ -1,10 +1,18 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Box } from "lucide-react";
+import type { JobStatus } from "@prisma/client";
 
 import { requireSession } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { privateUrl } from "@/lib/blob";
 import { parseInventory, type ParsedInventory } from "@/lib/inventory";
+import {
+  deriveBatchStatus,
+  summarizeJobs,
+} from "@/lib/orchestration/batch-status";
+import { formatDateTime, relativeTime } from "@/lib/format";
 import { Badge } from "@/app/components/ui/badge";
 import {
   Tabs,
@@ -14,7 +22,9 @@ import {
 } from "@/app/components/ui/tabs";
 
 import { loadAssignments } from "@/lib/products/assignments";
+import { PageBreadcrumb } from "@/app/components/app-shell/page-breadcrumb";
 
+import { BatchStatusPill } from "../../batches/status-pill";
 import { InspectPanel } from "./inspect-panel";
 import { GroupAssignment } from "./group-assignment";
 import { BuildBatchButton } from "./build-batch-button";
@@ -26,6 +36,21 @@ import { BuildBatchButton } from "./build-batch-button";
 // /api/file proxy (privateUrl, T-02-15).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Tab title (UX audit B7): a lightweight name-only select — the page's own
+// query is left untouched.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const product = await prisma.product.findUnique({
+    where: { id },
+    select: { name: true },
+  });
+  return { title: product?.name ?? "Product" };
+}
 
 const STATUS_PILL: Record<string, { label: string; variant: "secondary" | "outline" | "destructive" | "default" }> = {
   needs_inspection: { label: "needs inspection", variant: "outline" },
@@ -86,8 +111,41 @@ export default async function ProductDetailPage({
   const groupObjects = parsedInventory?.objects ?? [];
   const initialAssignments = await loadAssignments(id);
 
+  // Recent batches for this product (UX audit A3): newest 5 with their job-status
+  // tallies so each row shows the derived batch status. DB-only — when the product
+  // has no batches the section is omitted entirely.
+  const recentBatches = await prisma.batch.findMany({
+    where: { productId: id },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    include: { jobs: { select: { status: true } } },
+  });
+  const recentBatchRows = recentBatches.map((b) => {
+    const tally = new Map<string, number>();
+    for (const j of b.jobs) tally.set(j.status, (tally.get(j.status) ?? 0) + 1);
+    const progress = summarizeJobs(
+      [...tally.entries()].map(([status, count]) => ({
+        status: status as JobStatus,
+        _count: count,
+      })),
+    );
+    return {
+      id: b.id,
+      createdAt: b.createdAt,
+      total: progress.total,
+      status: deriveBatchStatus(progress, b.cancelRequestedAt),
+    };
+  });
+
   return (
     <div className="flex flex-col gap-8">
+      <PageBreadcrumb
+        items={[
+          { label: "Products", href: "/products" },
+          { label: product.name },
+        ]}
+      />
+
       <header className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-semibold leading-tight text-foreground">
@@ -132,7 +190,7 @@ export default async function ProductDetailPage({
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Uploaded</dt>
                 <dd className="font-mono text-sm text-foreground">
-                  {new Date(product.createdAt).toISOString().slice(0, 16).replace("T", " ")}
+                  {formatDateTime(product.createdAt)}
                 </dd>
               </div>
               {modelHref ? (
@@ -170,6 +228,39 @@ export default async function ProductDetailPage({
           )}
         </TabsContent>
       </Tabs>
+
+      {recentBatchRows.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-base font-semibold text-foreground">
+              Recent batches
+            </h2>
+            <Link
+              href="/batches"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              View all batches
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            {recentBatchRows.map((b) => (
+              <Link
+                key={b.id}
+                href={`/batches/${b.id}`}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 outline-none transition-colors hover:border-foreground/20 focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <BatchStatusPill status={b.status} />
+                <span className="font-mono text-xs text-muted-foreground">
+                  {b.total} jobs
+                </span>
+                <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
+                  {relativeTime(b.createdAt)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

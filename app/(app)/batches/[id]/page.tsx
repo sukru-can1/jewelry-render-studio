@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { Images } from "lucide-react";
 
 import { requireSession } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
@@ -13,11 +15,13 @@ import { isTerminal } from "@/lib/orchestration/status-map";
 import { loadBatchIntel } from "@/lib/intelligence/read";
 // Full-pass-first preview preference (pure helper, shared with the gallery).
 import { preferredPreviewLayer } from "@/lib/gallery/group";
+import { PageBreadcrumb } from "@/app/components/app-shell/page-breadcrumb";
 
 import { BatchStatusPill } from "../status-pill";
 import { CancelBatchControl } from "./cancel-controls";
 import { IntelPanel } from "./intel-panel";
 import { JobsMonitor, type MonitorJob, type MonitorSnapshot } from "./jobs-monitor";
+import { SegmentSwitcher } from "./segment-switcher";
 
 // UI-SPEC §2 — Batch detail / jobs monitor (ORCH-04/05/03). Async Server Component,
 // Node runtime (Prisma), force-dynamic so the first paint reflects the latest DB
@@ -27,6 +31,17 @@ import { JobsMonitor, type MonitorJob, type MonitorSnapshot } from "./jobs-monit
 // import the GPU dispatch client (ORCH-02; test/orch-db-only.test.ts source guard).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Tab title (UX audit B7): NO DB call — the short batch id is enough to tell
+// browser tabs apart.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  return { title: `Batch · ${id.slice(0, 8)}` };
+}
 
 // Render a job's combo Json into the "view1 · white · diamond · stone" mono string.
 // Reads the CANONICAL combo keys (angleKey/metalKey/stoneGroup/pass) the expander
@@ -65,13 +80,19 @@ export default async function BatchDetailPage({
   if (!batch) {
     return (
       <div className="flex flex-col gap-6">
+        <SegmentSwitcher batchId={id} active="monitor" />
         <div className="rounded-lg border border-border bg-card p-6">
           <p className="text-sm text-foreground">
             Couldn&apos;t load this batch. Check your connection and try again.
           </p>
-          <Button variant="secondary" className="mt-4" asChild>
-            <Link href="/batches">Retry</Link>
-          </Button>
+          <div className="mt-4 flex gap-2">
+            <Button asChild>
+              <Link href={`/batches/${id}`}>Try again</Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href="/batches">Back to batches</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -87,6 +108,15 @@ export default async function BatchDetailPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <PageBreadcrumb
+        items={[
+          { label: "Batches", href: "/batches" },
+          { label: batch.productName },
+        ]}
+      />
+
+      <SegmentSwitcher batchId={batch.id} active="monitor" />
+
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-1">
@@ -101,6 +131,16 @@ export default async function BatchDetailPage({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            {cancelable === 0 && batch.progress.completed > 0 ? (
+              // Terminal batch with finished renders — the primary next step is
+              // viewing what it produced (UX audit A2).
+              <Button size="sm" asChild>
+                <Link href={`/batches/${batch.id}/gallery`}>
+                  <Images className="size-4" />
+                  View outputs
+                </Link>
+              </Button>
+            ) : null}
             {terminalWithFailures ? (
               // Manual retry is descoped this phase (UI-SPEC: optional). Auto-retry
               // (Wave 2) already satisfies ORCH-03 via the Attempt column. The link

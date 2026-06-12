@@ -1,8 +1,12 @@
+import type { Metadata } from "next";
+
 import { auth } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/app/components/ui/card";
 
 import { LoginForm } from "./login-form";
+
+export const metadata: Metadata = { title: "Sign in" };
 
 // UI-SPEC §2 — Login brand moment, internal-tool feel. Centered single card
 // (max-width 400px) on the dominant background; Display-size wordmark above.

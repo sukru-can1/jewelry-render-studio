@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { Images } from "lucide-react";
 
 import { requireSession } from "@/lib/auth/rbac";
 import { Button } from "@/app/components/ui/button";
@@ -7,7 +9,10 @@ import {
   summarizeJobs,
 } from "@/lib/orchestration/batch-status";
 import { loadBatchGallery } from "@/lib/gallery/query";
+import { PageBreadcrumb } from "@/app/components/app-shell/page-breadcrumb";
 
+import { BatchStatusPill } from "../../status-pill";
+import { SegmentSwitcher } from "../segment-switcher";
 import { GalleryBody } from "./gallery-controls";
 import type { GalleryCardLayer } from "./layer-card";
 
@@ -20,6 +25,8 @@ import type { GalleryCardLayer } from "./layer-card";
 // src> resolves through the auth-gated /api/file proxy (T-05-07) inside the cards.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Outputs" };
 
 export default async function BatchGalleryPage({
   params,
@@ -34,13 +41,19 @@ export default async function BatchGalleryPage({
   if (!gallery) {
     return (
       <div className="flex flex-col gap-6">
+        <SegmentSwitcher batchId={id} active="gallery" />
         <div className="rounded-lg border border-border bg-card p-6">
           <p className="text-sm text-foreground">
             Couldn&apos;t load these outputs. Check your connection and try again.
           </p>
-          <Button variant="secondary" className="mt-4" asChild>
-            <Link href="/batches">Retry</Link>
-          </Button>
+          <div className="mt-4 flex gap-2">
+            <Button asChild>
+              <Link href={`/batches/${id}/gallery`}>Try again</Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href="/batches">Back to batches</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -69,13 +82,28 @@ export default async function BatchGalleryPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <PageBreadcrumb
+        items={[
+          { label: "Batches", href: "/batches" },
+          { label: gallery.productName, href: `/batches/${gallery.id}` },
+          { label: "Outputs" },
+        ]}
+      />
+
+      <SegmentSwitcher batchId={gallery.id} active="gallery" />
+
+      {/* C10 — header hierarchy matches batch detail: product name + status
+          pill, mono id sub-line; "Outputs" context comes from the switcher. */}
       <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold leading-tight text-foreground">
-            {gallery.productName} · {gallery.id} — Outputs
-          </h1>
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="truncate text-xl font-semibold leading-tight text-foreground">
+              {gallery.productName}
+            </h1>
+            <BatchStatusPill status={batchStatus} />
+          </div>
           <span className="font-mono text-xs text-muted-foreground">
-            {layers.length} layers
+            {gallery.id} · {layers.length} layers
           </span>
         </div>
         {layers.length > 0 ? (
@@ -93,9 +121,19 @@ export default async function BatchGalleryPage({
       ) : null}
 
       {layers.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-6">
-          <p className="text-sm text-foreground">No finished outputs yet.</p>
-          <Button variant="secondary" className="mt-4" asChild>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border py-16 text-center">
+          <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Images className="size-5" strokeWidth={1.75} aria-hidden />
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-foreground">
+              No finished outputs yet
+            </p>
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Outputs will appear here as renders finish.
+            </p>
+          </div>
+          <Button variant="secondary" asChild className="mt-2">
             <Link href={`/batches/${gallery.id}`}>Back to job monitor</Link>
           </Button>
         </div>
