@@ -210,10 +210,13 @@ export const MASTER_CATALOG_ORBITS: Record<EnterpriseAngleKey, MasterCameraOrbit
 /**
  * Shrink factor turning the v203 close poses into FULL-RING catalog framing
  * through the AUTHORED camera (the studio's light/card ensemble stays aimed
- * exactly as the artist tuned it). The worker re-grounds the smaller product
- * onto the reference floor line (pose_ground_to_reference, r12).
+ * exactly as the artist tuned it). The product stays CENTERED on the
+ * reference center — the camera's aim AND the studio's static painted
+ * contact-shadow mesh both live there (live r12 batch: grounding pushed the
+ * ring low in frame and off its shadow; v203 itself never grounded).
+ * 0.55 framed the ring at ~44% of frame height; 0.78 targets ~62%.
  */
-const FULL_RING_SCALE = 0.55;
+const FULL_RING_SCALE = 0.78;
 
 // The v203 studio trim, verbatim from v203a (identical across v203a..e):
 // softboxes dimmed for contrast, the micro-sparkle pin boosted and cooled.
@@ -519,7 +522,6 @@ export function buildMasterSceneRecipe(
       pose_rotation_degrees: pose.rotation,
       pose_scale: Number((pose.scale * FULL_RING_SCALE).toFixed(4)),
       pose_translation: pose.translation,
-      pose_ground_to_reference: true,
       // NO depth_of_field override: the authored camera's DOF IS the look.
       // Products are normalized onto the reference envelope, so the artist's
       // hand-focused camera is correct for any swap; the worker bakes an

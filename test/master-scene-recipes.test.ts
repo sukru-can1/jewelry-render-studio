@@ -59,6 +59,12 @@
 //      re-grounded via pose_ground_to_reference (worker r12). Per-pose v203
 //      exposures return. camera_orbit stays a worker capability but is no
 //      longer emitted by the builder.
+//   7. (FULL + STONE) full-ring framing v2 (live r12 batch cmqaxk454): the
+//      grounded 0.55 pose sat the ring LOW and SMALL — the studio's painted
+//      contact-shadow mesh and the camera aim both live at the REFERENCE
+//      CENTER, and v203 itself never grounded. pose_ground_to_reference is
+//      no longer emitted (stays a worker capability); FULL_RING_SCALE
+//      0.55 -> 0.78 (ring ~44% -> ~62% of frame height, centered).
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
@@ -74,9 +80,9 @@ import {
 import { buildMasterSceneRecipe as buildFromSibling } from "@/lib/master-scene-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "a88d967a84a887c38bd3689bbc02c96295f48b61213a51f5e0e83fcef31ea4ac";
+  "0a87e1157b9dc04f971fcf125927c61d32c12bda7c936687a48dc26d0740d00d";
 const GOLDEN_STONE_SHA256 =
-  "5243ee8de88cff9c54be465cd25a2218be2b1343b2f53ba784764f497ff1d00b";
+  "d453485b3153b0e4b638afe482af10bdefe8f355dcc85868e5fac6857a83a60b";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -172,41 +178,42 @@ describe("master_scene block — the worker contract", () => {
   });
 });
 
-describe("angle -> FULL-RING v203 pose (authored camera + ensemble; regeneration note 6)", () => {
-  // The proven v203 poses, shrunk x0.55 (FULL_RING_SCALE) + grounded.
+describe("angle -> FULL-RING v203 pose (authored camera + ensemble; notes 6+7)", () => {
+  // The proven v203 poses, shrunk x0.78 (FULL_RING_SCALE), CENTERED on the
+  // reference center (no grounding — note 7).
   const expected = {
     hero: {
       source: "v203a_close_front_hero",
       rotation: [-16, 0, -16],
-      scale: 0.5225, // 0.95 * 0.55
+      scale: 0.741, // 0.95 * 0.78
       translation: [0.0, 0.0, -0.01],
       exposure: -0.94,
     },
     front: {
       source: "v203b_close_catalog_left",
       rotation: [0, 0, -34],
-      scale: 0.5005, // 0.91 * 0.55
+      scale: 0.7098, // 0.91 * 0.78
       translation: [-0.004, 0.0, -0.01],
       exposure: -0.95,
     },
     top: {
       source: "v203e_close_upper_ring_shape",
       rotation: [12, 0, -26],
-      scale: 0.495, // 0.9 * 0.55
+      scale: 0.702, // 0.9 * 0.78
       translation: [0.0, 0.0, -0.006],
       exposure: -0.93,
     },
     profile: {
       source: "v203d_close_low_side",
       rotation: [-7, 0, -74],
-      scale: 0.484, // 0.88 * 0.55
+      scale: 0.6864, // 0.88 * 0.78
       translation: [0.0, 0.0, -0.008],
       exposure: -0.96,
     },
   } as const;
 
   for (const [angle, pose] of Object.entries(expected)) {
-    it(`${angle} <- ${pose.source} at full-ring scale, grounded`, () => {
+    it(`${angle} <- ${pose.source} at full-ring scale, centered`, () => {
       const recipe = buildMasterSceneRecipe({
         ...reqFull,
         angle: angle as EnterpriseRecipeRequest["angle"],
@@ -214,7 +221,10 @@ describe("angle -> FULL-RING v203 pose (authored camera + ensemble; regeneration
       expect(recipe.master_scene.pose_rotation_degrees).toEqual([...pose.rotation]);
       expect(recipe.master_scene.pose_scale).toBeCloseTo(pose.scale, 10);
       expect(recipe.master_scene.pose_translation).toEqual([...pose.translation]);
-      expect(recipe.master_scene.pose_ground_to_reference).toBe(true);
+      // Centered on the reference center — NOT grounded (note 7: the studio's
+      // painted shadow + camera aim live at the center; grounding sat the
+      // ring low and off its shadow).
+      expect(recipe.master_scene.pose_ground_to_reference).toBeUndefined();
       // The authored camera owns the view — no orbit emitted (note 6).
       expect(recipe.master_scene.camera_orbit).toBeUndefined();
       expect(recipe.render.exposure).toBe(pose.exposure);
