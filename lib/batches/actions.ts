@@ -200,9 +200,11 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
     })) ?? DEFAULT_QUALITY;
 
   // (9b) INTEL-04 / G9 kill-switch: the adaptive loop is ON only when the batch
-  //      opted in AND OPENAI_API_KEY is present AND the global toggle is not
-  //      "false". When OFF, everything below is EXACTLY the classic path —
-  //      intelState/intel stay absent and the selected quality renders directly.
+  //      opted in AND a vision-judge key is present (Gemini preferred, OpenAI
+  //      fallback — mirrors analyze-preview's provider pick) AND the global
+  //      toggle is not "false". When OFF, everything below is EXACTLY the
+  //      classic path — intelState/intel stay absent and the selected quality
+  //      renders directly.
   //      MASTER-SCENE EXCLUSION: the loop's knobs (worldStrength, cardDarkness,
   //      contactShadow…) move PROCEDURAL recipe surfaces that the studio .blend
   //      owns in the master pipeline — an adjusted re-dispatch would silently
@@ -210,7 +212,7 @@ export async function createBatch(input: unknown): Promise<CreateBatchResult> {
   const intelligenceOn =
     selection.optimizeWithAi === true &&
     selection.pipeline !== "master" &&
-    Boolean(env.OPENAI_API_KEY) &&
+    Boolean(env.GOOGLE_GENERATIVE_AI_API_KEY || env.OPENAI_API_KEY) &&
     env.ADAPTIVE_INTELLIGENCE_ENABLED !== "false";
 
   // Intelligence batches render their SEED pass at LOW preview samples (the

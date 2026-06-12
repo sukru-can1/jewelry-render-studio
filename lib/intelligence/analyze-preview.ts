@@ -1,15 +1,21 @@
 // INTEL-02 (Phase 9) — the single vision call of the adaptive render loop.
 //
 // Sends the downscaled PRIVATE preview (lib/intelligence/preview-image.ts) to
-// the OpenAI vision model and returns a schema-validated VisionVerdict. The
+// the vision model and returns a schema-validated VisionVerdict. The
 // generateObject -> generateText fallback ladder + safeParseJsonObject + the
 // defensive zod re-parse are lifted VERBATIM from lib/inspection/ai-classify.ts
 // so an unexpected structured-output rejection on the reasoning model degrades
 // gracefully — BOTH paths re-validate against visionVerdictSchema (G1: a
 // malformed/hallucinated structure can never drive a render).
 //
-// Server-only: reads OPENAI_API_KEY. Imported solely by the cron ANALYZING
-// sweep (lib/intelligence/sweep.ts) — NEVER by the webhook path (T-09-09: the
+// VISION PROVIDER (user directive: "always ask gemini latest as visual"):
+// when GOOGLE_GENERATIVE_AI_API_KEY is present the judge is the hot-swapping
+// "gemini-flash-latest" alias (AI_VISION_MODEL overrides); otherwise the
+// original OpenAI path (OPENAI_API_KEY + AI_MODEL) is the fallback, so the
+// loop keeps working on deployments that only have the OpenAI key.
+//
+// Server-only. Imported solely by the cron ANALYZING sweep
+// (lib/intelligence/sweep.ts) — NEVER by the webhook path (T-09-09: the
 // webhook must stay fast; this call is multi-second to tens of seconds).
 //
 // PROMPT SIGN CONVENTION (09-01 carry-over, overrides 09-AI-SPEC §5.3's table):
@@ -18,6 +24,7 @@
 // DARKENS the cards. The prompt below encodes that explicitly.
 
 import { generateObject, generateText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 
 import { env } from "@/lib/env";
@@ -25,6 +32,14 @@ import { previewDataUrl } from "@/lib/intelligence/preview-image";
 import { visionVerdictSchema, type VisionVerdict } from "@/lib/intelligence/verdict";
 
 const DEFAULT_MODEL = "gpt-5.5-pro";
+// The Gemini "latest" alias is hot-swapped by Google with every new release —
+// exactly the directive: the judge is always the newest Gemini.
+const DEFAULT_GEMINI_MODEL = "gemini-flash-latest";
+
+/** True when ANY vision-judge credential is configured (Gemini preferred). */
+export function visionConfigured(): boolean {
+  return Boolean(env.GOOGLE_GENERATIVE_AI_API_KEY || env.OPENAI_API_KEY);
+}
 
 // Reasoning headroom + the tiny verdict JSON; bounded on purpose (A2/A4).
 const MAX_OUTPUT_TOKENS = 4096;
@@ -92,9 +107,11 @@ function contextText(context: AnalyzeContext): string {
 /**
  * Score one completed preview render with the vision model.
  *
- * - Reads the model from env.AI_MODEL (default "gpt-5.5-pro") and the key from
- *   env.OPENAI_API_KEY; throws a clear Error when the key is missing so the
- *   caller treats it as loop-OFF (G9) rather than failing opaquely.
+ * - Judge selection: Gemini latest when GOOGLE_GENERATIVE_AI_API_KEY is set
+ *   (model from AI_VISION_MODEL, default "gemini-flash-latest"); otherwise the
+ *   OpenAI fallback (OPENAI_API_KEY + AI_MODEL, default "gpt-5.5-pro"). Throws
+ *   a clear Error when NEITHER key is present so the caller treats it as
+ *   loop-OFF (G9) rather than failing opaquely.
  * - Fetches + downscales the PRIVATE preview via previewDataUrl (never the
  *   file-proxy route, never a public URL — T-09-05), sent with imageDetail:"low" (A3).
  * - Prefers generateObject (validated structured output). If that throws, falls
@@ -105,9 +122,10 @@ export async function analyzePreview(
   pathname: string,
   context: AnalyzeContext,
 ): Promise<VisionVerdict> {
-  const apiKey = env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("AI is not configured (OPENAI_API_KEY missing)");
+  if (!visionConfigured()) {
+    throw new Error(
+      "AI is not configured (GOOGLE_GENERATIVE_AI_API_KEY / OPENAI_API_KEY missing)",
+    );
   }
   const dataUrl = await previewDataUrl(pathname);
   return analyzeImageDataUrl(dataUrl, context);
@@ -124,18 +142,26 @@ export async function analyzeImageDataUrl(
   dataUrl: string,
   context: AnalyzeContext,
 ): Promise<VisionVerdict> {
-  const apiKey = env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("AI is not configured (OPENAI_API_KEY missing)");
+  const googleKey = env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const openaiKey = env.OPENAI_API_KEY;
+  if (!googleKey && !openaiKey) {
+    throw new Error(
+      "AI is not configured (GOOGLE_GENERATIVE_AI_API_KEY / OPENAI_API_KEY missing)",
+    );
   }
-  const modelId = env.AI_MODEL ?? DEFAULT_MODEL;
 
-  const openai = createOpenAI({ apiKey });
-  const model = openai(modelId);
+  // Gemini latest is the PREFERRED judge (user directive); OpenAI is the
+  // fallback for deployments that only carry the OpenAI key.
+  const model = googleKey
+    ? createGoogleGenerativeAI({ apiKey: googleKey })(
+        env.AI_VISION_MODEL ?? DEFAULT_GEMINI_MODEL,
+      )
+    : createOpenAI({ apiKey: openaiKey! })(env.AI_MODEL ?? DEFAULT_MODEL);
 
   const imagePart = {
     type: "image" as const,
     image: dataUrl,
+    // Namespaced provider options: each provider reads only its own block.
     providerOptions: { openai: { imageDetail: "low" } },
   };
 

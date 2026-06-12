@@ -32,6 +32,12 @@ export const env = createEnv({
     // "AI is not configured" error and the app otherwise builds/runs unchanged.
     OPENAI_API_KEY: z.string().optional(),
     AI_MODEL: z.string().optional(),
+    // Optional (vision judge): when present, render-QA vision verdicts use the
+    // latest Gemini model instead of OpenAI (user directive: "always ask gemini
+    // latest as visual"). AI_VISION_MODEL overrides the hot-swapping
+    // "gemini-flash-latest" alias if a pinned id is ever needed.
+    GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+    AI_VISION_MODEL: z.string().optional(),
     // Optional (Phase 9, G9 kill-switch): set to the string "false" to disable
     // the adaptive render loop globally — batches render the classic path. The
     // loop is also OFF when OPENAI_API_KEY is absent or the batch did not opt in.

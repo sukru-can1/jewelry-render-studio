@@ -19,6 +19,8 @@ const envMock = vi.hoisted(() => ({
   env: { OPENAI_API_KEY: "sk-test", AI_MODEL: "gpt-5.5-pro" } as {
     OPENAI_API_KEY?: string;
     AI_MODEL?: string;
+    GOOGLE_GENERATIVE_AI_API_KEY?: string;
+    AI_VISION_MODEL?: string;
   },
 }));
 vi.mock("@/lib/env", () => envMock);
@@ -30,7 +32,13 @@ vi.mock("ai", () => ({
   generateText: (...a: unknown[]) => generateTextMock(...a),
 }));
 vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: () => (modelId: string) => ({ modelId }),
+  createOpenAI: () => (modelId: string) => ({ modelId, provider: "openai" }),
+}));
+vi.mock("@ai-sdk/google", () => ({
+  createGoogleGenerativeAI: () => (modelId: string) => ({
+    modelId,
+    provider: "google",
+  }),
 }));
 
 // Keep blob + sharp out of this suite entirely: the data URL is canned.
@@ -91,6 +99,8 @@ beforeEach(() => {
   previewDataUrlMock.mockClear();
   envMock.env.OPENAI_API_KEY = "sk-test";
   envMock.env.AI_MODEL = "gpt-5.5-pro";
+  envMock.env.GOOGLE_GENERATIVE_AI_API_KEY = undefined;
+  envMock.env.AI_VISION_MODEL = undefined;
 });
 
 describe("analyzePreview — structured vision call (INTEL-02)", () => {
@@ -172,12 +182,62 @@ describe("analyzePreview — structured vision call (INTEL-02)", () => {
     ).rejects.toThrow(/vision analysis failed/i);
   });
 
-  it("throws a clear 'not configured' error when OPENAI_API_KEY is absent", async () => {
+  it("throws a clear 'not configured' error when NO vision key is present", async () => {
     envMock.env.OPENAI_API_KEY = undefined;
+    envMock.env.GOOGLE_GENERATIVE_AI_API_KEY = undefined;
     await expect(
       analyzePreview("renders/job-1/preview.png", context),
     ).rejects.toThrow(/not configured/);
     expect(generateObjectMock).not.toHaveBeenCalled();
     expect(previewDataUrlMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("vision judge selection — Gemini latest preferred (user directive)", () => {
+  it("uses gemini-flash-latest when GOOGLE_GENERATIVE_AI_API_KEY is set (even with an OpenAI key)", async () => {
+    envMock.env.GOOGLE_GENERATIVE_AI_API_KEY = "g-test";
+    generateObjectMock.mockResolvedValueOnce({ object: cannedVerdict });
+
+    await analyzePreview("renders/job-1/preview.png", context);
+
+    const call = generateObjectMock.mock.calls[0][0] as CallArg & {
+      model?: { modelId?: string; provider?: string };
+    };
+    expect(call.model?.provider).toBe("google");
+    expect(call.model?.modelId).toBe("gemini-flash-latest");
+  });
+
+  it("AI_VISION_MODEL pins the Gemini model id", async () => {
+    envMock.env.GOOGLE_GENERATIVE_AI_API_KEY = "g-test";
+    envMock.env.AI_VISION_MODEL = "gemini-3.5-flash";
+    generateObjectMock.mockResolvedValueOnce({ object: cannedVerdict });
+
+    await analyzePreview("renders/job-1/preview.png", context);
+
+    const call = generateObjectMock.mock.calls[0][0] as CallArg & {
+      model?: { modelId?: string };
+    };
+    expect(call.model?.modelId).toBe("gemini-3.5-flash");
+  });
+
+  it("falls back to the OpenAI judge when only OPENAI_API_KEY is present", async () => {
+    generateObjectMock.mockResolvedValueOnce({ object: cannedVerdict });
+
+    await analyzePreview("renders/job-1/preview.png", context);
+
+    const call = generateObjectMock.mock.calls[0][0] as CallArg & {
+      model?: { modelId?: string; provider?: string };
+    };
+    expect(call.model?.provider).toBe("openai");
+    expect(call.model?.modelId).toBe("gpt-5.5-pro");
+  });
+
+  it("Gemini-only deployment works (no OpenAI key at all)", async () => {
+    envMock.env.OPENAI_API_KEY = undefined;
+    envMock.env.GOOGLE_GENERATIVE_AI_API_KEY = "g-test";
+    generateObjectMock.mockResolvedValueOnce({ object: cannedVerdict });
+
+    const verdict = await analyzePreview("renders/job-1/preview.png", context);
+    expect(verdict.overallScore).toBe(4);
   });
 });

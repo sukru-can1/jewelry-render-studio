@@ -79,10 +79,12 @@ export default async function NewBatchPage({
   );
 
   // INTEL-05 / G9: the "Optimize with AI" toggle is enabled only when the
-  // feature is configured server-side (key present + global kill-switch not
-  // "false"). Display-only — createBatch re-gates regardless of the client flag.
+  // feature is configured server-side (a vision-judge key present — Gemini
+  // preferred, OpenAI fallback — + global kill-switch not "false").
+  // Display-only — createBatch re-gates regardless of the client flag.
   const aiConfigured =
-    Boolean(env.OPENAI_API_KEY) && env.ADAPTIVE_INTELLIGENCE_ENABLED !== "false";
+    Boolean(env.GOOGLE_GENERATIVE_AI_API_KEY || env.OPENAI_API_KEY) &&
+    env.ADAPTIVE_INTELLIGENCE_ENABLED !== "false";
 
   return (
     <div className="flex flex-col gap-8 pb-28 lg:pb-8">

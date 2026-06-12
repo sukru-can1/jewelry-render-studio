@@ -374,13 +374,17 @@ async function processClaimedJob(job: ClaimedJob): Promise<void> {
 /**
  * Claim and process one bounded chunk of ANALYZING intelligence jobs.
  *
- * G9 kill-switch first: a missing OPENAI_API_KEY or
- * ADAPTIVE_INTELLIGENCE_ENABLED="false" makes this a no-op (loop OFF — the
- * classic render path is untouched). The per-batch optimizeWithAi gate rides in
- * the claim's where clause, so a batch that never opted in is never touched.
+ * G9 kill-switch first: no vision-judge key (Gemini preferred, OpenAI
+ * fallback) or ADAPTIVE_INTELLIGENCE_ENABLED="false" makes this a no-op (loop
+ * OFF — the classic render path is untouched). The per-batch optimizeWithAi
+ * gate rides in the claim's where clause, so a batch that never opted in is
+ * never touched.
  */
 export async function sweepAnalyzingJobs(): Promise<SweepAnalyzeResult> {
-  if (!env.OPENAI_API_KEY || env.ADAPTIVE_INTELLIGENCE_ENABLED === "false") {
+  if (
+    !(env.GOOGLE_GENERATIVE_AI_API_KEY || env.OPENAI_API_KEY) ||
+    env.ADAPTIVE_INTELLIGENCE_ENABLED === "false"
+  ) {
     return { analyzed: 0 };
   }
 
