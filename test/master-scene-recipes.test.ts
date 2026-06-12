@@ -50,6 +50,15 @@
 //      not the authored-camera path. camera_orbit no longer emits fstop;
 //      the worker (r11) renders orbit views DOF-OFF unless an explicit
 //      fstop override is present.
+//   6. (FULL + STONE) FULL-RING POSES replace the camera orbit (user: "still
+//      not close to where codex left v203"): the studio's lights + dark
+//      cards + AUTHORED camera are a tuned ensemble — orbiting the camera
+//      (r11) framed the whole ring but lost the cards' aimed reflections
+//      (the stone fire). Angles return to the PROVEN v203 poses, shrunk by
+//      FULL_RING_SCALE (0.55) so the whole ring fits the authored frame,
+//      re-grounded via pose_ground_to_reference (worker r12). Per-pose v203
+//      exposures return. camera_orbit stays a worker capability but is no
+//      longer emitted by the builder.
 import { createHash } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
@@ -65,9 +74,9 @@ import {
 import { buildMasterSceneRecipe as buildFromSibling } from "@/lib/master-scene-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "ea2a474357d95f6a56e83e504a720f53c760b2907bfe78b2a4ae5fe1111aa46e";
+  "a88d967a84a887c38bd3689bbc02c96295f48b61213a51f5e0e83fcef31ea4ac";
 const GOLDEN_STONE_SHA256 =
-  "96dcd895cfee53604880764625f77fb2f811fb3e3d5bf98a992bfe39db973131";
+  "5243ee8de88cff9c54be465cd25a2218be2b1343b2f53ba784764f497ff1d00b";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
@@ -163,45 +172,60 @@ describe("master_scene block — the worker contract", () => {
   });
 });
 
-describe("angle -> catalog orbit (the legacy Flask app's four views; regeneration note 4)", () => {
-  // models.py DEFAULT_CAMERA_PRESETS + _create_fresh_scene.py cam_configs.
+describe("angle -> FULL-RING v203 pose (authored camera + ensemble; regeneration note 6)", () => {
+  // The proven v203 poses, shrunk x0.55 (FULL_RING_SCALE) + grounded.
   const expected = {
-    hero: { source: "legacy view1", azimuth: 30, elevation: 25, distance_scale: 1.0, focal_length: 85 },
-    front: { source: "legacy view2", azimuth: 180, elevation: 15, distance_scale: 1.0, focal_length: 85 },
-    top: { source: "legacy view4", azimuth: -30, elevation: 70, distance_scale: 0.8, focal_length: 85 },
-    profile: { source: "legacy Camera", azimuth: -45, elevation: 15, distance_scale: 1.0, focal_length: 50 },
+    hero: {
+      source: "v203a_close_front_hero",
+      rotation: [-16, 0, -16],
+      scale: 0.5225, // 0.95 * 0.55
+      translation: [0.0, 0.0, -0.01],
+      exposure: -0.94,
+    },
+    front: {
+      source: "v203b_close_catalog_left",
+      rotation: [0, 0, -34],
+      scale: 0.5005, // 0.91 * 0.55
+      translation: [-0.004, 0.0, -0.01],
+      exposure: -0.95,
+    },
+    top: {
+      source: "v203e_close_upper_ring_shape",
+      rotation: [12, 0, -26],
+      scale: 0.495, // 0.9 * 0.55
+      translation: [0.0, 0.0, -0.006],
+      exposure: -0.93,
+    },
+    profile: {
+      source: "v203d_close_low_side",
+      rotation: [-7, 0, -74],
+      scale: 0.484, // 0.88 * 0.55
+      translation: [0.0, 0.0, -0.008],
+      exposure: -0.96,
+    },
   } as const;
 
-  for (const [angle, orbit] of Object.entries(expected)) {
-    it(`${angle} <- ${orbit.source}`, () => {
+  for (const [angle, pose] of Object.entries(expected)) {
+    it(`${angle} <- ${pose.source} at full-ring scale, grounded`, () => {
       const recipe = buildMasterSceneRecipe({
         ...reqFull,
         angle: angle as EnterpriseRecipeRequest["angle"],
       }) as AnyRecipe;
-      // No fstop key — the worker renders orbit views DOF-OFF (sharp
-      // packshot; regeneration note 5).
-      expect(recipe.master_scene.camera_orbit).toEqual({
-        azimuth: orbit.azimuth,
-        elevation: orbit.elevation,
-        distance_scale: orbit.distance_scale,
-        focal_length: orbit.focal_length,
-      });
-      // Product stays in the REFERENCE pose — the camera moves, not the ring.
-      expect(recipe.master_scene.pose_rotation_degrees).toEqual([0, 0, 0]);
-      expect(recipe.master_scene.pose_scale).toBe(1.0);
-      expect(recipe.master_scene.pose_translation).toEqual([0, 0, 0]);
-      // Uniform catalog exposure (v203a's studio value).
-      expect(recipe.render.exposure).toBe(-0.94);
-      expect(recipe.enterprise.pose_source).toBe(orbit.source);
-      expect(MASTER_CATALOG_ORBITS[angle as keyof typeof MASTER_CATALOG_ORBITS].source).toBe(
-        orbit.source,
-      );
+      expect(recipe.master_scene.pose_rotation_degrees).toEqual([...pose.rotation]);
+      expect(recipe.master_scene.pose_scale).toBeCloseTo(pose.scale, 10);
+      expect(recipe.master_scene.pose_translation).toEqual([...pose.translation]);
+      expect(recipe.master_scene.pose_ground_to_reference).toBe(true);
+      // The authored camera owns the view — no orbit emitted (note 6).
+      expect(recipe.master_scene.camera_orbit).toBeUndefined();
+      expect(recipe.render.exposure).toBe(pose.exposure);
+      expect(recipe.enterprise.pose_source).toBe(pose.source);
+      expect(MASTER_POSES[angle as keyof typeof MASTER_POSES].source).toBe(pose.source);
     });
   }
 
-  it("the v203 close poses remain exported as provenance (no longer drive angles)", () => {
-    expect(MASTER_POSES.hero.source).toBe("v203a_close_front_hero");
-    expect(MASTER_POSES.profile.source).toBe("v203d_close_low_side");
+  it("the legacy orbit table stays exported (worker capability for explicit recipes)", () => {
+    expect(MASTER_CATALOG_ORBITS.hero.source).toBe("legacy view1");
+    expect(MASTER_CATALOG_ORBITS.profile.focalLength).toBe(50);
   });
 
   it("keeps v203c_close_catalog_right as the exported 5th pose (no 5th angle key)", () => {

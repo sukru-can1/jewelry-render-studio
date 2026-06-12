@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-master-scene-r11"
+WORKER_BUILD = "20260612-master-scene-r12"
 
 
 DEFAULT_RECIPE = {
@@ -314,11 +314,18 @@ def place_product_on_reference(objects, settings, reference, pivot):
     return scale
 
 
-def apply_master_pose(config, reference, pivot):
+def apply_master_pose(config, reference, pivot, objects=None):
     """Per-angle PRODUCT POSE about the reference center — the v203 contract:
     the studio camera is FIXED; rotating/scaling/nudging the product creates
     the catalog angles. Mirrors the group_adjustments math (scale about the
-    center, rotate, then translate) as one composed matrix on the pivot."""
+    center, rotate, then translate) as one composed matrix on the pivot.
+
+    pose_ground_to_reference (full-ring catalog framing): a pose_scale well
+    below 1 shrinks the product TOWARD the reference center, lifting it off
+    the floor — invisible in the v203 close-ups, obvious in a full-ring frame.
+    When set, translate the posed product straight down so its bbox min-z
+    lands back on the REFERENCE's min-z (the studio floor contact line).
+    Single pivot write — the per-object transform law holds."""
     rotation = [math.radians(float(v)) for v in config.get("pose_rotation_degrees", [0.0, 0.0, 0.0])]
     scale = float(config.get("pose_scale", 1.0))
     translation = transform_vector(config.get("pose_translation", [0, 0, 0]), 0.0)
@@ -331,6 +338,15 @@ def apply_master_pose(config, reference, pivot):
     )
     pivot.matrix_world = pose @ pivot.matrix_world
     bpy.context.view_layer.update()
+
+    if config.get("pose_ground_to_reference", False) and objects:
+        mins, _maxs = object_bounds(objects)
+        floor_z = float(reference["min"][2])
+        drop = floor_z - mins.z
+        if abs(drop) > 1e-9:
+            pivot.matrix_world = Matrix.Translation((0.0, 0.0, drop)) @ pivot.matrix_world
+            bpy.context.view_layer.update()
+            print(f"MASTER_POSE: grounded to reference floor (dz={drop:+.5f})")
 
 
 def apply_master_camera_hide(config, product_objects):
@@ -537,7 +553,7 @@ def setup_master_scene(master_path: Path, model_path: Path, recipe):
     pivot = create_product_pivot(objects)
     imported_bounds = bounds_summary(objects)
     scale = place_product_on_reference(objects, recipe["model"], reference, pivot)
-    apply_master_pose(config, reference, pivot)
+    apply_master_pose(config, reference, pivot, objects)
     placed_bounds = bounds_summary(objects)
 
     # Same order as the standard path: pass visibility FIRST (its tokens match
