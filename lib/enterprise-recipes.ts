@@ -293,6 +293,14 @@ export function buildEnterpriseRecipe(request: EnterpriseRecipeRequest): Record<
       color: [0.965, 0.965, 0.955, 1.0],
       plane_size: 8.5,
       plane_z: -0.055,
+      // Catalog sweep (live-render fix): auto_orient + auto_frame made every
+      // camera view the floor at a grazing angle — the whole frame background
+      // WAS the floor (soft-shadow wedge + area-light pools). The worker adds a
+      // big camera-only EMISSION plane behind the product (zero light
+      // contribution); only `enabled` is emitted — worker defaults govern
+      // distance/size/color/strength. Emitted on ALL passes; on stone passes
+      // the worker extends visible_camera:false below to the backdrop too.
+      backdrop: { enabled: true },
       // Stone passes only (live E2E fix): the floor plane LIGHTS the stones
       // (diffuse/glossy/transmission bounce preserved by the worker) but is
       // invisible to camera, so the layer is pure stones-on-alpha for

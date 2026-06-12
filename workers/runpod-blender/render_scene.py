@@ -16,7 +16,7 @@ from mathutils import Euler, Matrix, Vector
 # render_scene.py — it is printed at main() start and written into the render
 # metadata JSON, so a stale RunPod image or cached worker-code download is
 # detectable from any job's stdout and metadata without guessing.
-WORKER_BUILD = "20260612-matte-floor-r2"
+WORKER_BUILD = "20260612-backdrop-r3"
 
 
 DEFAULT_RECIPE = {
@@ -1016,6 +1016,71 @@ def setup_world(recipe):
         bg.inputs["Strength"].default_value = recipe["world"].get("strength", 0.18)
 
 
+def make_backdrop_material(name, color, strength):
+    # Pure EMISSION shader (explicit node tree, like make_catalog_diamond_material):
+    # the backdrop must paint exact pixels — a Principled BSDF would shade with
+    # scene lighting and pick up the same grey gradients we are eliminating.
+    material = bpy.data.materials.new(name)
+    material.use_nodes = True
+    nodes = material.node_tree.nodes
+    links = material.node_tree.links
+    nodes.clear()
+
+    output = nodes.new("ShaderNodeOutputMaterial")
+    output.location = (260, 0)
+
+    emission = nodes.new("ShaderNodeEmission")
+    emission.location = (0, 0)
+    emission.inputs["Color"].default_value = [color[0], color[1], color[2], 1.0]
+    emission.inputs["Strength"].default_value = float(strength)
+    links.new(emission.outputs["Emission"], output.inputs["Surface"])
+    return material
+
+
+def add_catalog_backdrop(bg):
+    # Catalog sweep (live-render fix): auto_orient + auto_frame raised the camera
+    # target, so cameras view the floor at a grazing angle — the ENTIRE frame
+    # background became floor, showing the product's soft-shadow wedge and the
+    # area-light pools. A real catalog studio has a vertical backdrop behind the
+    # product; this adds one. All enterprise cameras look from -Y toward +Y, so a
+    # big plane perpendicular to +Y behind the product covers every preset.
+    backdrop = bg.get("backdrop") or {}
+    if not backdrop.get("enabled"):
+        return  # absent/disabled = byte-identical legacy scene
+    size = float(backdrop.get("size", 30.0))
+    distance = float(backdrop.get("distance", 6.0))
+    bpy.ops.mesh.primitive_plane_add(
+        size=size,
+        # Default plane lies in XY; rotate 90° about X to stand it vertical
+        # (perpendicular to Y). Center z = size/4 spans the horizon line:
+        # bottom at -size/4 (below floor), top at 3*size/4 (well above frame).
+        location=(0.0, distance, size / 4.0),
+        rotation=(math.radians(90.0), 0.0, 0.0),
+    )
+    sweep = bpy.context.object
+    sweep.name = "catalog_backdrop"
+    color = backdrop.get("color", [1.0, 1.0, 1.0])
+    sweep.data.materials.append(
+        make_backdrop_material("catalog_backdrop_emission", color, backdrop.get("strength", 1.0))
+    )
+    # Camera-only visibility: paints pure backdrop pixels but contributes ZERO
+    # light to the scene — every indirect light-path contribution is disabled
+    # (hasattr-guarded loop, same pattern as reflection cards). Stone passes
+    # (background.visible_camera=false) ALSO hide the backdrop from camera so
+    # the transparent stones-on-alpha layer stays clean.
+    visibility_map = {
+        "visible_camera": bool(bg.get("visible_camera", True)),
+        "visible_diffuse": False,
+        "visible_glossy": False,
+        "visible_transmission": False,
+        "visible_volume_scatter": False,
+        "visible_shadow": False,
+    }
+    for attribute, value in visibility_map.items():
+        if hasattr(sweep, attribute):
+            setattr(sweep, attribute, value)
+
+
 def setup_background(recipe):
     bg = recipe["background"]
     bpy.ops.mesh.primitive_plane_add(size=bg.get("plane_size", 8), location=(0, 0, bg.get("plane_z", -0.04)))
@@ -1040,6 +1105,7 @@ def setup_background(recipe):
     # floor for stone shots, hide it from camera only.
     if not bg.get("visible_camera", True) and hasattr(plane, "visible_camera"):
         plane.visible_camera = False
+    add_catalog_backdrop(bg)
 
 
 def add_contact_shadows(recipe):

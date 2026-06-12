@@ -38,6 +38,13 @@
 //     bbox center and recomputes the distance to fit the FOV. Pass-identical
 //     bbox basis keeps layers aligned — both goldens regenerated for this one
 //     added camera key.
+//  8. (FULL + STONE) catalog backdrop (live-render fix): background.backdrop:
+//     { enabled: true } is now emitted on EVERY pass — auto_frame raised the
+//     camera target so the floor filled the frame background at a grazing
+//     angle (soft-shadow wedge + light pools). The worker adds a camera-only
+//     EMISSION sweep behind the product (zero light contribution; stone
+//     passes also camera-hide it). Both goldens regenerated for this one
+//     added background key.
 //
 // WITH profileOverrides: each named knob moves exactly one recipe surface, CLAMPED
 // to KNOB_RANGES (G2), and nothing else changes. cameraPreset selects the ANGLES
@@ -53,9 +60,9 @@ import {
 } from "@/lib/enterprise-recipes";
 
 const GOLDEN_FULL_SHA256 =
-  "c5300b448d026a25fbaf3f6cdc79706aa602df5374ce3cde21e708ef679421a6";
+  "0ea945203d35eacac9c04744cc08699e802f2097f3a27827247422cc8bad5a52";
 const GOLDEN_STONE_SHA256 =
-  "ea454ea67d4a4b6a6efc827e7840b193317b626c3607ed8ffccdd904ace1f736";
+  "fc1b3209ecfaf78f8e5d7b7a505c72034fe33bc1623c5c399af1fa73cedca9e1";
 
 const reqFull: EnterpriseRecipeRequest = {
   angle: "hero",
